@@ -1,0 +1,63 @@
+# Environment — machine/org-local configuration
+
+Copy this file to `environment.md` (gitignored) and fill it in for your
+machine, org, and agent stack. Everything the protocol in SKILL.md
+parameterizes over lives here: which CLIs fill the implementer and
+fast-reviewer roles, their pinned models and commands, CLI-specific quirks,
+and org/repo integrations. Herdr can host many agent kinds (claude, codex,
+cursor, opencode, copilot, droid, grok, …) — porting the skill to another
+machine, org, or stack means rewriting this file (plus
+`review-checklists.md` and `agent-trust-profiles.md`, which are local by
+nature), never the skill body. Keep company data, repo names, model ids,
+and infra details here and out of SKILL.md.
+
+## Implementer — [CLI name]
+
+- **Model:** `[model id]` at `[reasoning/effort setting]`. [Where the
+  default is configured; pin per session if the config drifts:]
+
+  ```bash
+  herdr agent start <name> --kind [kind] --pane <id> -- [model/effort args]
+  ```
+
+- **Subscription check** (SKILL.md precondition): `[login status command]`
+  must report a subscription login, not an API key — flat-rate implementer
+  tokens are part of the cost model.
+- **Worktree rotation helper:** [script or procedure that does
+  quit → cd pane → start in one step, per (name, pane)].
+- **Known quirks:** [empirically verified failure modes and their
+  workarounds — e.g. silent large-paste drops, approval dialog behavior.]
+
+## Fast reviewer — [CLI name]
+
+- **Model:** `[model id]`; always pin at start:
+
+  ```bash
+  herdr agent start <name> --kind [kind] --pane <id> -- [model args]
+  ```
+
+- **Model listing:** `[command]` (ids drift).
+- **Approval settings (verified known-good):** [the CLI's approval mode and
+  allowlist configuration that lets read-only work run without stalls, and
+  the stricter-settings fallback.]
+
+## External review bot — [bot name, or delete this section]
+
+- **Enablement:** [which repos, manual/auto, billing model.]
+- **Trigger:** [command.]
+- **Poll:** [command.]
+- **Behavior notes:** [incremental review, effort routing, and anything else
+  configured account-side.]
+
+## Org and repos
+
+Primary org: `[org]`.
+
+### [org/repo] (`[local path]`)
+
+- **High-risk domains** for the external-bot trigger criteria: [e.g.
+  auth/RBAC, payments, data deletion/migration, infra/deploy].
+- **Preview deployments:** [opt-in mechanism, URL scheme, budget, docs
+  pointer — or delete if the repo has none.]
+- Review checklists, escalation reviewers, and the commit-free gate runner:
+  see this repo's entry in `review-checklists.md`.
