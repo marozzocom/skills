@@ -37,6 +37,12 @@ the mechanics to tmux or another multiplexer is possible but not done here.
 - `references/agent-trust-profiles.md` — per-agent-kind trust calibration
   from empirically verified behavior; new kinds start at zero trust.
 - `references/brief-template.md` — the implementer brief skeleton.
+- `bin/` — tracked, generic helpers shipped with the skill.
+  `rotate-implementer.sh` rotates any Herdr agent onto a new worktree in one
+  state-verified step (quit with an escalation ladder → confirmed cd → fresh
+  start with your model pin passed after `--`).
+- `scripts/` — does not exist here and is gitignored: it is the slot where an
+  installer may overlay machine-local helper scripts.
 
 ## Roadmap / to evaluate
 
