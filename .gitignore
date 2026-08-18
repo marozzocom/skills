@@ -4,4 +4,6 @@ skills/*/references/review-checklists.md
 skills/*/references/agent-trust-profiles.md
 
 # Machine-local helper scripts an installer may overlay into a skill
-skills/*/scripts/
+# (no trailing slash: the overlay may be a symlink, which a dir-only
+# pattern would not match)
+skills/*/scripts
