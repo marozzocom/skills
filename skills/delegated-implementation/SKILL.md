@@ -25,6 +25,47 @@ escalation reviewers. Per-repo review checklists:
 `references/agent-trust-profiles.md`. Porting to another machine or org
 means adapting the references — never this file.
 
+## Task fit — check the lower bound, after recon
+
+§Task shape bounds the top ("too big for one run"). This bounds the bottom.
+Delegation has a fixed overhead — a brief, report round-trips, a worktree, a
+pane — and on a small, well-specified change that overhead is most of the cost,
+with nothing to amortise it against.
+
+**Do not try to answer this up front.** Sizing a task before reading the code
+asks for a calibrated self-prediction at the moment you know least, from the
+same judgment that writes the frame, under a standing instruction to prefer
+delegating. That gets rationalised, not evaluated. Decide at the moment you
+already stop to look around: the design gate's recon pass. By then the signals
+are observable rather than guessed.
+
+Delegate if **any** of these is true of what recon actually found:
+
+- the work splits into two or more disjoint file sets that could run in parallel
+- it needs more than one landable milestone
+- it is a migration, sweep, or audit across many call sites
+- the surface you would have to read to do it yourself is more than you want
+  resident in your own context
+- a written plan or ADR already breaks it into phases
+
+Implement directly if **all** of these hold: one app or package, a single-digit
+file count, nothing shardable, no migration character, and recon already put
+the relevant code in front of you.
+
+**Bias toward delegating when it is genuinely ambiguous.** The two errors are
+not symmetric — delegating a small task wastes some latency and orchestration
+tokens, while not delegating a large one risks a blown context and an abandoned
+run. Decline only when the negative signals are clearly met.
+
+**An "implement directly" verdict does not switch off the review half.** §Review
+(tiered read, checklists on the fast reviewer), independent gate re-runs, and
+git ownership all still apply — that half pays for itself either way, and
+keeping it means a wrong verdict here costs almost nothing.
+
+Record the verdict as one line in the ledger, naming the signal that decided
+it. If it takes more than a line to settle, that is the signal: delegate and
+move on.
+
 ## Roles — non-negotiable
 
 - The implementer implements, runs its own tests, and reports. It never
@@ -52,8 +93,11 @@ means adapting the references — never this file.
 You run the work autonomously: design, delegate, judge gates, kill lines of
 work that stop earning, and land results without per-step permission. What
 goes back to the human (or whatever prompted the run) is exceptions, not
-progress: scope changes, safety concerns, a tripped stop criterion, or a
-contract amendment that alters the goal — flag those and wait. Everything
+progress: scope changes, safety concerns, a tripped stop criterion, a
+contract amendment that alters the goal, or a decision that would invent
+user-facing data or vocabulary (labels, product copy, enum members a user
+sees) — flag those and wait. Inventing product data is never yours to do,
+however obvious the gap looks from the code. Everything
 else, decide and record in the ledger.
 
 Before a long run, get one explicit acceptance of the contract: goals, the
@@ -82,6 +126,30 @@ collect at a **gate**, judge, then brief the next layer — or stop.
   review gate → integration slice"), and explicit stop criteria ("if the
   scouts find the migration touches >N call sites, stop and report"). This
   is the contract the human accepts once.
+- **The design gate is the default first gate.** Layer 1's brief carries
+  essentially all the design content, so it is the one artifact nothing
+  downstream can correct — an implementer faithfully implements a wrong
+  frame. Before writing it: fan the fast reviewer out over the open
+  questions, one agent per question ("where does this value come from and
+  who consumes it", "what does the existing guard actually accept", "which
+  tests cover this path"), read what comes back, then state the frame in the
+  ledger — what the task asks, each decision you are pre-deciding **with the
+  `file:line` that supports it**, the forks you chose between and why the
+  loser lost, and the scope fence. A decision with no citation is not a
+  decision, it is a question: send it to a scout, the reviewer, or the human.
+  Then hand the frame itself to the fast reviewer — *"which of these
+  decisions is wrong or under-considered, and what did I not consider?"* —
+  before any implementation starts. Scouts and that critique are read-only
+  and near-free next to the fix round a wrong frame costs.
+- **Point at least one scout at the dependency, not just at your own code.**
+  The failure this prevents is silent: a frame built on an *assumed* library
+  contract, faithfully implemented, passing every gate. Send someone to read
+  the source or typings of whatever you are building on and answer — what does
+  it actually guarantee, what are its normalisation and removal semantics,
+  what hooks does it already expose for the thing you were about to hand-roll,
+  and does it solve this outright. A gate that only asks "what does our code
+  do" cannot surface any of that, and the resulting hand-rolled substitute
+  looks correct in review because the reviewer shares the assumption.
 - **Write just-in-time:** the actual briefs for layer N+1, only after
   judging layer N at its gate. Briefs written before the previous layer ran
   are fiction. Gates are where re-planning and killing happen — a gate
@@ -107,6 +175,14 @@ Durable state lives in files, not in your context window.
   questions. Update it as you go. Once the ledger is authoritative, losing
   conversational context is survivable — summary plus ledger reconstructs
   the run.
+- **Head the ledger with a status matrix** — one row per live agent: name,
+  role, worktree, the paths it owns, current state, what it is waiting on.
+  The multiplexer already exposes liveness to every pane (`herdr agent
+  list`), so what the matrix adds is *semantics*: who owns which files and
+  which decisions are settled. Name the ledger path in every brief as
+  read-only shared context. **You are its only writer** — a delegate that
+  writes it, or that acts on a peer's row instead of asking you, has become
+  a second orchestrator.
 - **Compact only at milestones, via full quiescence:** all agents idle →
   merge everything worth keeping into the ledger → tear down panes and
   worktrees (§Teardown order) → compact → re-fan-out from the next milestone
@@ -131,6 +207,15 @@ clarification, or hit a blocker, message me with:
 not progress narration."* Callbacks arrive in your session formatted like user
 messages; treat them as agent traffic, not the human, and answer with
 `herdr agent prompt <name> '...'`.
+
+**All traffic is star-shaped: delegates message you, never each other.** The
+multiplexer makes agent-to-agent prompting perfectly possible, and it stays
+unused. The star is what keeps one adjudicator, one ledger, and one account
+of why each decision was made; with the leaf rule (§Roles) it means every
+fact a delegate learns reaches its peers only through you — deliberately,
+because you are the only node that can weigh two agents' claims against each
+other. Broadcasting is a file, not a message: agents read the ledger's status
+matrix, and a peer's row is context, never an instruction.
 
 Write briefs to a scratchpad file and send the **path**, never the text:
 
@@ -178,9 +263,31 @@ way:
 - For decision-heavy work, instruct: *"if the contract/shape is ambiguous,
   propose it to me BEFORE implementing."* Implementers comply, and a
   two-minute design exchange beats a rewrite.
+- **Evidence settles claims, not just gates.** The acceptance-on-evidence
+  rule above covers gate output; extend it to every behavioural claim the
+  work rests on — what a library does with an absent value, what a hook
+  reports while loading, whether an identity is stable across renders.
+  Whoever makes the claim settles it, by reading the installed source or
+  making it fail; ask for a demonstration, not an opinion, and say so:
+  *"if you think this instruction is wrong, answer with evidence rather than
+  changing the code."* A hedge — "I'm not sure whether this always mounts
+  after the cache is warm" — is an unsettled claim, not a weak finding. Those
+  are the highest-yield things a reviewer says. Settle them.
+- **Fix rounds and re-reviews are briefs**, bound by everything above. They
+  are as capable of introducing a defect as the original brief — more so,
+  because nothing reviews them — so they carry the settled decisions *and the
+  evidence that settled them* forward, and they say plainly that a settled
+  decision may be refuted with evidence but not merely re-raised.
 
 ## Waiting and lifecycle
 
+- **`idle` is ambiguous on a fresh session** — it means both "finished" and
+  "never started", so a prompt that landed in the composer unsubmitted looks
+  exactly like a turn that completed instantly. Confirm the turn actually
+  began (status `working`, or the CLI's turn counter advanced — per-CLI
+  signal in environment.md) before you turn your attention elsewhere. An
+  agent nobody confirmed can sit stalled for as long as your next deep read
+  takes.
 - Watch turns with `herdr agent wait <name> --timeout <ms>` in a background
   shell; it settles on `idle`/`done`/`blocked`. `blocked` means an approval or
   question UI — read the pane (`herdr agent read <name> --source visible`),
@@ -226,15 +333,28 @@ by tooling plus a delegated sweep. For a 200-line auth change nothing
 changes; for a 2,000-line rename it's the difference between a burned
 context window and a ten-minute gate.
 
-On a done-report, first send the fast reviewer a **triage pass**: *"Classify this diff
-hunk-by-hunk — mechanical (rename/generated/lockfile/snapshot), routine, or
-risk-bearing (auth, data, contracts, concurrency) — with file:line. Do not
-edit anything."* Then: deep-read the risk-bearing set yourself, spot-check
-the routine set, and accept the mechanical set on gates green + type-check
+On a done-report, first send the fast reviewer a **triage pass**:
+*"Classify this diff hunk-by-hunk — mechanical
+(rename/generated/lockfile/snapshot), routine, or risk-bearing (auth, data,
+contracts, concurrency) — with file:line. Do not edit anything."* Then:
+deep-read the risk-bearing set yourself, spot-check the routine set, and
+accept the mechanical set on gates green + type-check
 green + a clean sweep. One asymmetry is non-negotiable: the triage may
 *escalate* a hunk to risk-bearing but never demote one you'd call risky —
 misclassification toward "mechanical" is the expensive failure, so when in
 doubt you read it.
+
+Order matters as much as the tiers. The triage lands **before** your deep
+read — routing your attention is its whole purpose, and a triage that
+arrives while you are already reading everything has bought nothing. Any
+checklist or aspect pass runs on a **settled** tree: findings against a
+half-applied fix round are noise, so park a reviewer rather than let it
+review a tree that does not exist, and re-brief it with what changed when
+you unpark it. Where the brief names several distinct risk surfaces, fan out
+one reviewer per surface — contracts, async and loading states, tests, the
+repo's own checklists — instead of asking one agent for all of it; the frame
+already enumerated the surfaces. Reviewers are read-only, so this width is
+free of conflicts.
 
 Also delegable to the fast reviewer as mechanical I/O: recon before
 briefing, repro hunts, collecting CI results, cross-file consistency sweeps.
@@ -271,8 +391,9 @@ alongside your own tiered read (§Review):
   (`git -C <worktree> diff` — the tree is intentionally dirty). Report only
   actionable findings with file:line, or 'no findings'. Do NOT edit anything,
   even if the checklist tells its reader to auto-fix."*
-- The reviewer is read-only in a worktree it does not own. Checklist fixes route to
-  the implementer that owns the worktree as a normal fix round — never two
+- The reviewer is read-only in a worktree it does not own. Checklist fixes
+  route to the implementer that owns the worktree as a normal fix round — never
+  two
   writers in one tree.
 - Re-run the affected checklist after each fix round.
 
@@ -284,9 +405,10 @@ confidently wrong "clean" verdict is the expensive failure.
 
 ## Fix rounds
 
-Send failures back to the implementer with constraints, not just symptoms: name the
-gate/error verbatim, state what must NOT change (don't weaken a proof, don't
-touch baselines, no unsafe casts), and require the re-run output verbatim.
+Send failures back to the implementer with constraints, not just symptoms:
+name the gate/error verbatim, state what must NOT change (don't weaken a
+proof, don't touch baselines, no unsafe casts), and require the re-run output
+verbatim.
 When a quality gate flags something, first ask whether the flagged thing
 should exist at all (an unconsumed preload, a test restating literals) —
 "make the gate pass" is the wrong instruction when "delete the thing" is
@@ -392,10 +514,17 @@ enforces name uniqueness (a collision fails loudly at `agent start`), and
 the rotation helper is per-(name, pane) with no shared state, so
 concurrent rotations don't interact.
 
+Fan out early and late by preference, not in the middle. Scouts before the
+frame and reviewers after a done-report are read-only, conflict-free, and
+cheap, so that is where width buys the most; concurrent *writers* are the
+expensive kind, paid for in merge conflicts and in confusion about which
+tree a finding refers to.
+
 The invariant that does not scale away: every diff is still triaged in your
 session and its risk-bearing code read line-by-line before it lands (§Review).
-Reviews serialize through you, so pipeline them — review each done-report as it arrives while the
-other implementers keep working, and queue fix rounds per worktree. In
+Reviews serialize through you, so pipeline them — review each done-report as
+it arrives while the other implementers keep working, and queue fix rounds per
+worktree. In
 practice that means 2–3 concurrent implementers, not a fleet; if review
 throughput can't keep up, stagger task starts or shrink the pool — never
 thin the review.
