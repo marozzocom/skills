@@ -20,7 +20,14 @@ The protocol in this file is generic; read it with
 `references/environment.md`, which pins the concrete stack — the CLI and
 model filling each role (**implementer**; **fast reviewer / investigator /
 mechanical worker**), start commands, repo names, CI integrations,
-escalation reviewers. Per-repo review checklists:
+escalation reviewers, and the **cost table** — per-role marginal cost and
+the routing rule that follows from it. The standing cost principle: the
+orchestrator runs on the best available model, which makes its tokens the
+most expensive in the whole mesh, so anything that needs neither your
+accumulated context nor your authority (git, gate verdicts, adjudication)
+runs on a delegate or a cheaper subagent — and mechanical workflow steps run
+as **scripts** (`bin/`): deterministic, reviewed once, token-free
+thereafter. Per-repo review checklists:
 `references/review-checklists.md`. Per-agent trust calibration:
 `references/agent-trust-profiles.md`. Porting to another machine or org
 means adapting the references — never this file.
@@ -175,9 +182,15 @@ Durable state lives in files, not in your context window.
 
 - Keep a **task ledger** file (scratchpad or repo, one per run): graph state,
   per-node status, decisions made, gate verdicts, contract amendments, open
-  questions. Update it as you go. Once the ledger is authoritative, losing
-  conversational context is survivable — summary plus ledger reconstructs
-  the run.
+  questions. Update it as you go, **timestamping entries** — the ledger
+  doubles as the run's event log, and §Closeout renders the report from it.
+  Once the ledger is authoritative, losing conversational context is
+  survivable — summary plus ledger reconstructs the run.
+- **Assign a run id when you create the ledger** (`YYYY-MM-DD-<slug>`), and
+  put it in every PR the run opens as an invisible HTML comment in the body:
+  `<!-- herdr-run: <run-id> -->`. Reviewers see nothing; you (and §Closeout)
+  can pin any PR back to its run deterministically (lookup command in
+  environment.md), and the ledger lists PR numbers the other way.
 - **Head the ledger with a status matrix** — one row per live agent: name,
   role, worktree, the paths it owns, current state, what it is waiting on.
   The multiplexer already exposes liveness to every pane (`herdr agent
@@ -298,8 +311,13 @@ way:
   composer for stray characters before the next prompt (send-keys leftovers
   prepend to your next message).
 - On macOS, long-running background watchers (`gh pr checks --watch`) get
-  QoS-killed. Poll CI with a Monitor-style loop that emits each check result
-  and exits when all settle, instead of one long-lived watch process.
+  QoS-killed. Watch CI with the pinned poll script `bin/watch-pr.sh` under a
+  Monitor-style harness (invocation in environment.md) — it treats an empty
+  check list as still-pending, emits every terminal state (fail and cancel,
+  not just pass), and exits when all checks settle. Do not improvise the
+  loop per run: the improvised versions are exactly the ones that grep only
+  for success and stay silent through a failure, which looks identical to
+  "still running".
 
 ## Verification ownership — the verdict decides the runner
 
@@ -535,16 +553,47 @@ practice that means 2–3 concurrent implementers, not a fleet; if review
 throughput can't keep up, stagger task starts or shrink the pool — never
 thin the review.
 
-## Teardown — verified, in the right order
+## Merge policy — decided by table, not by feel
 
-When the task's PRs are merged or abandoned, tear down in this order: close
-agent panes FIRST (`herdr pane close <pane_id>` — positional ID, not a
-`--pane` flag), remove worktrees SECOND. A surviving agent whose cwd was
-deleted spins on "No such file or directory" errors until the user notices.
+You own the merge, but whether a PR may auto-merge or must wait for human
+review is not a per-PR judgment call: each repo's entry in
+`references/review-checklists.md` (or the repo's own rules file) carries a
+**default-deny path table** — auto-merge only when *every* changed path
+falls in that repo's enumerated safe set; any path outside it, and any
+mixed PR, waits for the human. State the verdict and which branch of the
+table produced it in the PR body, so a misclassification is visible in
+review rather than discovered after a bad merge. Where the human arms
+auto-merge personally (that act being their approval), never arm it
+yourself outside the table's safe set — and never disable what they armed.
 
-Verify teardown with a read, not the mutation: after closing, `herdr pane
-list` must show only panes you did not create. Never suppress stderr in a
-teardown chain and never emit your own success marker — `2>/dev/null` plus
-an unconditional `echo CLOSED` once turned a wrong-syntax close into a
-reported success and left three orphaned agents on screen. Gate any "cleaned
-up" claim on exit status plus the post-state read.
+## Closeout — report first, teardown inside it
+
+Closeout is one step, not two, and the report is its forcing function: a
+run is not closed until the run report exists, and the report is not
+complete without teardown evidence. Teardown-by-memory is what gets
+skipped — the sequence lives at the end of the run, after the reward, at
+the point of longest context — so the artifact you want (the report)
+carries the cleanup you forget.
+
+When the run's PRs are merged or abandoned:
+
+1. **Render the run report** from the ledger using
+   `references/run-report.md` — timeline (agents spawned/rotated/torn down,
+   gates, PRs, fix rounds), stats, highlights, and what the next run should
+   do differently. Report only what was measured (turns, wall time, rounds,
+   diff sizes, PR count); delegate-side token spend is not reliably
+   observable — never invent it.
+2. **Tear down in order**: close agent panes FIRST (`herdr pane close
+   <pane_id>` — positional ID, not a `--pane` flag), remove worktrees
+   SECOND. A surviving agent whose cwd was deleted spins on "No such file
+   or directory" errors until the user notices. Walk the ledger's status
+   matrix — every row ever opened must end closed; the matrix is the
+   registry of what exists, so nothing untracked can be forgotten.
+3. **Verify with a read, not the mutation**, and paste the evidence into
+   the report's teardown section: after closing, `herdr pane list` must
+   show only panes you did not create, and `git worktree list` only trees
+   you did not make. Never suppress stderr in a teardown chain and never
+   emit your own success marker — `2>/dev/null` plus an unconditional
+   `echo CLOSED` once turned a wrong-syntax close into a reported success
+   and left three orphaned agents on screen. Gate any "cleaned up" claim on
+   exit status plus the post-state read.

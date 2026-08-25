@@ -21,6 +21,10 @@ verification matrix — check → runner → verdict owner → evidence type
   note that the implementer brief overrides it — review is centralized with
   the orchestrator.]
 - **Commit-free gate runner** for brief verification floors: `[command]`.
+- **Merge policy table** (SKILL.md §Merge policy) — default deny: auto-merge
+  only when *every* changed path is in the safe set; mixed or out-of-set
+  PRs wait for the human. [Enumerate the repo's safe set here, or point at
+  the repo rules file that carries the table.]
 - **Verification matrix:**
   - tests / type-check / lint (`[gate command]`) → implementer runs in its
     loop, orchestrator re-runs at the gate (the acceptance) → verdict: the

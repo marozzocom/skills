@@ -49,6 +49,47 @@ and infra details here and out of SKILL.md.
 - **Behavior notes:** [incremental review, effort routing, and anything else
   configured account-side.]
 
+## Cost table — marginal cost per role, and the routing rule
+
+The orchestrator deliberately runs the best available model (judge/overseer
+quality is where model strength pays), which makes its tokens the most
+expensive in the mesh and its context the scarcest resource. Fill in API
+list prices as relative weights, dated — ratios move:
+
+| Runner | Model | Billing here | API list (in/out per MTok) | Relative |
+|---|---|---|---|---|
+| Orchestrator | [model] | [subscription/API] | [$ / $] | 1× (the ceiling) |
+| Orchestrator's subagents | [pinned cheaper model] | [same pool] | [$ / $] | [ratio] |
+| Implementer | [model] | [subscription flat-rate?] | [$ / $] | [marginal ≈ 0 if flat] |
+| Fast reviewer | [model] | [subscription flat-rate?] | [$ / $] | [marginal ≈ 0 if flat] |
+
+Routing rule: work that needs neither the orchestrator's accumulated
+context nor its authority (git, gate verdicts, adjudication) never runs on
+the orchestrator's model. Note here how the orchestrator's harness pins
+subagent models — including whether unpinned subagents silently inherit the
+expensive session model (Claude Code's do: pass `model` explicitly on every
+search/mechanical spawn).
+
+## Workflow scripts (`bin/`)
+
+Deterministic steps run as scripts, not re-derived prose. Ship with the
+skill: `bin/watch-pr.sh` (CI poll loop for a background monitor — emits
+every terminal state, treats an empty check list as pending),
+`bin/run-report.sh` (deterministic half of the §Closeout report),
+`bin/rotate-implementer.sh` (worktree rotation). Add machine-local ones
+under `scripts/` (gitignored) and note them here.
+
+## Run marker — pinning PRs to runs
+
+Every PR a run opens carries `<!-- herdr-run: <run-id> -->` in its body
+(invisible when rendered). Lookup:
+
+```bash
+gh pr list --repo [owner/repo] --state all --limit 100 \
+  --search "herdr-run: <run-id> in:body" --json number,title \
+  --jq '.[] | "#\(.number) \(.title)"'
+```
+
 ## Org and repos
 
 Primary org: `[org]`.
