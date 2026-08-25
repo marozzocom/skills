@@ -140,7 +140,10 @@ collect at a **gate**, judge, then brief the next layer — or stop.
   Then hand the frame itself to the fast reviewer — *"which of these
   decisions is wrong or under-considered, and what did I not consider?"* —
   before any implementation starts. Scouts and that critique are read-only
-  and near-free next to the fix round a wrong frame costs.
+  and near-free next to the fix round a wrong frame costs. If the repo ships
+  its own plan-review skill (e.g. Furnace's `review-plan`), run it on the
+  frame at this gate too — it validates the plan against codebase reality
+  and repo-specific guardian rules the fast reviewer does not know.
 - **Point at least one scout at the dependency, not just at your own code.**
   The failure this prevents is silent: a frame built on an *assumed* library
   contract, faithfully implemented, passing every gate. Send someone to read
