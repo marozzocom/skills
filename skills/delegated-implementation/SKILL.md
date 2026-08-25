@@ -195,7 +195,10 @@ Durable state lives in files, not in your context window.
   role, worktree, the paths it owns, current state, what it is waiting on.
   The multiplexer already exposes liveness to every pane (`herdr agent
   list`), so what the matrix adds is *semantics*: who owns which files and
-  which decisions are settled. Name the ledger path in every brief as
+  which decisions are settled. Treat that status as advisory, not ground
+  truth — for some CLIs it misreports (quirks in environment.md); before
+  concluding an agent is idle or stuck, confirm with
+  `herdr agent read <name> --source visible`. Name the ledger path in every brief as
   read-only shared context. **You are its only writer** — a delegate that
   writes it, or that acts on a peer's row instead of asking you, has become
   a second orchestrator.
@@ -532,8 +535,18 @@ etiquette apply unchanged regardless of which CLI is in the pane.
 ## Parallel implementers
 
 Multiple implementer agents work: unique names, one pane + worktree each,
-disjoint file sets only (shared baselines/lockfiles conflict). Launch as many
-sessions as the work shards into — implementer tokens are flat-rate, herdr
+disjoint file sets only (shared baselines/lockfiles conflict). Panes share the
+overseer's tab by default — that's what keeps the run glanceable — but each
+split narrows every pane, and a TUI in a too-narrow pane can break silently:
+prompts submitted via `herdr agent prompt` + enter are dropped with no error,
+the agent sits at `idle`, and `agent read --source visible` renders a few
+characters per line. Width, not pane count, is the variable (count thresholds
+depend on window size and split orientation; any CLI-specific numbers live in
+environment.md). On those symptoms, or when a fan-out would clearly cramp the
+tab, give the agent its own tab instead of another split:
+`herdr tab create --cwd <dir>` — note it returns the *tab*, not a pane, so
+read the new `pane_id` from `herdr pane list` filtered on the returned
+`tab_id`. Launch as many sessions as the work shards into — implementer tokens are flat-rate, herdr
 enforces name uniqueness (a collision fails loudly at `agent start`), and
 the rotation helper is per-(name, pane) with no shared state, so
 concurrent rotations don't interact.
