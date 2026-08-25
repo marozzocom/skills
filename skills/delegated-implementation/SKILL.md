@@ -64,10 +64,29 @@ not symmetric — delegating a small task wastes some latency and orchestration
 tokens, while not delegating a large one risks a blown context and an abandoned
 run. Decline only when the negative signals are clearly met.
 
-**An "implement directly" verdict does not switch off the review half.** §Review
-(tiered read, checklists on the fast reviewer), independent gate re-runs, and
-git ownership all still apply — that half pays for itself either way, and
-keeping it means a wrong verdict here costs almost nothing.
+**This bound is about delegating *implementation*.** It does not gate read-only
+fan-out — scouts, triage passes, checklist passes, one reader per artifact.
+Those carry none of the overhead being weighed here: no brief round-trip, no
+worktree, no pane, and no conflicts (§Review). So "implement directly" never
+means "read everything yourself". A task that is mostly **adjudication** —
+compare N implementations, audit N call sites, decide which of N answers is
+right — trips every implement-directly signal above and should still fan out on
+the read.
+
+**An "implement directly" verdict does not switch off the review half, and it
+does not switch off the design gate.** §Review (tiered read, checklists on the
+fast reviewer), independent gate re-runs, and git ownership all still apply —
+that half pays for itself either way, and keeping it means a wrong verdict here
+costs almost nothing.
+
+The design gate survives for a different reason: its two load-bearing pieces —
+the dependency scout, and handing your frame to the fast reviewer for critique
+— are read-only, cost no brief and no pane, and do not depend on an implementer
+existing at all. Typing the code yourself changes who implements the frame; it
+does nothing to make the frame right. The failure mode is specific: one agent
+pre-decides a fork, gets no critique, implements its own answer faithfully, and
+every gate goes green. Skipping the gate because you are not delegating is the
+one shortcut this section does not license.
 
 Record the verdict as one line in the ledger, naming the signal that decided
 it. If it takes more than a line to settle, that is the signal: delegate and
@@ -335,6 +354,16 @@ Who runs a check is decided by where its verdict lives:
   necessary, not sufficient: never let "tests pass" clear work that
   hardcoded an expected value, weakened an assertion, or bypassed a stated
   requirement to get there — spot-check the diff for that specifically.
+- **The exit code is not a verdict for a test the delegate wrote in the same
+  run.** Green reports that the assertion held, not that it would break if the
+  behaviour it names regressed — and an agent authoring tests for its own diff
+  has a structural pull toward green. So for any test whose whole job is to pin
+  something (a default, an invariant, an idempotency claim, a regression guard),
+  mutate the implementation and confirm the test fails. Cheap, and it is the
+  only evidence that the test is load-bearing rather than decorative. When it
+  does *not* fail, the useful question is not "is this tautological" but **which
+  layer is actually holding the invariant** — often a library default nobody
+  named, which is worth learning and worth pinning either way.
 - **Judgment checks** (UI verification, visual/UX QA, semantic review,
   accessibility beyond automated scans) — split into three parts with
   different owners. The **standard** is centralized and written (repo
