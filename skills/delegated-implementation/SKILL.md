@@ -223,7 +223,7 @@ Durable state lives in files, not in your context window.
   a second orchestrator.
 - **Compact only at milestones, via full quiescence:** all agents idle →
   merge everything worth keeping into the ledger → tear down panes and
-  worktrees (§Teardown order) → compact → re-fan-out from the next milestone
+  worktrees (§Closeout order) → compact → re-fan-out from the next milestone
   with fresh sessions and worktrees. Never compact with agents in flight.
   Teardown-before-compaction also means a context loss can never orphan a
   live agent.
