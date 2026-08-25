@@ -307,7 +307,10 @@ Who runs a check is decided by where its verdict lives:
   them twice. The implementer runs them in its own loop (feedback stays
   local; lint/type fixes are mechanical and stay with the implementer or the
   cheapest worker). You re-run at the gate — that re-run is the acceptance,
-  the implementer's run just saves round-trips.
+  the implementer's run just saves round-trips. A green exit code is
+  necessary, not sufficient: never let "tests pass" clear work that
+  hardcoded an expected value, weakened an assertion, or bypassed a stated
+  requirement to get there — spot-check the diff for that specifically.
 - **Judgment checks** (UI verification, visual/UX QA, semantic review,
   accessibility beyond automated scans) — split into three parts with
   different owners. The **standard** is centralized and written (repo
