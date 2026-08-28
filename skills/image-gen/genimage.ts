@@ -1,118 +1,296 @@
 #!/usr/bin/env bun
 /**
- * genimage — generate or edit images via the OpenAI Images API.
+ * Generate or edit PNG images with the OpenAI Images API.
  *
  * Usage:
- *   bun genimage.ts generate "prompt" [outfile.png] [--model M] [--size S] [--quality Q] [--transparent] [--n N]
- *   bun genimage.ts edit input.png [input2.png ...] "prompt" [outfile.png] [--model M] [--size S] [--quality Q]
+ *   bun genimage.ts generate "prompt" [outfile.png] [options]
+ *   bun genimage.ts edit input.png [input2.png ...] "prompt" [outfile.png] [options]
  *   bun genimage.ts models
- *
- * Sizes: 1024x1024 (default), 1536x1024 (landscape), 1024x1536 (portrait), auto
- * Quality: low | medium | high | auto (default)
- *
- * API key resolution order:
- *   1. $OPENAI_API_KEY
- *   2. Proton Pass CLI, when $GENIMAGE_PASS_VAULT and $GENIMAGE_PASS_ITEM are set
  */
 
-// Optional secret-manager fallback. Both are opt-in via env so the skill ships
-// with no org-specific configuration baked in; without them the key must come
-// from $OPENAI_API_KEY.
-const PASS_VAULT = process.env.GENIMAGE_PASS_VAULT;
-const PASS_ITEM = process.env.GENIMAGE_PASS_ITEM;
-const DEFAULT_MODEL = process.env.GENIMAGE_MODEL ?? "gpt-image-1.5";
+import { stat } from "node:fs/promises";
+import { resolve } from "node:path";
+
+const DEFAULT_MODEL = process.env.GENIMAGE_MODEL?.trim() || "gpt-image-2";
+const PASS_VAULT = process.env.GENIMAGE_PASS_VAULT?.trim();
+const PASS_ITEM = process.env.GENIMAGE_PASS_ITEM?.trim();
+const API_BASE = "https://api.openai.com/v1";
+const QUALITIES = new Set(["low", "medium", "high", "auto"]);
+const INPUT_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp"]);
+
+const USAGE = `Usage:
+  bun genimage.ts generate "prompt" [outfile.png] [options]
+  bun genimage.ts edit input.png [input2.png ...] "prompt" [outfile.png] [options]
+  bun genimage.ts models
+
+Options:
+  --model MODEL       Default: $GENIMAGE_MODEL or ${DEFAULT_MODEL}
+  --size SIZE         auto or WIDTHxHEIGHT (default: 1024x1024)
+  --quality QUALITY   low, medium, high, or auto (default: auto)
+  --n COUNT           Integer 1-10 (default: 1)
+  --transparent       Request a transparent PNG background
+  -h, --help          Show this help
+
+Use -- before a prompt that begins with --.`;
+
+class UsageError extends Error {}
+
+type Flags = {
+  model: string;
+  size: string;
+  quality: string;
+  n: number;
+  transparent: boolean;
+};
+
+type ParsedArgs = { positional: string[]; flags: Flags; literalStart: number | null };
+
+type ApiImage = { b64_json?: unknown; url?: unknown };
+type ImageResponse = { data?: unknown };
+
+function requireFlagValue(args: string[], index: number, flag: string): string {
+  const value = args[index + 1];
+  if (value === undefined || value.startsWith("--"))
+    throw new UsageError(`${flag} requires a value.`);
+  return value;
+}
+
+function parseFlags(args: string[]): ParsedArgs {
+  const flags: Flags = {
+    model: DEFAULT_MODEL,
+    size: "1024x1024",
+    quality: "auto",
+    n: 1,
+    transparent: false,
+  };
+  const positional: string[] = [];
+  const seen = new Set<string>();
+  let literalStart: number | null = null;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--") {
+      literalStart = positional.length;
+      positional.push(...args.slice(i + 1));
+      break;
+    }
+    if (!arg.startsWith("-")) {
+      positional.push(arg);
+      continue;
+    }
+    if (arg === "-h" || arg === "--help") throw new UsageError(USAGE);
+    if (!["--model", "--size", "--quality", "--n", "--transparent"].includes(arg))
+      throw new UsageError(`Unknown option: ${arg}`);
+    if (seen.has(arg)) throw new UsageError(`Option may only be specified once: ${arg}`);
+    seen.add(arg);
+
+    if (arg === "--transparent") {
+      flags.transparent = true;
+      continue;
+    }
+    const value = requireFlagValue(args, i, arg);
+    i++;
+    if (arg === "--model") flags.model = value.trim();
+    else if (arg === "--size") flags.size = value.toLowerCase();
+    else if (arg === "--quality") flags.quality = value.toLowerCase();
+    else if (arg === "--n") flags.n = Number(value);
+  }
+
+  if (!flags.model) throw new UsageError("--model cannot be empty.");
+  if (flags.size !== "auto" && !/^[1-9]\d*x[1-9]\d*$/.test(flags.size))
+    throw new UsageError("--size must be auto or WIDTHxHEIGHT, for example 1024x1024.");
+  if (!QUALITIES.has(flags.quality))
+    throw new UsageError("--quality must be low, medium, high, or auto.");
+  if (!Number.isSafeInteger(flags.n) || flags.n < 1 || flags.n > 10)
+    throw new UsageError("--n must be an integer from 1 to 10.");
+
+  return { positional, flags, literalStart };
+}
+
+function inputExtension(path: string): string {
+  const dot = path.lastIndexOf(".");
+  return dot >= 0 ? path.slice(dot).toLowerCase() : "";
+}
+
+function validateOutputPath(outfile: string): void {
+  if (!outfile.toLowerCase().endsWith(".png"))
+    throw new UsageError(`Output path must end in .png: ${outfile}`);
+}
+
+function outputPath(outfile: string, index: number, total: number): string {
+  return total === 1 ? outfile : `${outfile.slice(0, -4)}-${index + 1}.png`;
+}
 
 async function getApiKey(): Promise<string> {
-  if (process.env.OPENAI_API_KEY) return process.env.OPENAI_API_KEY;
-  if (!PASS_VAULT || !PASS_ITEM)
+  const environmentKey = process.env.OPENAI_API_KEY?.trim();
+  if (environmentKey) return environmentKey;
+
+  if (Boolean(PASS_VAULT) !== Boolean(PASS_ITEM)) {
+    const missing = PASS_VAULT ? "$GENIMAGE_PASS_ITEM" : "$GENIMAGE_PASS_VAULT";
     throw new Error(
-      "No OpenAI key. Set $OPENAI_API_KEY, or set $GENIMAGE_PASS_VAULT and $GENIMAGE_PASS_ITEM to read it from Proton Pass via pass-cli.",
-    );
-  const proc = Bun.spawn(
-    ["pass-cli", "item", "view", "--vault-name", PASS_VAULT, "--item-title", PASS_ITEM, "--output", "json"],
-    { stdout: "pipe", stderr: "pipe" },
-  );
-  const out = await new Response(proc.stdout).text();
-  const err = await new Response(proc.stderr).text();
-  if ((await proc.exited) !== 0) {
-    throw new Error(
-      `pass-cli failed (is it logged in? run: pass-cli login):\n${err.trim()}`,
+      `Secret-manager fallback is incomplete: set ${missing}, or unset both fallback variables and set $OPENAI_API_KEY.`,
     );
   }
-  // Find any field value that looks like an OpenAI key, regardless of item schema.
-  const match = out.match(/sk-[A-Za-z0-9_-]{20,}/);
-  if (!match) throw new Error(`No OpenAI key (sk-...) found in Proton Pass item "${PASS_ITEM}"`);
+  if (!PASS_VAULT || !PASS_ITEM) {
+    throw new Error(
+      "No OpenAI API key configured. Set $OPENAI_API_KEY, or set both $GENIMAGE_PASS_VAULT and $GENIMAGE_PASS_ITEM to use Proton Pass via pass-cli.",
+    );
+  }
+
+  let proc: ReturnType<typeof Bun.spawn>;
+  try {
+    proc = Bun.spawn(
+      [
+        "pass-cli",
+        "item",
+        "view",
+        "--vault-name",
+        PASS_VAULT,
+        "--item-title",
+        PASS_ITEM,
+        "--output",
+        "json",
+      ],
+      { stdout: "pipe", stderr: "pipe" },
+    );
+  } catch (error) {
+    throw new Error(
+      `Could not start pass-cli: ${error instanceof Error ? error.message : String(error)}. Install pass-cli or set $OPENAI_API_KEY.`,
+    );
+  }
+
+  const [status, stdout, stderr] = await Promise.all([
+    proc.exited,
+    new Response(proc.stdout).text(),
+    new Response(proc.stderr).text(),
+  ]);
+  if (status !== 0) {
+    const detail = stderr.trim() || `exit code ${status}`;
+    throw new Error(`pass-cli could not read the configured item: ${detail}. Log in with "pass-cli login" and try again.`);
+  }
+  const match = stdout.match(/sk-[A-Za-z0-9_-]{20,}/);
+  if (!match) {
+    throw new Error(
+      "The configured Proton Pass item did not contain a recognizable OpenAI API key. Update the item or set $OPENAI_API_KEY.",
+    );
+  }
   return match[0];
 }
 
-type Flags = { model: string; size: string; quality: string; n: number; transparent: boolean };
-
-function parseFlags(args: string[]): { positional: string[]; flags: Flags } {
-  const flags: Flags = { model: DEFAULT_MODEL, size: "1024x1024", quality: "auto", n: 1, transparent: false };
-  const positional: string[] = [];
-  for (let i = 0; i < args.length; i++) {
-    const a = args[i];
-    if (a === "--model") flags.model = args[++i];
-    else if (a === "--size") flags.size = args[++i];
-    else if (a === "--quality") flags.quality = args[++i];
-    else if (a === "--n") flags.n = parseInt(args[++i], 10);
-    else if (a === "--transparent") flags.transparent = true;
-    else positional.push(a);
+async function request(url: string, init: RequestInit, action: string): Promise<Response> {
+  let response: Response;
+  try {
+    response = await fetch(url, init);
+  } catch (error) {
+    throw new Error(
+      `${action} could not reach the OpenAI API: ${error instanceof Error ? error.message : String(error)}. Check the network connection and try again.`,
+    );
   }
-  return { positional, flags };
+  if (!response.ok) await apiError(response, action);
+  return response;
 }
 
-async function writeImages(data: any, outfile: string): Promise<string[]> {
+async function apiError(response: Response, action: string): Promise<never> {
+  const raw = await response.text();
+  let detail = raw.trim();
+  try {
+    const parsed = JSON.parse(raw);
+    detail = parsed?.error?.message || parsed?.error?.code || detail;
+  } catch {
+    // The response was not JSON; its text is still useful diagnostics.
+  }
+  if (detail.length > 800) detail = `${detail.slice(0, 800)}…`;
+  const requestId = response.headers.get("x-request-id");
+  const recovery =
+    response.status === 401
+      ? " Check $OPENAI_API_KEY or the configured secret-manager item."
+      : response.status === 429
+        ? " Check account quota and rate limits, then retry."
+        : response.status >= 500
+          ? " This is usually transient; retry the request."
+          : "";
+  throw new Error(
+    `${action} failed with OpenAI API HTTP ${response.status}${detail ? `: ${detail}` : "."}${recovery}${requestId ? ` Request ID: ${requestId}.` : ""}`,
+  );
+}
+
+function responseImages(data: ImageResponse): ApiImage[] {
+  if (!Array.isArray(data?.data) || data.data.length === 0)
+    throw new Error("The OpenAI API returned no images. Retry once; if it persists, inspect the API response and account access.");
+  return data.data as ApiImage[];
+}
+
+async function writeImages(
+  data: ImageResponse,
+  outfile: string,
+  protectedPaths: ReadonlySet<string> = new Set(),
+): Promise<string[]> {
+  const images = responseImages(data);
+  const paths = images.map((_, index) => outputPath(outfile, index, images.length));
+  const collision = paths.find((path) => protectedPaths.has(resolve(path)));
+  if (collision)
+    throw new Error(`The API response would write over an input image: ${collision}. Choose another output path.`);
   const written: string[] = [];
-  const images = data.data ?? [];
   for (let i = 0; i < images.length; i++) {
-    const path = images.length === 1 ? outfile : outfile.replace(/\.png$/, `-${i + 1}.png`);
-    if (images[i].b64_json) {
-      await Bun.write(path, Buffer.from(images[i].b64_json, "base64"));
-    } else if (images[i].url) {
-      const res = await fetch(images[i].url);
-      await Bun.write(path, await res.arrayBuffer());
+    const path = paths[i];
+    let bytes: Uint8Array | ArrayBuffer;
+    const encoded = images[i].b64_json;
+    const remoteUrl = images[i].url;
+    if (typeof encoded === "string" && encoded.length > 0) {
+      bytes = Buffer.from(encoded, "base64");
+      if (bytes.byteLength === 0) throw new Error(`Image ${i + 1} contained empty base64 data.`);
+    } else if (typeof remoteUrl === "string" && remoteUrl.length > 0) {
+      const download = await request(remoteUrl, {}, `Downloading image ${i + 1}`);
+      bytes = await download.arrayBuffer();
+      if (bytes.byteLength === 0) throw new Error(`Downloaded image ${i + 1} was empty.`);
     } else {
-      throw new Error(`Image ${i} has neither b64_json nor url`);
+      throw new Error(`Image ${i + 1} had neither base64 data nor a download URL.`);
+    }
+    try {
+      await Bun.write(path, bytes);
+    } catch (error) {
+      throw new Error(
+        `Could not write image ${i + 1} to "${path}": ${error instanceof Error ? error.message : String(error)}. Check that the parent directory exists and is writable.`,
+      );
     }
     written.push(path);
   }
   return written;
 }
 
-async function apiError(res: Response): Promise<never> {
-  const body = await res.text();
-  throw new Error(`API error ${res.status}: ${body}`);
+async function validateInputs(paths: string[], outfile: string, outputCount: number): Promise<void> {
+  const outputs = new Set(
+    Array.from({ length: outputCount }, (_, index) => resolve(outputPath(outfile, index, outputCount))),
+  );
+  for (const path of paths) {
+    const extension = inputExtension(path);
+    if (!INPUT_EXTENSIONS.has(extension))
+      throw new UsageError(`Unsupported input type for "${path}". Use PNG, JPEG, or WebP.`);
+    let inputStat;
+    try {
+      inputStat = await stat(path);
+    } catch (error) {
+      if (typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT")
+        throw new UsageError(`Input image does not exist: ${path}`);
+      throw new Error(`Could not inspect input image "${path}": ${error instanceof Error ? error.message : String(error)}`);
+    }
+    if (!inputStat.isFile()) throw new UsageError(`Input image is not a regular file: ${path}`);
+    if (inputStat.size === 0) throw new UsageError(`Input image is empty: ${path}`);
+    if (inputStat.size >= 50 * 1024 * 1024) throw new UsageError(`Input image must be smaller than 50 MB: ${path}`);
+    if (outputs.has(resolve(path)))
+      throw new UsageError(`Output path must differ from every input image: ${outfile}`);
+  }
 }
 
-const [cmd, ...rest] = process.argv.slice(2);
-
-if (!cmd || !["generate", "edit", "models"].includes(cmd)) {
-  console.error("Usage: genimage.ts generate|edit|models ... (see header comment)");
-  process.exit(1);
-}
-
-const key = await getApiKey();
-
-if (cmd === "models") {
-  const res = await fetch("https://api.openai.com/v1/models", {
-    headers: { Authorization: `Bearer ${key}` },
-  });
-  if (!res.ok) await apiError(res);
-  const data = await res.json();
-  const imageModels = data.data
-    .map((m: any) => m.id)
-    .filter((id: string) => /image|dall/i.test(id))
-    .sort();
-  console.log(imageModels.join("\n") || "(no image models visible to this key)");
-  process.exit(0);
-}
-
-const { positional, flags } = parseFlags(rest);
-
-if (cmd === "generate") {
+async function runGenerate(args: string[]): Promise<void> {
+  const { positional, flags } = parseFlags(args);
+  if (positional.length < 1 || positional.length > 2)
+    throw new UsageError("generate requires a prompt and accepts one optional output path.");
   const [prompt, outfile = "image.png"] = positional;
-  if (!prompt) throw new Error("generate requires a prompt");
+  if (!prompt.trim()) throw new UsageError("generate requires a non-empty prompt.");
+  validateOutputPath(outfile);
+
+  const key = await getApiKey();
   const body: Record<string, unknown> = {
     model: flags.model,
     prompt,
@@ -121,41 +299,104 @@ if (cmd === "generate") {
     n: flags.n,
   };
   if (flags.transparent) body.background = "transparent";
-  const res = await fetch("https://api.openai.com/v1/images/generations", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) await apiError(res);
-  const written = await writeImages(await res.json(), outfile);
-  console.log(written.join("\n"));
-} else if (cmd === "edit") {
-  // positional: one or more input images, then prompt, then optional outfile
-  const inputs: string[] = [];
-  let i = 0;
-  while (i < positional.length && (await Bun.file(positional[i]).exists())) {
-    inputs.push(positional[i++]);
-  }
-  const prompt = positional[i++];
-  const outfile = positional[i] ?? "edited.png";
-  if (inputs.length === 0) throw new Error("edit requires at least one existing input image");
-  if (!prompt) throw new Error("edit requires a prompt after the input image(s)");
+  const response = await request(
+    `${API_BASE}/images/generations`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify(body),
+    },
+    "Image generation",
+  );
+  console.log((await writeImages(await response.json(), outfile)).join("\n"));
+}
 
+async function runEdit(args: string[]): Promise<void> {
+  const { positional, flags, literalStart } = parseFlags(args);
+  const inputs: string[] = [];
+  let index = 0;
+  const inputLimit = literalStart ?? positional.length;
+  while (index < inputLimit && INPUT_EXTENSIONS.has(inputExtension(positional[index]))) {
+    inputs.push(positional[index++]);
+  }
+  const remaining = positional.slice(index);
+  if (inputs.length === 0)
+    throw new UsageError("edit requires at least one PNG, JPEG, or WebP input before the prompt.");
+  if (remaining.length < 1 || remaining.length > 2)
+    throw new UsageError("edit requires a prompt and accepts one optional output path after it.");
+  const [prompt, outfile = "edited.png"] = remaining;
+  if (!prompt.trim()) throw new UsageError("edit requires a non-empty prompt after the input image(s).");
+  validateOutputPath(outfile);
+  await validateInputs(inputs, outfile, flags.n);
+
+  const key = await getApiKey();
   const form = new FormData();
   form.append("model", flags.model);
   form.append("prompt", prompt);
   form.append("size", flags.size);
   form.append("quality", flags.quality);
+  form.append("n", String(flags.n));
+  if (flags.transparent) form.append("background", "transparent");
   for (const input of inputs) {
     const file = Bun.file(input);
-    form.append("image[]", new File([await file.arrayBuffer()], input.split("/").pop()!, { type: file.type || "image/png" }));
+    const name = input.split(/[\\/]/).pop() || "image.png";
+    form.append("image[]", new File([await file.arrayBuffer()], name, { type: file.type || "application/octet-stream" }));
   }
-  const res = await fetch("https://api.openai.com/v1/images/edits", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}` },
-    body: form,
-  });
-  if (!res.ok) await apiError(res);
-  const written = await writeImages(await res.json(), outfile);
-  console.log(written.join("\n"));
+  const response = await request(
+    `${API_BASE}/images/edits`,
+    { method: "POST", headers: { Authorization: `Bearer ${key}` }, body: form },
+    "Image edit",
+  );
+  console.log(
+    (
+      await writeImages(
+        await response.json(),
+        outfile,
+        new Set(inputs.map((input) => resolve(input))),
+      )
+    ).join("\n"),
+  );
 }
+
+async function runModels(args: string[]): Promise<void> {
+  if (args.length > 0) throw new UsageError("models does not accept arguments.");
+  const key = await getApiKey();
+  const response = await request(
+    `${API_BASE}/models`,
+    { headers: { Authorization: `Bearer ${key}` } },
+    "Model listing",
+  );
+  const data = await response.json();
+  if (!Array.isArray(data?.data)) throw new Error("The model-list response did not contain a data array.");
+  const models = data.data
+    .map((model: unknown) =>
+      typeof model === "object" && model !== null && "id" in model ? String(model.id) : "",
+    )
+    .filter((id: string) => /image|dall/i.test(id))
+    .sort();
+  console.log(models.join("\n") || "(no image models visible to this key)");
+}
+
+async function main(): Promise<void> {
+  const [command, ...args] = process.argv.slice(2);
+  if (command === "-h" || command === "--help" || (args.length === 1 && ["-h", "--help"].includes(args[0]))) {
+    console.log(USAGE);
+    return;
+  }
+  if (!command) throw new UsageError(USAGE);
+  if (command === "generate") return runGenerate(args);
+  if (command === "edit") return runEdit(args);
+  if (command === "models") return runModels(args);
+  throw new UsageError(`Unknown command: ${command}`);
+}
+
+main().catch((error: unknown) => {
+  if (error instanceof UsageError) {
+    console.error(error.message);
+    if (error.message !== USAGE) console.error("\nRun with --help for usage.");
+    process.exitCode = 2;
+    return;
+  }
+  console.error(`genimage: ${error instanceof Error ? error.message : String(error)}`);
+  process.exitCode = 1;
+});

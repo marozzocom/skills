@@ -1,36 +1,35 @@
 ---
 name: image-gen
-description: Generate or edit images (illustrations, logos, diagrams, infographics, textures, placeholder art, photo edits) via the OpenAI Images API. Use whenever the user asks for an image to be created, or a task needs visual assets — hero images, icons, social cards, mockup imagery. Supports text-to-image and image+prompt editing.
+description: Generate or edit raster images with the OpenAI Images API. Use when the user says "generate an image," "make a hero image," "create an illustration/logo/icon/social card," "edit this photo," "remove or replace the background," "make this image transparent," or asks for raster mockup imagery, textures, sprites, or visual variants. Do not use when hand-authored SVG, HTML/CSS, Mermaid, or another code-native format better fits the requested artifact.
 ---
 
 # Image generation
 
-A bash-callable CLI lives next to this file. It bills the user's OpenAI API account (roughly $0.04–$0.25/image depending on quality/size), so don't generate large batches without being asked.
+Use the Bun CLI in this skill's directory for text-to-image generation and prompt-based edits. Requests bill the user's OpenAI API account; confirm scope before generating a large batch.
 
-## Commands
+## Run
+
+Resolve `genimage.ts` relative to this `SKILL.md`, then run:
 
 ```bash
-# Text → image (writes PNG, prints the path)
-bun ~/.claude/skills/image-gen/genimage.ts generate "prompt" out.png \
-  [--size 1024x1024|1536x1024|1024x1536|auto] [--quality low|medium|high|auto] \
-  [--model gpt-image-1.5] [--transparent] [--n 2]
+# Text to image
+bun <skill-directory>/genimage.ts generate "prompt" [output.png] [options]
 
-# Edit / iterate: input image(s) + prompt → new image
-bun ~/.claude/skills/image-gen/genimage.ts edit input.png "make the background dusk" out.png
+# Edit one or more images
+bun <skill-directory>/genimage.ts edit input.png [input2.png ...] "describe the intended result" [output.png] [options]
 
-# List image models this key can use
-bun ~/.claude/skills/image-gen/genimage.ts models
+# Options: --size SIZE --quality low|medium|high|auto --model MODEL --transparent --n COUNT
+
+# List image models available to the configured key
+bun <skill-directory>/genimage.ts models
 ```
 
-## The loop that matters
+The default model is `gpt-image-2`; `--model` overrides `$GENIMAGE_MODEL`, which overrides the default. The output path must end in `.png`. Multiple results are written as `name-1.png`, `name-2.png`, and so on.
 
-After every generation, **Read the output PNG to look at it**. Judge it against the request; if it misses, either regenerate with a sharper prompt or use `edit` with the current output as input for targeted fixes. Editing preserves composition; regenerating rerolls everything. Show the user the final path.
+Authentication uses `$OPENAI_API_KEY`. As an optional fallback, set both `$GENIMAGE_PASS_VAULT` and `$GENIMAGE_PASS_ITEM` to read the key from Proton Pass with `pass-cli`. If that command reports an expired session, ask the user to run `pass-cli login`; do not print or echo a key.
 
-## Practical notes
+## Iterate
 
-- Default model is `gpt-image-1.5` (override with `--model` or `GENIMAGE_MODEL` env). If a model errors as unknown, run the `models` subcommand and pick from what the key actually has.
-- This model family is unusually good at **legible text in images** (labels, diagrams, infographics) and instruction-following. For diagrams, consider whether SVG/Mermaid written by hand beats a raster image first.
-- `--transparent` gives a transparent background (logos, sprites, cut-outs).
-- `--quality low` is cheap and fast — good for drafts; re-run the winner at `high`.
-- Auth: uses `$OPENAI_API_KEY` if set. Otherwise, if both `$GENIMAGE_PASS_VAULT` and `$GENIMAGE_PASS_ITEM` are set, it reads the key from Proton Pass via `pass-cli`. If pass-cli says no session, ask the user to run `! pass-cli login`. With neither configured it fails with that instruction rather than guessing.
-- To publish a result to Furnace media storage, use the `media_upload_image` MCP tool with the generated file.
+After every generation, inspect the actual output image. Compare composition, dimensions, text, transparency, and requested details against the user's intent. Use `edit` for a targeted correction that should preserve the composition; generate again when the concept itself needs a new attempt. Use low quality for drafts and a higher quality only for the selected result.
+
+Return the final image path and mention any requested property you could not verify. For diagrams or layout-sensitive graphics, prefer SVG, Mermaid, or HTML/CSS when those formats offer more reliable geometry and text.

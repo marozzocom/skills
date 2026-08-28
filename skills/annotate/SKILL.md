@@ -1,43 +1,45 @@
 ---
 name: annotate
-description: Inject a click-to-annotate overlay into a website open in a browser tab so the user can pin improvement notes to elements, then collect the notes and implement them. Use when the user asks to annotate a site/page, "let me leave notes on the site", re-add the annotation tool, or collect/clear previously left annotations.
+description: Inject a click-to-annotate overlay into a website open in a browser tab, then collect the pinned feedback and implement it. Use when the user says "annotate this page," "let me mark up the site," "I want to leave notes on elements," "collect my annotations," "clear the feedback pins," or asks to reinstall the annotation overlay after a reload.
 ---
 
 # Website annotation overlay
 
-Inject `annotator.js` (in this skill's directory) into the page, let the user click elements and leave notes, then collect the notes from `localStorage` and implement them.
+Use `annotator.js` from this skill's directory to collect element-specific feedback on a live page.
 
 ## Inject
 
-Read `annotator.js` from this skill's directory and execute it verbatim in the target tab:
+Execute the complete contents of `annotator.js` as JavaScript in the target browser tab. Use the in-app browser by default; use the user's browser only when they need its existing login or explicitly ask for it. Navigate to the target page first if necessary.
 
-- **In-app browser** (default): `mcp__Claude_Browser__javascript_tool` with `action: "javascript_exec"` on the tab showing the site. If no tab is open, `preview_start`/`navigate` first.
-- **User's real Chrome**: `mcp__claude-in-chrome__javascript_tool` — only when the user wants to annotate in their own logged-in browser.
+The script returns `already installed` or `installed, existing notes: N`; the latter adds `skipped invalid: M` when individual stored records are malformed. Relay that warning so the user can inspect or clear the bad records. The overlay is idempotent for the current page load. A reload or full navigation removes it, so inject it again. On a client-side route change, run `window.__skillAnnotator.refresh()` to redraw the pins for the new pathname.
 
-The IIFE returns `"already installed"` or `"installed, existing notes: N"`. It is idempotent per page load (guards on `window.__skillAnnotator`) but does NOT survive a reload or hard navigation — re-inject after those. Notes persist in `localStorage` per origin regardless, and pins for the current path redraw on re-inject. SPA route changes keep the overlay alive.
+Tell the user:
 
-Tell the user: click any element to leave a note; the bottom-right toolbar toggles annotating OFF to browse/navigate normally (clicks are intercepted while ON).
+- With **Annotating: ON**, click an element, enter a note, then choose **Save**. **Cancel**, Escape, and Ctrl/Command+Enter are keyboard-accessible alternatives.
+- Turn annotating **OFF** in the bottom-right toolbar before using page links or controls normally; page clicks are intentionally intercepted while it is on.
 
-## Collect
+If injection fails because storage is unavailable or corrupt, relay the script's recovery message instead of claiming the overlay was installed.
+
+## Collect and act
+
+Read:
 
 ```js
 localStorage.getItem('__skill_annotations')
 ```
 
-Each note: `{ n, note, url (pathname), pageX, pageY, selector, tag, text, ts }` — `selector` + `text` identify the element, `url` the page. Enumerate the notes back to the user, map each to code/content, and implement.
+Parse the JSON array and skip records that do not match the overlay's note shape. Each valid note contains `{ n, note, url, pageX, pageY, selector, tag, text, ts }`; `url` is the pathname. Enumerate the valid notes for the user, use `selector` and `text` to find the intended element, then make the requested changes. Coordinates depend on the viewport and are only a fallback.
 
 ## Clear
 
-Only when the user asks to start fresh (it deletes their notes, and the permission classifier may block it unless the user's request is explicit):
+Clear notes only after an explicit user request because this deletes their feedback:
 
 ```js
-localStorage.removeItem('__skill_annotations')
-document.querySelectorAll('.__fa_pin').forEach(p => p.remove())
+window.__skillAnnotator.clear()
 ```
 
-Alternatively leave old notes in place and filter collected notes by `n` or `ts` — numbering continues from the stored count.
+To remove the overlay without deleting notes, run `window.__skillAnnotator.destroy()`.
 
-## Gotchas
+## Browser limitation
 
-- The in-app browser pane never fires IntersectionObserver callbacks — scroll-triggered page behavior (reveal-on-view etc.) will look broken there. Verify such behavior with Playwright against localhost instead of trusting the pane.
-- `pageX/pageY` are document coordinates at the user's viewport size; prefer `selector`/`text` over coordinates when locating what they meant.
+Some in-app browser environments do not fire `IntersectionObserver` callbacks. When scroll-triggered page behavior appears broken, verify it in a normal browser or with the project's browser test tooling before changing the site.
