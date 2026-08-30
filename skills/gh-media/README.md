@@ -1,4 +1,4 @@
-# pr-media
+# gh-media
 
 Attach screenshots, screen recordings, videos, and GIFs **inline** to GitHub
 PRs, issues, and comments from the CLI or an agent session — including on
@@ -34,9 +34,9 @@ the media actually displays.
 ```bash
 gh extension install drogers0/gh-image
 
-ln -s "$(pwd)/skills/pr-media" ~/.claude/skills/
-cp skills/pr-media/references/environment.template.md \
-   skills/pr-media/references/environment.md   # then fill it in
+ln -s "$(pwd)/skills/gh-media" ~/.claude/skills/
+cp skills/gh-media/references/environment.template.md \
+   skills/gh-media/references/environment.md   # then fill it in
 ```
 
 `environment.md` is gitignored — it holds your default upload repo, plan tier

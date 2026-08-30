@@ -1,4 +1,4 @@
-# pr-media — local environment
+# gh-media — local environment
 
 Copy to `environment.md` (gitignored) and fill in. The skill reads this for machine- and org-specific defaults; everything here is a default, not a limit — per-task instructions win.
 
