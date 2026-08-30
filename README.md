@@ -16,6 +16,7 @@ each skill's `README.md` for setup.
 |---|---|
 | [`annotate`](skills/annotate/) | Inject a click-to-annotate overlay into a page open in a browser tab, so a reviewer can pin notes to elements; then collect the notes and implement them. No build step, no dependencies — one idempotent IIFE, notes in `localStorage` per origin. |
 | [`image-gen`](skills/image-gen/) | Generate or edit images via the OpenAI Images API — text-to-image and image+prompt editing, with size/quality/transparency flags. Reads `$OPENAI_API_KEY`, or optionally a secret manager when `$GENIMAGE_PASS_VAULT`/`$GENIMAGE_PASS_ITEM` are set. |
+| [`gh-media`](skills/gh-media/) | Attach screenshots, screen recordings, and videos inline to GitHub PRs, issues, and comments — including private repos — via GitHub's own user-attachments CDN (headless token auth through the [`gh-image`](https://github.com/drogers0/gh-image) extension). Capture → fit to size limits → upload → embed → verify rendering. |
 | [`delegated-implementation`](skills/delegated-implementation/) | Orchestrate CLI coding agents (via [Herdr](https://herdr.dev/)) as workers while Claude oversees, reviews, verifies, and owns all git operations. Layered task graphs with gates, a file-based ledger, tiered review, and explicit verification ownership. |
 
 ## Install
