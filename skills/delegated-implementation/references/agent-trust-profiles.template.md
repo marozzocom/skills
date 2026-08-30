@@ -13,7 +13,7 @@ here, then record what was actually observed.
 
 Trust here is never clearance. Even the best-calibrated delegate's report is
 input; acceptance is on evidence (verbatim gate output re-run by the
-orchestrator, triaged diff read, checklist pass) per SKILL.md §Review.
+orchestrator, triaged diff read, checklist pass) per phase-review.md §Review.
 
 ## Codex CLI — gpt-5.6-sol, reasoning high (implementer)
 
@@ -41,7 +41,7 @@ orchestrator, triaged diff read, checklist pass) per SKILL.md §Review.
   read or the stronger reviewer named in the repo's
   `review-checklists.md` entry, regardless of Grok's verdict.
 - **Triage asymmetry:** its hunk classification may escalate to
-  risk-bearing, never demote below your own judgment (SKILL.md §Review).
+  risk-bearing, never demote below your own judgment (phase-review.md §Review).
 - **Over-investigates:** scope briefs tightly ("only actionable findings
   with file:line, or: no findings"); when it drifts, `send-keys esc` then
   ask for the final report.
@@ -49,7 +49,7 @@ orchestrator, triaged diff read, checklist pass) per SKILL.md §Review.
 ## Bugbot (Cursor, account-side)
 
 - Usage-billed escalation, not a pipeline stage — trigger conditions in
-  SKILL.md §External review bot; mechanics in `environment.md`.
+  phase-review.md §External review bot; mechanics in `environment.md`.
 - **Confidence is not evidence:** verify every finding against the code
   before routing a fix. It surfaces real issues in cross-cutting diffs but
   also asserts plausible-sounding non-bugs with equal confidence.

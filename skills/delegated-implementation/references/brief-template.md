@@ -22,7 +22,8 @@ genuinely help, propose it to me instead and I will decide and provision it.
 You are running inside Herdr and so am I. If you need a decision,
 clarification, or hit a blocker, message me with:
 herdr agent prompt overseer "<message>" — I am the Claude agent named
-overseer. Use it for blockers and decisions, not progress narration.
+overseer. Use it for blockers and decisions, not progress narration. Batch
+questions: one message carrying every open question, not one per question.
 
 Read first, in this order: [repo rules file], [plan/ADR], [named key files
 with symbols/line hints].

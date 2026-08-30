@@ -75,8 +75,12 @@ search/mechanical spawn).
 Deterministic steps run as scripts, not re-derived prose. Ship with the
 skill: `bin/watch-pr.sh` (CI poll loop for a background monitor — emits
 every terminal state, treats an empty check list as pending),
-`bin/run-report.sh` (deterministic half of the §Closeout report),
-`bin/rotate-implementer.sh` (worktree rotation). Add machine-local ones
+`bin/run-report.sh` (deterministic half of the closeout report),
+`bin/rotate-implementer.sh` (worktree rotation), `bin/run-gates.sh`
+(acceptance gate runner — one verdict line per gate, failure tails only),
+`bin/agent-status.sh` (one-line agent liveness probe),
+`bin/resolve-thread.sh` (review-thread reply + resolve in one call), and
+`bin/ledger-append.sh` (timestamped ledger append). Add machine-local ones
 under `scripts/` (gitignored) and note them here.
 
 ## Run marker — pinning PRs to runs
@@ -100,7 +104,7 @@ Primary org: `[org]`.
   auth/RBAC, payments, data deletion/migration, infra/deploy].
 - **Preview deployments:** [opt-in mechanism, URL scheme, budget, docs
   pointer — or delete if the repo has none.]
-- **Feature flags** (SKILL.md §Landing modes, `flag` mode): [how a flag is
+- **Feature flags** (phase-landing.md §Landing modes, `flag` mode): [how a flag is
   created, read, enabled/disabled, and cleaned up; where the repo's
   gating-layer rules live (flag vs RBAC vs entitlement); the exact
   enable/disable commands a `flag` closeout report must quote — or delete
