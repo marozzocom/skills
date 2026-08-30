@@ -25,10 +25,16 @@ the mechanics to tmux or another multiplexer is possible but not done here.
 
 ## Layout
 
-- `SKILL.md` — the generic orchestration protocol. Stack-, org-, and
-  machine-agnostic by design; no vendor names in the body (the frontmatter
-  keeps "(e.g. Codex, Cursor)" solely as trigger keywords for skill
-  routing).
+- `SKILL.md` — the core protocol every phase needs: roles, the contract,
+  context discipline, the communication mesh, token-economy mechanics, and
+  the phase-file map. Stack-, org-, and machine-agnostic by design; no
+  vendor names in the body (the frontmatter keeps "(e.g. Codex, Cursor)"
+  solely as trigger keywords for skill routing).
+- `references/phase-design.md`, `phase-execution.md`, `phase-review.md`,
+  `phase-landing.md` — the per-phase protocol detail, split so the
+  orchestrator reads each phase just-in-time (and re-reads only the current
+  phase after a milestone compaction) instead of holding the whole protocol
+  resident. Same generic/portable status as SKILL.md.
 - `references/environment.md` — the concrete stack: which CLI/model fills
   each role, start commands, CLI quirks, org/repo integrations. Porting the
   skill = rewriting the references, never SKILL.md.
@@ -40,7 +46,12 @@ the mechanics to tmux or another multiplexer is possible but not done here.
 - `bin/` — tracked, generic helpers shipped with the skill.
   `rotate-implementer.sh` rotates any Herdr agent onto a new worktree in one
   state-verified step (quit with an escalation ladder → confirmed cd → fresh
-  start with your model pin passed after `--`).
+  start with your model pin passed after `--`); `watch-pr.sh` polls CI;
+  `run-report.sh` renders the deterministic half of the closeout report;
+  `run-gates.sh` runs acceptance gates and prints verdict lines only;
+  `agent-status.sh` is a one-line liveness probe; `resolve-thread.sh`
+  replies to and resolves a PR review thread in one call;
+  `ledger-append.sh` appends a timestamped ledger entry.
 - `scripts/` — does not exist here and is gitignored: it is the slot where an
   installer may overlay machine-local helper scripts.
 
@@ -68,10 +79,10 @@ in `references/review-checklists.md`:
   repo-specific and only visible after reading the code, and one run found a
   third option the other never generated. A skill that forced one answer
   would lock in the worse answer exactly as easily. Gate the design pass
-  (§design gate in SKILL.md) — do not script it. Determinism on a design task
+  (the design gate in phase-design.md) — do not script it. Determinism on a design task
   buys consistency at the price of the search.
 
-- **Do not make §Task fit a capability self-estimate.** The obvious way to
+- **Do not make §Task fit (phase-design.md) a capability self-estimate.** The obvious way to
   write that gate is "judge up front whether this task is big enough" — and
   that is the version to avoid. It asks for a calibrated self-prediction
   before the code has been read, produced by the same judgment that writes the
@@ -113,7 +124,7 @@ Two further readings worth keeping:
   delegated run's review pass caught a user-visible regression before it
   shipped. The solo run shipped a defect of similar severity, caught only
   because a benchmark existed to diff against. That asymmetry is why §Task fit
-  explicitly refuses to gate §Review — the cheap configuration to try next is
+  explicitly refuses to gate the review phase — the cheap configuration to try next is
   solo implementation plus the centralised review pass.
 - **Recon target, not delegation, explained most of the artifact spread.** Both
   the delegated and solo runs spent a similar recon budget; they aimed it
@@ -126,7 +137,7 @@ Two further readings worth keeping:
   authoring the brief, never read the library, and hand-rolled substitutes for
   primitives that already existed. The implementer then faithfully built the
   brief. Nothing in the pipeline created a reason for anyone to read the
-  dependency — hence the dependency-scout bullet in §Task shape. Note this cuts
+  dependency — hence the dependency-scout bullet in phase-design.md §Task shape. Note this cuts
   *for* the protocol: scouts are read-only, parallel and near-free, so the
   delegated path can afford this check more easily than a solo run can.
 - **This measured the overhead floor, not the protocol.** The task was one
@@ -137,7 +148,7 @@ Two further readings worth keeping:
 
 ## Roadmap / to evaluate
 
-- **Judge-panel the frame, not just the implementation.** SKILL.md names the
+- **Judge-panel the frame, not just the implementation.** The protocol names the
   judge-panel pattern but applies it nowhere near the brief, which is where
   the variance actually is. For design-heavy tickets: generate two
   independent frames, score them, synthesize from the winner while grafting
@@ -148,18 +159,20 @@ Two further readings worth keeping:
   review passes and a mutation test all missed — found only by diffing
   against the other implementation.
 
-- **Per-domain judges.** §Verification ownership says the verdict on a
+- **Per-domain judges.** phase-review.md §Verification ownership says the verdict on a
   judgment check stays with "you, or one named judge per domain". The
   per-domain-judge option is permitted but unbuilt — e.g. a
   design-specialized agent owning UI verdicts instead of the orchestrator.
   Build only when a real need shows up; it needs a trust profile, a written
   standard, and a matrix entry before it may own verdicts.
 - **Graph/ledger/milestone machinery is design, not yet battle-tested.**
-  §Task shape, the ledger, and quiesce→teardown→compact→re-fan-out were
+  phase-design.md §Task shape, the ledger, and
+  quiesce→teardown→compact→re-fan-out were
   reasoned out in a 2026-08 design pass, unlike the CLI quirk material,
   which was learned from real failures. Treat the first substantial
   multi-layer run as validation; expect follow-up adjustments.
-- **Preview deployments are unmapped, not absent.** §Preview deployments
+- **Preview deployments are unmapped, not absent.** phase-review.md
+  §Preview deployments
   expects a per-app opt-in mechanism in `environment.md`. Fill in each app's
   mechanism, URL scheme, and budget the first time you use it. Until an app
   has an entry, treat its UI evidence as local-run screenshots.

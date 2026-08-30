@@ -3,13 +3,13 @@
 Copy this file to `review-checklists.md` (gitignored) and add an entry the
 first time you delegate in a new repo. Machine-local map from repo → the
 review checklists the orchestrator runs after an implementer's done-report
-(SKILL.md §Review checklists). The skill body stays repo-agnostic;
+(phase-review.md §Review checklists). The skill body stays repo-agnostic;
 everything repo-specific about reviewing lives here.
 
 Each entry answers four questions: where the checklists live, how changed
 files map to them, which domains escalate past the fast reviewer, and the
 verification matrix — check → runner → verdict owner → evidence type
-(SKILL.md §Verification ownership).
+(phase-review.md §Verification ownership).
 
 ## [org/repo] (`[local path]`)
 
@@ -21,15 +21,15 @@ verification matrix — check → runner → verdict owner → evidence type
   note that the implementer brief overrides it — review is centralized with
   the orchestrator.]
 - **Commit-free gate runner** for brief verification floors: `[command]`.
-- **Review conventions** (SKILL.md §Landing modes): [what the repo's process
+- **Review conventions** (phase-landing.md §Landing modes): [what the repo's process
   actually expects — branch protection, required reviewers, CODEOWNERS,
   required checks, review bots, the rules file's delivery section. If it
   expects other-human review, `stage` is the ceiling regardless of grant.]
-- **Autonomous landing grant** (SKILL.md §Landing modes): [absent = denied,
+- **Autonomous landing grant** (phase-landing.md §Landing modes): [absent = denied,
   `stage` is the ceiling. To grant: "granted <date> by <source — repo agent
   docs section, or the user's explicit directive>", enabling `land`/`flag`
   under an accepted contract.]
-- **Merge policy table** (SKILL.md §Merge policy) — default deny: auto-merge
+- **Merge policy table** (phase-landing.md §Merge policy) — default deny: auto-merge
   on green checks only when *every* changed path is in the safe set. Paths
   outside the safe set merge only under the grant above plus an accepted
   `land`/`flag` landing mode — otherwise they wait for the human.
