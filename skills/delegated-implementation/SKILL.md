@@ -643,12 +643,34 @@ merge, where the mode says so.
   hatch — reach for it whenever it converts a `stage` into a landed
   deliverable.
 
-Choosing: would a human looking at the result exercise judgment no gate or
-checklist encodes? Yes → `stage`. No → `land`, or `flag` when production
-exposure is the residual risk. Mid-run you may always *downgrade*
-(`land` → `flag` → `stage`) when something surfaces that genuinely needs
-human eyes — record why in the ledger; upgrading toward autonomy mid-run
-requires the human.
+**Autonomous landing is off by default — it exists only under an explicit
+grant.** `land` and `flag` are available in a repo only when one of two
+sources explicitly authorizes autonomous merge/deployment there: the repo's
+own agent documentation (its rules file or delivery policy), or the repo's
+entry in this skill's references (the **autonomous-landing grant** line in
+`references/review-checklists.md`, recorded with date and source). No
+grant — including any repo you have not checked — means `stage` is the
+ceiling, however strong the contract feels. The grant authorizes the
+*mechanism*; the contract still decides per run whether the mechanism is
+used.
+
+**Understand the repo's review conventions before proposing a mode.** The
+skill is generic and most codebases still require other-human review. On
+first delegation in a repo (and when the entry is stale), read what its
+process actually expects — branch protection and required reviewers,
+CODEOWNERS, required checks, review bots, the rules file's delivery
+section — and record it in the repo's `review-checklists.md` entry. A repo
+whose convention expects review by another human caps at `stage` regardless
+of any grant: autonomous modes replace only the *granting user's own*
+review, never a required reviewer, a protection rule, or a team's process.
+Respecting the existing convention beats optimizing past it.
+
+Choosing (within what the grant allows): would a human looking at the
+result exercise judgment no gate or checklist encodes? Yes → `stage`.
+No → `land`, or `flag` when production exposure is the residual risk.
+Mid-run you may always *downgrade* (`land` → `flag` → `stage`) when
+something surfaces that genuinely needs human eyes — record why in the
+ledger; upgrading toward autonomy mid-run requires the human.
 
 ## Merge policy — decided by table plus contract, not by feel
 
@@ -657,10 +679,13 @@ call: each repo's entry in `references/review-checklists.md` (or the repo's
 own rules file) carries a **default-deny path table** — paths in the safe
 set may auto-merge on green checks regardless of landing mode. For paths
 the table reserves for human review, an accepted `land` or `flag` contract
-supplies that review: the human approved the merge when they accepted the
-contract, so merging is executing their decision, not arming auto-merge on
-your own authority. Outside both — no safe-set row and no `land`/`flag`
-contract — the PR waits.
+supplies that review **only in a repo carrying the autonomous-landing
+grant (§Landing modes)**: the human approved the merge when they accepted
+the contract, so merging is executing their decision, not arming
+auto-merge on your own authority. Outside those — no safe-set row, and no
+grant-backed `land`/`flag` contract — the PR waits; and required
+reviewers, branch protection, and team review conventions are never
+bypassed in any mode.
 
 State the full verdict in the PR body: the table row (or "outside safe
 set"), the landing mode, and for `land`/`flag` the contract-acceptance
