@@ -100,5 +100,10 @@ Primary org: `[org]`.
   auth/RBAC, payments, data deletion/migration, infra/deploy].
 - **Preview deployments:** [opt-in mechanism, URL scheme, budget, docs
   pointer — or delete if the repo has none.]
+- **Feature flags** (SKILL.md §Landing modes, `flag` mode): [how a flag is
+  created, read, enabled/disabled, and cleaned up; where the repo's
+  gating-layer rules live (flag vs RBAC vs entitlement); the exact
+  enable/disable commands a `flag` closeout report must quote — or delete
+  if the repo has no flag system.]
 - Review checklists, escalation reviewers, and the commit-free gate runner:
   see this repo's entry in `review-checklists.md`.
