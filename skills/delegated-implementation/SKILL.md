@@ -127,8 +127,10 @@ however obvious the gap looks from the code. Everything
 else, decide and record in the ledger.
 
 Before a long run, get one explicit acceptance of the contract: goals, the
-graph skeleton (§Task shape), and the stop criteria. After that acceptance,
-silence from the human is not a blocker.
+graph skeleton (§Task shape), the stop criteria, and the **landing mode**
+(§Landing modes — whether the run merges autonomously, stages for one human
+merge, or lands behind a feature flag). After that acceptance, silence from
+the human is not a blocker.
 
 State acceptance criteria as **invariants, not exhaustive contracts**:
 properties that must hold ("no route reachable without an RBAC check",
@@ -227,6 +229,18 @@ Durable state lives in files, not in your context window.
   with fresh sessions and worktrees. Never compact with agents in flight.
   Teardown-before-compaction also means a context loss can never orphan a
   live agent.
+- **Token budget is a gate input, and the preferred exit is a fresh session,
+  not compaction.** Check remaining budget at every gate. Once roughly 400k
+  tokens are consumed, start shaping the next milestone as a fresh-session
+  start rather than a continuation; never begin a layer that could take the
+  remaining budget below 500k mid-flight. At that boundary: land or stage
+  what is landable, close out per §Closeout, and put a **continuation
+  prompt** in the ledger and the run report — self-contained (repo, run id,
+  ledger path, contract state including landing mode, settled decisions with
+  their evidence, the next milestone's goal and skeleton) so pasting it into
+  a fresh session resumes the project with zero archaeology. Proposing that
+  handoff is yours to do proactively; a run that limps to the context floor
+  mid-milestone chose the worst of the three exits.
 - Supporting hygiene: read agent reports from their files once, don't pull
   the same diff into context twice, and prefer targeted
   `herdr agent read --source visible` snippets over history dumps.
@@ -595,18 +609,116 @@ practice that means 2–3 concurrent implementers, not a fleet; if review
 throughput can't keep up, stagger task starts or shrink the pool — never
 thin the review.
 
-## Merge policy — decided by table, not by feel
+## Landing modes — how the run ends is decided at contract time
 
-You own the merge, but whether a PR may auto-merge or must wait for human
-review is not a per-PR judgment call: each repo's entry in
-`references/review-checklists.md` (or the repo's own rules file) carries a
-**default-deny path table** — auto-merge only when *every* changed path
-falls in that repo's enumerated safe set; any path outside it, and any
-mixed PR, waits for the human. State the verdict and which branch of the
-table produced it in the PR body, so a misclassification is visible in
-review rather than discovered after a bad merge. Where the human arms
-auto-merge personally (that act being their approval), never arm it
-yourself outside the table's safe set — and never disable what they armed.
+A run that stops at "PR open, awaiting review" has exported its last and
+hardest step to the human. Decide at contract acceptance which of three
+landing modes each milestone gets, record it in the ledger, and drive to it.
+The human's one acceptance of the contract covers the mode — including the
+merge, where the mode says so.
+
+- **`land` — autonomous merge.** The default when the ask is clear and the
+  contract is strong: acceptance criteria are invariants that gates and
+  evidence can verify without human judgment. You open the PR, drive checks
+  green, run the external review bot only when §External review bot's
+  criteria hold and budget allows, merge, tear down, and report done. The
+  accepted contract *is* the human review for these PRs.
+- **`stage` — everything done pending a single merge.** For work where the
+  human plausibly wants to see the result before it lands: visual or UX
+  judgment, preview-deployment walkthroughs, docs or copy they will read as
+  a reader. Deliver to one-click state: PR open, checks green, review
+  threads closed, preview deployed with URLs and visual evidence inline in
+  the PR body, merge verdict stated. The merge is the *only* remaining act —
+  never a merge plus a list of things to verify first (§Complete
+  deliverables).
+- **`flag` — autonomous merge behind a feature flag.** When the behavior is
+  best proven in production, or when `land` confidence is missing only on
+  the runtime-exposure axis. Gate the new surface behind a feature flag
+  (mechanism and provisioning rules per repo in
+  `references/environment.md`), verify both states — flag off is a no-op
+  against existing behavior, flag on works, ideally in a preview
+  deployment — then merge autonomously and tear down. Report: done, pending
+  rollout via flag `<name>`, with the exact enable/disable commands. Repos
+  that support flags make this a first-class tool, not an exotic escape
+  hatch — reach for it whenever it converts a `stage` into a landed
+  deliverable.
+
+**Autonomous landing is off by default — it exists only under an explicit
+grant.** `land` and `flag` are available in a repo only when one of two
+sources explicitly authorizes autonomous merge/deployment there: the repo's
+own agent documentation (its rules file or delivery policy), or the repo's
+entry in this skill's references (the **autonomous-landing grant** line in
+`references/review-checklists.md`, recorded with date and source). No
+grant — including any repo you have not checked — means `stage` is the
+ceiling, however strong the contract feels. The grant authorizes the
+*mechanism*; the contract still decides per run whether the mechanism is
+used.
+
+**Understand the repo's review conventions before proposing a mode.** The
+skill is generic and most codebases still require other-human review. On
+first delegation in a repo (and when the entry is stale), read what its
+process actually expects — branch protection and required reviewers,
+CODEOWNERS, required checks, review bots, the rules file's delivery
+section — and record it in the repo's `review-checklists.md` entry. A repo
+whose convention expects review by another human caps at `stage` regardless
+of any grant: autonomous modes replace only the *granting user's own*
+review, never a required reviewer, a protection rule, or a team's process.
+Respecting the existing convention beats optimizing past it.
+
+Choosing (within what the grant allows): would a human looking at the
+result exercise judgment no gate or checklist encodes? Yes → `stage`.
+No → `land`, or `flag` when production exposure is the residual risk.
+Mid-run you may always *downgrade* (`land` → `flag` → `stage`) when
+something surfaces that genuinely needs human eyes — record why in the
+ledger; upgrading toward autonomy mid-run requires the human.
+
+## Merge policy — decided by table plus contract, not by feel
+
+You own the merge. Whether a PR may auto-merge is not a per-PR judgment
+call: each repo's entry in `references/review-checklists.md` (or the repo's
+own rules file) carries a **default-deny path table** — paths in the safe
+set may auto-merge on green checks regardless of landing mode. For paths
+the table reserves for human review, an accepted `land` or `flag` contract
+supplies that review **only in a repo carrying the autonomous-landing
+grant (§Landing modes)**: the human approved the merge when they accepted
+the contract, so merging is executing their decision, not arming
+auto-merge on your own authority. Outside those — no safe-set row, and no
+grant-backed `land`/`flag` contract — the PR waits; and required
+reviewers, branch protection, and team review conventions are never
+bypassed in any mode.
+
+State the full verdict in the PR body: the table row (or "outside safe
+set"), the landing mode, and for `land`/`flag` the contract-acceptance
+reference (run id + ledger). A misclassification must be visible in review,
+not discovered after a bad merge. Where the human arms auto-merge personally
+(that act being their approval), never disable what they armed.
+
+## Complete deliverables — close the loops, don't report them
+
+The failure mode this bans: a run reports done "except one or two things to
+check", and those trailing items land on the human, who cannot cheaply
+reconstruct where they came from or what hangs on them. An open loop you
+export costs the human more than it costs you — you have the context to
+close it, they must rebuild it.
+
+So before any report, sweep the ledger's open questions and would-be
+follow-ups and close them yourself: run the check, read the doc, make the
+small adjacent fix, extend a gate. Doing modestly more than the brief asked
+is the cheap branch — the rule of thumb is that **if closing an item costs
+less than explaining it well, close it**. "One more thing to double-check"
+never appears in a report; checking it was the run's job.
+
+A follow-up survives into a report only when it is genuinely not yours to
+close — blocked on an external system, a user-only decision (product
+vocabulary, spend, infra), or an explicitly agreed scope fence. Then report
+it decision-ready, not as a loose end: what it is, where it came from
+(file:line, PR, gate), why it could not be closed autonomously, and the one
+concrete next action with its owner. If it cannot be stated that way, it is
+not ready to report — go close it or drop it.
+
+This also shapes mode choice upstream: prefer stringing partial results into
+one landed (or one-merge-staged, or flag-gated) deliverable over reporting
+an archipelago of almost-done pieces.
 
 ## Closeout — report first, teardown inside it
 
@@ -624,7 +736,10 @@ When the run's PRs are merged or abandoned:
    gates, PRs, fix rounds), stats, highlights, and what the next run should
    do differently. Report only what was measured (turns, wall time, rounds,
    diff sizes, PR count); delegate-side token spend is not reliably
-   observable — never invent it.
+   observable — never invent it. When the project continues past this run,
+   the report ends with the continuation prompt (§Context discipline) —
+   proposing the next milestone as a fresh session is part of closing this
+   one.
 2. **Tear down in order**: close agent panes FIRST (`herdr pane close
    <pane_id>` — positional ID, not a `--pane` flag), remove worktrees
    SECOND. A surviving agent whose cwd was deleted spins on "No such file

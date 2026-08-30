@@ -33,5 +33,14 @@ without the teardown evidence, and the run is not closed without the report.
   round-trip, contract amendments worth keeping. Anything durable graduates
   into `environment.md`, `agent-trust-profiles.md`, or the repo's
   checklists — the report is where those files get their updates from.
+- **Landing state** — per PR: landing mode (`land`/`stage`/`flag`, SKILL.md
+  §Landing modes) and where it ended: merged; staged pending the single
+  merge (with the preview URL and evidence links); or merged behind flag
+  `<name>` with the exact enable/disable commands. Follow-ups appear only
+  under §Complete deliverables' conditions, decision-ready — origin, why
+  not closable autonomously, next action, owner.
+- **Continuation prompt** — only when the project continues past this run:
+  the self-contained fresh-session prompt from the ledger (§Context
+  discipline). Omit the section for finished projects.
 
 Keep it one screen where possible; the ledger holds the detail.

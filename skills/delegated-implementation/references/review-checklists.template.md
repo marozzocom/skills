@@ -21,10 +21,20 @@ verification matrix — check → runner → verdict owner → evidence type
   note that the implementer brief overrides it — review is centralized with
   the orchestrator.]
 - **Commit-free gate runner** for brief verification floors: `[command]`.
+- **Review conventions** (SKILL.md §Landing modes): [what the repo's process
+  actually expects — branch protection, required reviewers, CODEOWNERS,
+  required checks, review bots, the rules file's delivery section. If it
+  expects other-human review, `stage` is the ceiling regardless of grant.]
+- **Autonomous landing grant** (SKILL.md §Landing modes): [absent = denied,
+  `stage` is the ceiling. To grant: "granted <date> by <source — repo agent
+  docs section, or the user's explicit directive>", enabling `land`/`flag`
+  under an accepted contract.]
 - **Merge policy table** (SKILL.md §Merge policy) — default deny: auto-merge
-  only when *every* changed path is in the safe set; mixed or out-of-set
-  PRs wait for the human. [Enumerate the repo's safe set here, or point at
-  the repo rules file that carries the table.]
+  on green checks only when *every* changed path is in the safe set. Paths
+  outside the safe set merge only under the grant above plus an accepted
+  `land`/`flag` landing mode — otherwise they wait for the human.
+  [Enumerate the repo's safe set here, or point at the repo rules file that
+  carries the table.]
 - **Verification matrix:**
   - tests / type-check / lint (`[gate command]`) → implementer runs in its
     loop, orchestrator re-runs at the gate (the acceptance) → verdict: the
