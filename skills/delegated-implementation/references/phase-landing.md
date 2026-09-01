@@ -65,6 +65,16 @@ ledger) — a misclassification must be visible in review, not discovered
 after a bad merge. Where the human arms auto-merge personally, never
 disable what they armed.
 
+## Before landing — the plan matches the diff
+
+A milestone does not land while its plan or ADR describes something the
+diff does not do. Sweep the ledger's amendments against the repo's plan
+document and confirm each accepted drift was written back
+(phase-review.md §Plan drift); the ledger holds the reasoning, the repo
+holds the outcome. If the repo ships a spec-review skill, its verdict on
+the final diff should be `VERIFIED` against the amended plan — a
+weak-spec `INCONCLUSIVE` at this point means the write-back was skipped.
+
 ## Complete deliverables — close the loops, don't report them
 
 Banned: reporting done "except one or two things to check". An exported

@@ -83,6 +83,19 @@ the repo's entry names. That is the model-routing lever: fast model by
 default, a stronger one where a confidently wrong "clean" is the
 expensive failure.
 
+## Plan drift — write it back, don't just record it
+
+Implementers report plan/code drift in every report (phase-design.md
+§Briefs) and the ledger records what you adjudicated. The ledger is not
+in the repo. Any accepted drift that changes what the repo's own plan or
+ADR says — a point the plan left open, a step done another way, scope
+added or dropped — is amended in that document before the milestone
+lands, in the same PR as the code. Otherwise the next run's spec
+reviewer reads a plan the merged diff contradicts and every finding
+against it is noise. Route the amendment to the implementer that owns
+the tree, scoped to the plan document; it is the one write a spec
+finding produces.
+
 ## Fix rounds
 
 Send back constraints, not just symptoms: the gate/error verbatim, what
