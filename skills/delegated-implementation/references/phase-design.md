@@ -104,6 +104,17 @@ Use `references/brief-template.md`. The load-bearing parts:
   evidence rather than changing the code."* A hedge ("not sure this
   always mounts after the cache is warm") is an unsettled claim — the
   highest-yield thing a reviewer says. Settle it.
+- **Bug fixes are two briefs.** The first writes a failing test that
+  reproduces the report and stops; you observe it red and record the
+  tree's revision in the ledger. The second fixes, with every test file
+  in its scope fence. Acceptance for the second is green **plus** an
+  empty test-file diff against the recorded revision — the check is on
+  the diff, so it binds an implementer of any vendor without relying on
+  that CLI's hooks. A fix that needed to touch the test has shown only
+  that the test now agrees with the code; send it back with the test
+  restored. Delegate-written tests still get the mutation check
+  (phase-review.md §Verification ownership) — red-then-green proves the
+  test sees the bug, not that it pins the invariant.
 - **Fix rounds and re-reviews are briefs**, bound by all of the above —
   and nothing reviews them, so they carry the settled decisions *and the
   evidence that settled them* forward, stating that settled decisions may

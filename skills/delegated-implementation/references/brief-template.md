@@ -32,7 +32,10 @@ Then execute exactly [scope]:
 1. [step]
 2. [step]
 
-Do NOT touch [out-of-scope areas — name them]. If [known ambiguity] is
+Do NOT touch [out-of-scope areas — name them]. [For the fix step of a bug
+fix: Do NOT edit any test file; the failing test at revision [sha] is the
+proof and stays as written — if it seems wrong, message me with evidence
+instead of changing it.] If [known ambiguity] is
 unclear, propose the shape to me BEFORE implementing.
 
 Do NOT run the repo's guardian or review skills, even where repo rules files
