@@ -18,9 +18,10 @@ included.
 - **`stage` — one click left.** For results the human plausibly wants to
   see first: visual or UX judgment, walkthroughs, prose they will read
   as a reader. Deliver to one-click state: PR open, checks green,
-  threads closed, preview deployed, evidence inline, merge verdict
-  stated. The merge is the *only* remaining act — never a merge plus a
-  list of things to verify first (§Complete deliverables).
+  threads closed, preview deployed, evidence inline (screenshots and
+  recordings via the `gh-media` skill — never hot-linked from elsewhere),
+  merge verdict stated. The merge is the *only* remaining act — never a
+  merge plus a list of things to verify first (§Complete deliverables).
 - **`flag` — autonomous merge behind a feature flag.** When behavior is
   best proven in production, or `land` confidence is missing only on
   runtime exposure: gate the surface behind a flag (mechanics per repo
@@ -64,6 +65,13 @@ the landing mode, and for `land`/`flag` the contract reference (run id +
 ledger) — a misclassification must be visible in review, not discovered
 after a bad merge. Where the human arms auto-merge personally, never
 disable what they armed.
+
+Land through `bin/land-pr.sh` (stage → commit → push → `gh pr create`
+from a body file → optional auto-merge → run marker) in a background
+shell, never from a forked or backgrounded agent turn: a turn that ends
+while the pre-commit hook is still running gets the hook killed, leaving
+files staged and nothing landed. Read the script's last line and confirm
+with `gh pr view` before recording the PR in the ledger.
 
 ## Before landing — the plan matches the diff
 

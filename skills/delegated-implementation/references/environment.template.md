@@ -79,8 +79,11 @@ every terminal state, treats an empty check list as pending),
 `bin/rotate-implementer.sh` (worktree rotation), `bin/run-gates.sh`
 (acceptance gate runner — one verdict line per gate, failure tails only),
 `bin/agent-status.sh` (one-line agent liveness probe),
-`bin/resolve-thread.sh` (review-thread reply + resolve in one call), and
-`bin/ledger-append.sh` (timestamped ledger append). Add machine-local ones
+`bin/resolve-thread.sh` (review-thread reply + resolve in one call),
+`bin/ledger-append.sh` (timestamped ledger append), and `bin/land-pr.sh`
+(stage → commit → push → PR from a body file → optional auto-merge → run
+marker, as one process so a slow commit hook cannot be orphaned by an agent
+turn ending). Add machine-local ones
 under `scripts/` (gitignored) and note them here.
 
 ## Run marker — pinning PRs to runs

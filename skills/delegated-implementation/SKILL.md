@@ -1,6 +1,6 @@
 ---
 name: delegated-implementation
-description: "Orchestrate CLI coding agents (via Herdr) as workers while Claude oversees, reviews, verifies, and owns all git operations — an implementer CLI plus a fast reviewer/investigator/mechanical-refactorer CLI, with the concrete stack (e.g. Codex, Cursor) pinned in references/environment.md. Use PROACTIVELY, low threshold, whenever starting substantial implementation inside a Herdr session (HERDR_ENV=1): executing a written plan, building a feature, any change expected to span multiple files or need its own worktree. Also use when the user explicitly asks to delegate implementation to a CLI agent (e.g. Codex) or get a fast second-opinion review or investigation (e.g. from Cursor/Grok). Skip for single-file quick fixes, urgent hotfixes, pure review-only requests, when Herdr or the CLI login is unavailable, or when the user asks Claude to implement directly. Read the herdr skill first for CLI mechanics; this skill only adds the orchestration protocol."
+description: "Orchestrate CLI coding agents in Herdr panes as implementers and fast reviewers while Claude reviews, verifies, and owns all git operations. Use PROACTIVELY, low threshold, whenever starting substantial implementation inside a Herdr session (HERDR_ENV=1) — a plan, a feature, anything spanning multiple files or needing its own worktree — or when the user asks to delegate to a CLI agent or get a second-opinion review. Skip for single-file fixes, hotfixes, review-only requests, or when Herdr is unavailable. Read the herdr skill first for CLI mechanics."
 ---
 
 # Delegated implementation protocol
@@ -105,7 +105,7 @@ Durable state lives in files, not your context window.
   become a second orchestrator.
 - **Compact only at milestones, via full quiescence:** all agents idle →
   merge keepers into the ledger → tear down panes and worktrees
-  (phase-landing.md §Closeout order) → compact → re-fan-out fresh. Never
+  (phase-landing.md §Closeout) → compact → re-fan-out fresh. Never
   compact with agents in flight.
 - **Token budget is a gate input; prefer a fresh session over
   compaction.** From ~400k tokens consumed, shape the next milestone as a
