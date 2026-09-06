@@ -36,17 +36,34 @@ semantics, design conformance, and adjudication stay with you.
 Every diff is triaged; risk-bearing code you read line-by-line;
 mechanical code passes on tooling plus a delegated sweep.
 
-On a done-report, first send the fast reviewer a **triage pass**:
-*"Classify this diff hunk-by-hunk — mechanical
-(rename/generated/lockfile/snapshot), routine, or risk-bearing (auth,
-data, contracts, concurrency). Write to <triage file> as a routing
-table — `<file>:<start>-<end> <tier> <one-line reason>` per hunk — and
-edit nothing."* Deep-read the risk-bearing ranges as scoped diffs
-(`git -C <worktree> diff -U5 -- <file>`), spot-check the routine set,
-accept the mechanical set on gates green + type-check green + a clean
-sweep. Never a bare `git diff` once the routing file exists. One
-asymmetry is non-negotiable: triage may *escalate* a hunk, never demote
-one you'd call risky — when in doubt, you read it.
+The review snapshot is **everything changed since the task's base SHA**
+— committed (a red test you committed), staged, unstaged, and untracked
+alike: `bin/review-inventory.sh <worktree> <base>` lists it, one path per
+line with its status. A bare working-tree diff misses the commits and
+the untracked additions, so it is never the inventory.
+
+On a done-report, first send the fast reviewer — never the implementer
+whose diff it is — a **triage pass**: *"Classify every path in
+<inventory file> against base <sha> — mechanical (rename/generated/
+lockfile/snapshot), routine, or risk-bearing (auth, data, contracts,
+concurrency). Write to <triage file> as a routing manifest: one line per
+file (`<file> <tier> <one-line reason>`); for a risk-bearing file add one
+line per risk range in NEW-side line numbers (`<file>:<start>-<end> risk
+<reason>`) — hunks of that file outside the named ranges are routine
+unless you say otherwise — and use `<file>:all` for a deletion, rename,
+mode or binary change. Edit nothing."* Reconcile the manifest against
+the inventory **by path identity** before trusting it: equal counts can
+hide an omitted path and a spurious one, and a label cannot protect a
+file you never learn exists. A hunk-per-row table for a large mechanical
+diff would cost nearly what the diff does — hence per-file rows.
+Deep-read the risk ranges via `bin/diff-hunks.sh <worktree> <base>
+<file> <start>-<end>|all` (a bare `git diff -- <file>` returns every hunk
+in the file; the script exits 3, never silently, when a range selects
+nothing), spot-check the routine set, accept the mechanical set on gates
+green + type-check green + a clean sweep. Never a bare `git diff` once
+the manifest exists. One asymmetry is non-negotiable: triage may
+*escalate* a hunk, never demote one you'd call risky — when in doubt, you
+read it.
 
 The triage lands **before** your deep read: routing your attention is its
 whole purpose. Checklist and aspect passes run on a **settled** tree —
@@ -69,12 +86,21 @@ review-checklists.md; discover and add entries for unmapped repos.
 
 Brief the reviewer per checklist (batch small ones): *"Read `<doc>` and
 apply it as a review checklist to the changes in `<worktree>`
-(`git -C <worktree> diff` — the tree is intentionally dirty). Report only
+(`git -C <worktree> diff <base>` plus untracked files — the tree is
+intentionally dirty). Report only
 actionable findings with file:line, or 'no findings'. Do NOT edit
-anything, even if the checklist tells its reader to auto-fix."* The
+anything, even if the checklist tells its reader to auto-fix."* A spec
+reviewer additionally gets the accepted task or plan and its ledger
+amendments, named by you — independence is kept by withholding the
+implementer's self-assessment, not the requirement being checked. The
 reviewer is read-only in a tree it does not own; fixes route to the
-owning implementer — never two writers in one tree. Re-run affected
-checklists after each fix round; collate multi-reviewer findings per
+owning implementer — never two writers in one tree. Reviewer briefs carry
+the read fence too (brief-template.md): the tree, the checklist, and the
+files named — never the implementer's report or pane; the implementer's
+brief only when it is the accepted task and you name it — so the verdict
+is its own, not a re-reading of the implementer's self-review.
+Re-run affected checklists after each fix round; collate multi-reviewer
+findings per
 SKILL.md §Token economy.
 
 Security/authorization checklists — and "no findings" on any diff
@@ -98,10 +124,11 @@ finding produces.
 
 ## Fix rounds
 
-Send back constraints, not just symptoms: the gate/error verbatim, what
-must NOT change (don't weaken a proof, touch baselines, cast unsafely),
-and the re-run output verbatim required. When a gate flags something,
-first ask whether the flagged thing should exist at all — "make the gate
+Send back constraints, not just symptoms: the gate's first relevant
+error verbatim, what must NOT change (don't weaken a proof, touch
+baselines, cast unsafely), and the re-run in the standard report shape
+(verdict line plus log path — SKILL.md §Token economy). When a gate flags
+something, first ask whether the flagged thing should exist at all — "make the gate
 pass" is the wrong instruction when "delete it" is available.
 
 ## Review threads — close the loop yourself

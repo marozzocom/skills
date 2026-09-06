@@ -13,18 +13,29 @@ and infra details here and out of SKILL.md.
 
 ## Implementer — [CLI name]
 
-- **Model:** `[model id]` at `[reasoning/effort setting]`. [Where the
-  default is configured; pin per session if the config drifts:]
+- **Model:** `[model id]`. **Effort ladder** (phase-design.md §Reasoning
+  effort): default pin `[level]`, escalation pin `[level]`; levels the
+  skill never uses: `[anything that enables the CLI's own delegation or
+  multi-agent mode — it breaks the leaf rule]`. [Where the default is
+  configured.] Always pass the pin at start:
 
   ```bash
-  herdr agent start <name> --kind [kind] --pane <id> -- [model/effort args]
+  # default pin
+  herdr agent start <name> --kind [kind] --pane <id> -- [model args] [default effort args]
+  # escalation pin
+  herdr agent start <name> --kind [kind] --pane <id> -- [model args] [escalated effort args]
   ```
 
 - **Subscription check** (SKILL.md precondition): `[login status command]`
   must report a subscription login, not an API key — flat-rate implementer
   tokens are part of the cost model.
 - **Worktree rotation helper:** [script or procedure that does
-  quit → cd pane → start in one step, per (name, pane)].
+  quit → cd pane → start in one step, per (name, pane)]. Pass the pin
+  after `--` — a rotation without it drops to the config default; the same
+  helper on the same worktree is how an effort escalation happens.
+- **Transcript access:** [where this CLI keeps session logs, so the
+  orchestrator knows what "never read it" covers; whether `herdr agent read`
+  on this pane returns the alternate screen or scrollback].
 - **Known quirks:** [empirically verified failure modes and their
   workarounds — e.g. silent large-paste drops, approval dialog behavior.]
 
@@ -52,23 +63,25 @@ and infra details here and out of SKILL.md.
 ## Cost table — marginal cost per role, and the routing rule
 
 The orchestrator deliberately runs the best available model (judge/overseer
-quality is where model strength pays), which makes its tokens the most
-expensive in the mesh and its context the scarcest resource. Fill in API
-list prices as relative weights, dated — ratios move:
+quality is where model strength pays); its context window and its usage
+allowance are the scarcest resources in the mesh. State how each role is
+actually billed here — a subscription window is a quota, not a price, and
+API list prices are reference only unless a role really runs on the API.
+Date every number; ratios move:
 
 | Runner | Model | Billing here | API list (in/out per MTok) | Relative |
 |---|---|---|---|---|
 | Orchestrator | [model] | [subscription/API] | [$ / $] | 1× (the ceiling) |
-| Orchestrator's subagents | [pinned cheaper model] | [same pool] | [$ / $] | [ratio] |
 | Implementer | [model] | [subscription flat-rate?] | [$ / $] | [marginal ≈ 0 if flat] |
 | Fast reviewer | [model] | [subscription flat-rate?] | [$ / $] | [marginal ≈ 0 if flat] |
 
 Routing rule: work that needs neither the orchestrator's accumulated
 context nor its authority (git, gate verdicts, adjudication) never runs on
-the orchestrator's model. Note here how the orchestrator's harness pins
-subagent models — including whether unpinned subagents silently inherit the
-expensive session model (Claude Code's do: pass `model` explicitly on every
-search/mechanical spawn).
+the orchestrator's model. State whether the orchestrator's harness
+subagents are used at all: the default here is no — every delegate is a
+pane, so the fan-out stays visible and nothing inherits the session model
+unseen. If you do allow them, note how their model is pinned (Claude
+Code's inherit the session model unless `model` is passed).
 
 ## Workflow scripts (`bin/`)
 
@@ -80,7 +93,11 @@ every terminal state, treats an empty check list as pending),
 (acceptance gate runner — one verdict line per gate, failure tails only),
 `bin/agent-status.sh` (one-line agent liveness probe),
 `bin/resolve-thread.sh` (review-thread reply + resolve in one call),
-`bin/ledger-append.sh` (timestamped ledger append), and `bin/land-pr.sh`
+`bin/ledger-append.sh` (timestamped ledger append),
+`bin/review-inventory.sh` (every changed path since the task base, untracked
+included), `bin/diff-hunks.sh` (only the hunks of a file overlapping a
+routing entry's line range, against the task base),
+and `bin/land-pr.sh`
 (stage → commit → push → PR from a body file → optional auto-merge → run
 marker, as one process so a slow commit hook cannot be orphaned by an agent
 turn ending). Add machine-local ones
