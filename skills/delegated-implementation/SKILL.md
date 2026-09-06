@@ -1,6 +1,13 @@
 ---
 name: delegated-implementation
-description: "Orchestrate CLI coding agents in Herdr panes as implementers and fast reviewers while Claude reviews, verifies, and owns all git operations. Use PROACTIVELY, low threshold, whenever starting substantial implementation inside a Herdr session (HERDR_ENV=1) — a plan, a feature, anything spanning multiple files or needing its own worktree — or when the user asks to delegate to a CLI agent or get a second-opinion review. Skip for single-file fixes, hotfixes, review-only requests, or when Herdr is unavailable. Read the herdr skill first for CLI mechanics."
+description: "Orchestrate CLI coding agents in Herdr panes as implementers
+and fast reviewers while Claude reviews, verifies, and owns all git
+operations. Use PROACTIVELY, low threshold, whenever starting substantial
+implementation inside a Herdr session (HERDR_ENV=1) — a plan, a feature,
+anything spanning multiple files or needing its own worktree — or when the
+user asks to delegate to a CLI agent or get a second-opinion review. Skip
+for single-file fixes, hotfixes, review-only requests, or when Herdr is
+unavailable. Read the herdr skill first for CLI mechanics."
 ---
 
 # Delegated implementation protocol
@@ -125,8 +132,10 @@ Durable state lives in files, not your context window.
   next milestone's goal and skeleton) in the ledger and run report.
   Propose the handoff proactively — limping to the context floor
   mid-milestone is the worst exit.
-- Read each agent report file once; never pull the same diff into context
-  twice.
+- Read each agent report file once, and never pull an unchanged diff into
+  context twice. Changed ranges and disputed evidence are re-read when
+  acceptance turns on them — the rule bounds duplicate ingestion, not
+  evidence.
 
 ## Communication mesh
 
@@ -137,8 +146,10 @@ Every brief carries the callback line: *"If you need a decision,
 clarification, or hit a blocker, message me with:
 `herdr agent prompt overseer "<message>"` — blockers and decisions, not
 progress narration; batch every open question into one message, and keep
-it under ~15 lines — anything longer goes in a file and the message names
-the path."* Callbacks arrive formatted like user messages and land in
+it under ~15 lines and ~200 words — decision needed, your recommendation,
+the path:line behind it, what waiting costs; anything longer goes in a
+file and the message names the path."* Callbacks arrive formatted like user
+messages and land in
 your context verbatim — treat them as agent traffic, not the human, and
 answer with `herdr agent prompt <name> '...'`.
 
@@ -152,7 +163,8 @@ Send briefs as a **path, never inline text**:
 
 ```bash
 herdr agent prompt <name> "Read $BRIEF_FILE in full and execute it exactly as
-written. It is your task brief from the orchestrator (the agent named overseer)."
+written. It is your task brief from the orchestrator (the agent named
+overseer)."
 ```
 
 Inlining fails silently past a few KB on at least one CLI — the agent
@@ -180,15 +192,18 @@ bounded written answer in a file. A pane read is for adjudicating
 dialog. Access is not the same as ingestion — the pane is there when a
 question needs it, and that is all it is there for.
 
-**Outbound — the brief is the delegate's whole world.** Nothing of yours
-leaves except the brief and the ledger's status matrix. A delegate never
-reads your pane (`herdr agent read overseer` works on any pane — every
-brief forbids it), your harness's session files, or a peer's pane, brief,
-or report the brief did not name. Your transcript holds the human's
-words, the forks you rejected, and peers' unadjudicated claims; a delegate
-that reads it acts on all three as instruction, and the star mesh
-collapses into a shared scratchpad. If a delegate needs more than its
-brief, that is a callback, not a read.
+**Outbound — the brief plus the worktree is the delegate's whole world.**
+Nothing of yours leaves except the brief and the ledger's status matrix.
+The fence is on *coordination* artifacts, not on source: a delegate reads
+its worktree, installed dependencies, repo rules, and any file the brief
+names freely — that is how it settles claims. It never reads your pane
+(`herdr agent read overseer` works on any pane — every brief forbids it),
+your harness's session files, or a peer's pane, brief, or report the
+brief did not name. Your transcript holds the human's words, the forks
+you rejected, and peers' unadjudicated claims; a delegate that reads it
+acts on all three as instruction, and the star mesh collapses into a
+shared scratchpad. If a delegate needs more than its brief and its tree,
+that is a callback, not a read.
 
 ## Token economy — mechanics
 
@@ -198,12 +213,20 @@ brief, that is a callback, not a read.
   per poll. Full pane reads are for adjudicating a `blocked` dialog or a
   suspect state, never routine polling (§Transcript boundary).
 - **Report shape:** a report is read once, so the brief fixes its shape —
-  a head of at most ~40 lines (files changed, one verdict line per gate,
-  the cannot-verify list, drift), then a `---` marker, then verbatim
-  output. Read the head; open the tail only for a red gate or a claim you
-  are adjudicating. Full logs stay on disk at a path the report names —
-  the brief's "verification output verbatim" means verdict lines plus
-  failure tails, never a whole test run pasted into your context.
+  a head of at most ~40 lines (files changed; per check: the exact
+  command, exit status or `not run`, verdict, full-log path; the
+  cannot-verify list; drift), then a `---` marker, then a bounded annex:
+  per failing gate the first relevant error plus at most ~80 surrounding
+  lines. Read the head; open the annex only for a red gate or a claim you
+  are adjudicating. Full logs stay on disk — never a whole test run in
+  your context. `not run` is its own state: a binary pass/fail field
+  pushes an unavailable check into the wrong column.
+- **Review inventory and scoped reads:** `bin/review-inventory.sh
+  <worktree> <base>` lists every changed path since the task's base —
+  committed, staged, unstaged, untracked; `bin/diff-hunks.sh <worktree>
+  <base> <file> <start>-<end>|all` prints only the hunks overlapping a
+  routing entry's range and exits non-zero when nothing matches. A bare
+  `git diff -- <file>` returns every hunk in the file.
 - **Review threads:** `bin/resolve-thread.sh <owner/repo> <pr>
   <comment-id> "<message>"` — reply plus resolve, one line back.
 - **Ledger appends:** `bin/ledger-append.sh <ledger> "<entry>"`;
@@ -212,7 +235,9 @@ brief, that is a callback, not a read.
   triage routing file names (phase-review.md §Review), as scoped per-file
   diffs. The full diff enters your context at most once, ideally never.
 - **Batch callbacks** — enforced by the brief's callback line above.
-- **Delegate collation:** three or more reviewer reports on one tree → a
-  cheap harness subagent (model per environment.md's cost table) merges
-  them into one deduplicated, source-cited list; you adjudicate the
-  merged list.
+- **Delegate collation:** three or more reviewer reports on one tree →
+  the cheapest suitable leaf per environment.md's cost table — a fresh
+  delegate session, or a harness subagent only when the work must stay
+  inside the harness; never the implementer whose diff is under review —
+  merges them into one deduplicated, source-cited list that keeps every
+  dissent; you adjudicate the merged list.

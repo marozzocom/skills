@@ -51,7 +51,12 @@ the mechanics to tmux or another multiplexer is possible but not done here.
   `run-gates.sh` runs acceptance gates and prints verdict lines only;
   `agent-status.sh` is a one-line liveness probe; `resolve-thread.sh`
   replies to and resolves a PR review thread in one call;
-  `ledger-append.sh` appends a timestamped ledger entry.
+  `ledger-append.sh` appends a timestamped ledger entry;
+  `review-inventory.sh` lists every path changed since the task base
+  (committed, staged, unstaged, untracked) so a triage manifest can be
+  reconciled by path identity; `diff-hunks.sh` prints only the hunks of
+  one file that overlap a routing entry's range against that base, and
+  fails visibly when a range selects nothing.
 - `scripts/` — does not exist here and is gitignored: it is the slot where an
   installer may overlay machine-local helper scripts.
 
@@ -92,6 +97,12 @@ in `references/review-checklists.md`:
   starts drifting back toward "is this substantial enough", that is the
   failure mode returning.
 
+- **First-run calibration of the effort default.** The 2026-09-06
+  implementer-model consultation (the new model reviewing this protocol at
+  high effort) endorsed medium as a *trial* default, not an equivalence
+  with the previous high pin, and noted the vendor's own migration advice
+  is to preserve effort. Treat the first two runs as the measurement: per
+  node, effort, fix rounds, callback causes, review burden.
 - **Transcript boundary is a rule, not a mechanism.** SKILL.md §Transcript
   boundary forbids delegates reading the overseer's pane and session files,
   and the overseer ingesting delegate transcripts — but Herdr lets any
