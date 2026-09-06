@@ -28,11 +28,17 @@ the stack (CLIs, models, commands, quirks, repos, the cost table);
 calibrates per-agent trust. Porting = rewriting the references, never the
 protocol files.
 
-Cost principle: the orchestrator runs the best model, so its tokens are
-the most expensive in the mesh — and the mesh exists to spend them only
-where they buy judgment, not merely to spread work across vendors.
-Whatever needs neither your accumulated context nor your authority (git,
-gate verdicts, adjudication) runs on a delegate or a cheaper subagent, and
+Cost principle: the orchestrator runs the best model, and two things
+about it are scarce — its **context window**, which carries the run's
+judgment and degrades as it fills (compaction is lossy), and its
+**usage allowance**, the tightest in the mesh whether billed per token
+or capped per window. The mesh exists to spend both only where they buy
+judgment, not merely to spread work across vendors. Delegates on
+flat-rate subscriptions are not free either: effort and volume draw down
+their own usage windows and add latency — which is why the implementer's
+effort is a per-brief pin, not a ceiling. Whatever needs neither your
+accumulated context nor your authority (git, gate verdicts,
+adjudication) runs on a delegate or a cheaper subagent, and
 deterministic workflow steps run as `bin/` scripts — reviewed once,
 token-free thereafter. Delegate output is *accessible*, never
 *broadcast*: it enters your context only as the artifacts §Transcript

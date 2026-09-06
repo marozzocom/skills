@@ -63,9 +63,11 @@ and infra details here and out of SKILL.md.
 ## Cost table — marginal cost per role, and the routing rule
 
 The orchestrator deliberately runs the best available model (judge/overseer
-quality is where model strength pays), which makes its tokens the most
-expensive in the mesh and its context the scarcest resource. Fill in API
-list prices as relative weights, dated — ratios move:
+quality is where model strength pays); its context window and its usage
+allowance are the scarcest resources in the mesh. State how each role is
+actually billed here — a subscription window is a quota, not a price, and
+API list prices are reference only unless a role really runs on the API.
+Date every number; ratios move:
 
 | Runner | Model | Billing here | API list (in/out per MTok) | Relative |
 |---|---|---|---|---|
