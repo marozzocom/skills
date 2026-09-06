@@ -5,7 +5,8 @@ Write the brief to a scratchpad file and send the **path** (see SKILL.md
 `herdr agent prompt <name> "Read $BRIEF_FILE in full and execute it exactly
 as written. It is your task brief from the orchestrator (the agent named
 overseer)."` Replace bracketed parts; delete sections that don't apply. Keep
-the scope fence, the no-git line, and the no-delegation line in every brief.
+the scope fence, the no-git line, the no-delegation line, the read fence,
+and the report shape in every brief.
 
 ```text
 Your task: implement [task] in this repo worktree (branch [branch], based on
@@ -23,7 +24,16 @@ You are running inside Herdr and so am I. If you need a decision,
 clarification, or hit a blocker, message me with:
 herdr agent prompt overseer "<message>" — I am the Claude agent named
 overseer. Use it for blockers and decisions, not progress narration. Batch
-questions: one message carrying every open question, not one per question.
+questions: one message carrying every open question, not one per question,
+and keep it under ~15 lines — anything longer goes in a file under
+[scratch dir] and the message names the path.
+
+This brief, the status matrix in [ledger path] (read-only shared context),
+and the files named below are your whole context. Do NOT read my pane
+(`herdr agent read overseer` or any other agent's pane), any Claude Code or
+Herdr session files, or another agent's brief or report unless this brief
+names it. If you need something that is not here, that is a question for
+me, not a read.
 
 Read first, in this order: [repo rules file], [plan/ADR], [named key files
 with symbols/line hints].
@@ -60,8 +70,13 @@ do not approximate it. If satisfying an invariant seems to require changing
 the agreed shape, propose the amendment to me BEFORE implementing it.
 
 When done, write your report to [$REPORT_FILE] and message me that it is
-ready. The report: files changed, [contract/design decisions made],
-verification output verbatim, and any drift between the plan and the code.
+ready (one line: the path). The report has two parts separated by a line
+containing only `---`. Above it, at most ~40 lines: files changed,
+[contract/design decisions made], one PASS/FAIL line per verification
+command, what could not be verified here, and any drift between the plan
+and the code. Below it: the verbatim output of each verification command,
+failures in full and passes trimmed to their summary line, with the path
+to each full log under [log dir].
 ```
 
 Notes:

@@ -26,10 +26,10 @@ the mechanics to tmux or another multiplexer is possible but not done here.
 ## Layout
 
 - `SKILL.md` — the core protocol every phase needs: roles, the contract,
-  context discipline, the communication mesh, token-economy mechanics, and
-  the phase-file map. Stack-, org-, and machine-agnostic by design; no
-  vendor names in the body (the frontmatter keeps "(e.g. Codex, Cursor)"
-  solely as trigger keywords for skill routing).
+  context discipline, the communication mesh, the transcript boundary,
+  token-economy mechanics, and the phase-file map. Stack-, org-, and
+  machine-agnostic by design; no vendor names anywhere in it, frontmatter
+  included.
 - `references/phase-design.md`, `phase-execution.md`, `phase-review.md`,
   `phase-landing.md` — the per-phase protocol detail, split so the
   orchestrator reads each phase just-in-time (and re-reads only the current
@@ -91,6 +91,33 @@ in `references/review-checklists.md`:
   It is written as observable post-recon signals for that reason. If it ever
   starts drifting back toward "is this substantial enough", that is the
   failure mode returning.
+
+- **Transcript boundary is a rule, not a mechanism.** SKILL.md §Transcript
+  boundary forbids delegates reading the overseer's pane and session files,
+  and the overseer ingesting delegate transcripts — but Herdr lets any
+  agent `agent read` any pane, and the harness's session files are plain
+  files in the home directory. Enforcement today is the brief's read fence
+  plus the orchestrator's own discipline. If a delegate is ever observed
+  acting on something only the overseer's transcript contained, the fix is
+  mechanical (a Herdr per-pane read ACL, or session files outside the
+  delegate's readable tree), not more prose.
+
+## Why the transcript boundary exists
+
+Two transcripts, two different reasons to keep them apart. The overseer's
+context is the most expensive in the mesh and fills from the inside: every
+pane read, every pasted test run, every narrated callback is a token spent
+on the best model that a verdict line, a report head, or a file path would
+have replaced. So delegate output is *accessible* — the pane, the logs, the
+full report tail are all there — but never *broadcast*; it enters only in
+the shapes the brief fixed, when the overseer pulls it. The delegate's
+context is flat-rate, so the concern runs the other way: not cost but
+authority. The overseer's transcript holds the human's words, the forks the
+overseer rejected, and other delegates' claims nobody has adjudicated. A
+delegate that reads it treats all three as instruction, and the star mesh —
+one adjudicator, one ledger — quietly becomes a shared scratchpad. Hence
+the brief as the delegate's whole world, the ledger's status matrix as the
+only broadcast, and every gap a callback rather than a read.
 
 ## Why §Task fit exists — the measured comparison
 
@@ -181,11 +208,13 @@ Two further readings worth keeping:
   read-only, low-effort scouts inside the implementer's own worktree
   (implementer tokens are flat-rate, so cost is nil). Deferred for
   enforceability — revisit if the leaf rule measurably slows implementers.
-- **Reasoning-effort routing per task.** The implementer is pinned at high
-  effort unconditionally. Medium may suffice for routine, well-specified
-  slices; marginal while mechanical work routes to the fast reviewer, so
-  only worth evaluating if implementer throughput or quota becomes a
-  bottleneck.
+- **Reasoning-effort routing — built 2026-09, unmeasured.** phase-design.md
+  §Reasoning effort pins the environment's default effort per brief and
+  escalates on named signals (security, concurrency, seams, named
+  ambiguity, non-mechanical migrations, second fix round). The signal list
+  is reasoned, not measured: record in the run report which escalations
+  paid (a fix round avoided) and which defaults failed (a second fix round
+  on a default-pinned node), and prune the list from that.
 - **Ledger format.** Free-form file today. If runs get long enough that
   resuming from summary+ledger is common, a light structure (per-node
   status table, decision log, amendment log) may earn its keep.

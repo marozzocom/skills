@@ -13,18 +13,29 @@ and infra details here and out of SKILL.md.
 
 ## Implementer — [CLI name]
 
-- **Model:** `[model id]` at `[reasoning/effort setting]`. [Where the
-  default is configured; pin per session if the config drifts:]
+- **Model:** `[model id]`. **Effort ladder** (phase-design.md §Reasoning
+  effort): default pin `[level]`, escalation pin `[level]`; levels the
+  skill never uses: `[anything that enables the CLI's own delegation or
+  multi-agent mode — it breaks the leaf rule]`. [Where the default is
+  configured.] Always pass the pin at start:
 
   ```bash
-  herdr agent start <name> --kind [kind] --pane <id> -- [model/effort args]
+  # default pin
+  herdr agent start <name> --kind [kind] --pane <id> -- [model args] [default effort args]
+  # escalation pin
+  herdr agent start <name> --kind [kind] --pane <id> -- [model args] [escalated effort args]
   ```
 
 - **Subscription check** (SKILL.md precondition): `[login status command]`
   must report a subscription login, not an API key — flat-rate implementer
   tokens are part of the cost model.
 - **Worktree rotation helper:** [script or procedure that does
-  quit → cd pane → start in one step, per (name, pane)].
+  quit → cd pane → start in one step, per (name, pane)]. Pass the pin
+  after `--` — a rotation without it drops to the config default; the same
+  helper on the same worktree is how an effort escalation happens.
+- **Transcript access:** [where this CLI keeps session logs, so the
+  orchestrator knows what "never read it" covers; whether `herdr agent read`
+  on this pane returns the alternate screen or scrollback].
 - **Known quirks:** [empirically verified failure modes and their
   workarounds — e.g. silent large-paste drops, approval dialog behavior.]
 

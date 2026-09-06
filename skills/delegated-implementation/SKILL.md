@@ -22,10 +22,14 @@ calibrates per-agent trust. Porting = rewriting the references, never the
 protocol files.
 
 Cost principle: the orchestrator runs the best model, so its tokens are
-the most expensive in the mesh. Whatever needs neither your accumulated
-context nor your authority (git, gate verdicts, adjudication) runs on a
-delegate or a cheaper subagent, and deterministic workflow steps run as
-`bin/` scripts — reviewed once, token-free thereafter.
+the most expensive in the mesh — and the mesh exists to spend them only
+where they buy judgment, not merely to spread work across vendors.
+Whatever needs neither your accumulated context nor your authority (git,
+gate verdicts, adjudication) runs on a delegate or a cheaper subagent, and
+deterministic workflow steps run as `bin/` scripts — reviewed once,
+token-free thereafter. Delegate output is *accessible*, never
+*broadcast*: it enters your context only as the artifacts §Transcript
+boundary names, and only when you pull them.
 
 ## Phase files — read just-in-time
 
@@ -61,6 +65,10 @@ compaction re-read only the phase you are in.
 - One task = one fresh worktree = one fresh implementer session. Agent
   cwds are fixed: rotating the worktree means restarting the agent
   (rotation helper in environment.md).
+- The implementer's reasoning effort is a per-brief parameter, pinned at
+  session start: the environment's default pin unless the brief carries
+  an escalation signal (phase-design.md §Reasoning effort). Record the
+  pin in the status matrix row.
 
 ## Autonomy and the contract
 
@@ -128,9 +136,11 @@ Name yourself once so delegates can address you:
 Every brief carries the callback line: *"If you need a decision,
 clarification, or hit a blocker, message me with:
 `herdr agent prompt overseer "<message>"` — blockers and decisions, not
-progress narration, and batch every open question into one message."*
-Callbacks arrive formatted like user messages — treat them as agent
-traffic, not the human, and answer with `herdr agent prompt <name> '...'`.
+progress narration; batch every open question into one message, and keep
+it under ~15 lines — anything longer goes in a file and the message names
+the path."* Callbacks arrive formatted like user messages and land in
+your context verbatim — treat them as agent traffic, not the human, and
+answer with `herdr agent prompt <name> '...'`.
 
 **All traffic is star-shaped: delegates message you, never each other.**
 The star keeps one adjudicator, one ledger, one account of every decision;
@@ -154,13 +164,46 @@ delegate's first callback may hit its own CLI's approval dialog — approve
 with the persistent "don't ask again" option so the channel never stalls
 again.
 
+## Transcript boundary — access, never broadcast
+
+Every agent owns its transcript. Yours is the scarcest context in the
+mesh; a delegate's is flat-rate, and worthless to you in bulk.
+
+**Inbound — only what you pull, in the shapes you fixed.** Delegate work
+enters your context as: the report file (once, head first — §Token
+economy), gate verdict lines, the triage routing file, scoped per-file
+diffs, bounded callbacks, `bin/agent-status.sh` lines. Never as a
+transcript: no routine `herdr agent read`, no session logs, no "show me
+what you did" prompts. If you need a delegate's reasoning, ask for a
+bounded written answer in a file. A pane read is for adjudicating
+`blocked` or a suspect state, always with `--lines <N>`, and stops at the
+dialog. Access is not the same as ingestion — the pane is there when a
+question needs it, and that is all it is there for.
+
+**Outbound — the brief is the delegate's whole world.** Nothing of yours
+leaves except the brief and the ledger's status matrix. A delegate never
+reads your pane (`herdr agent read overseer` works on any pane — every
+brief forbids it), your harness's session files, or a peer's pane, brief,
+or report the brief did not name. Your transcript holds the human's
+words, the forks you rejected, and peers' unadjudicated claims; a delegate
+that reads it acts on all three as instruction, and the star mesh
+collapses into a shared scratchpad. If a delegate needs more than its
+brief, that is a callback, not a read.
+
 ## Token economy — mechanics
 
 - **Gate re-runs:** `bin/run-gates.sh <worktree> "<name>:<command>" ...` —
   one verdict line per gate, failure tails only, full logs on disk.
 - **Status probes:** `bin/agent-status.sh <name> [tail-lines]` — one line
   per poll. Full pane reads are for adjudicating a `blocked` dialog or a
-  suspect state, never routine polling.
+  suspect state, never routine polling (§Transcript boundary).
+- **Report shape:** a report is read once, so the brief fixes its shape —
+  a head of at most ~40 lines (files changed, one verdict line per gate,
+  the cannot-verify list, drift), then a `---` marker, then verbatim
+  output. Read the head; open the tail only for a red gate or a claim you
+  are adjudicating. Full logs stay on disk at a path the report names —
+  the brief's "verification output verbatim" means verdict lines plus
+  failure tails, never a whole test run pasted into your context.
 - **Review threads:** `bin/resolve-thread.sh <owner/repo> <pr>
   <comment-id> "<message>"` — reply plus resolve, one line back.
 - **Ledger appends:** `bin/ledger-append.sh <ledger> "<entry>"`;

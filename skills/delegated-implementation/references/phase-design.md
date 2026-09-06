@@ -77,12 +77,42 @@ judge, then brief the next layer — or stop.
   graphs extend depth, not width. What can't be a sequence of landable
   gates is a multi-session project — plan it as one.
 
+## Reasoning effort — set per brief, escalated on evidence
+
+The implementer's reasoning effort is pinned at session start (the ladder
+and the exact args per CLI in environment.md), so it is decided where the
+brief is written, per node. Default is the environment's **default pin**.
+Raise to the **escalation pin** when the brief carries any of:
+
+- security or authorization semantics, or an invariant the brief says
+  must not be violated;
+- concurrency, ordering, or cache-coherence invariants;
+- a contract two parallel implementers must meet;
+- a named ambiguity where the implementer must propose the shape first;
+- a migration whose call sites are not mechanically identical;
+- a second fix round on the same node after a red gate — the first retry
+  was cheap; the second says the model under-reasoned, not misread.
+
+Keep the default for well-specified slices whose frame cites `file:line`,
+mechanical sweeps, test-first briefs, docs, and fix rounds that name the
+exact error. Record the pin in the status matrix row and the ledger's
+brief entry. A mid-task escalation is a rotation onto the same worktree
+(`bin/rotate-implementer.sh` with the higher pin — a rotation without the
+pin silently drops to the config default) and the re-brief says "read
+your previous report first". Never a level that enables the CLI's own
+delegation or multi-agent mode — it breaks the leaf rule; environment.md
+names any such level so it is never chosen by accident.
+
 ## Briefs
 
 Use `references/brief-template.md`. The load-bearing parts:
 
 - **Reading order** (repo rules → plan/ADR → named key files) and an
   explicit scope fence ("do NOT touch X — that is a later slice").
+- **Read fence** (SKILL.md §Transcript boundary): the delegate reads its
+  brief, the ledger's status matrix, and the files the brief names —
+  never the overseer's pane or session files, a peer's pane, or a report
+  the brief did not name. The template's standard lines carry it.
 - **Verification floor**, including the repo's commit-free gate runner
   (review-checklists.md) — without it, gate failures surface at your
   commit step and cost a round-trip each.
@@ -94,7 +124,9 @@ Use `references/brief-template.md`. The load-bearing parts:
 - **Report format:** files changed, verification output verbatim, what
   cannot be verified in the sandbox (said plainly, not approximated), and
   plan/code drift — implementers report drift honestly only when asked
-  (agent-trust-profiles.md).
+  (agent-trust-profiles.md). Fix the shape (SKILL.md §Token economy
+  §Report shape): a ~40-line head you always read, a `---` marker, then
+  the verbatim output you open only on a red gate; full logs on disk.
 - Decision-heavy work: *"if the contract/shape is ambiguous, propose it
   to me BEFORE implementing."* A two-minute exchange beats a rewrite.
 - **Evidence settles claims, not just gates.** Every behavioural claim

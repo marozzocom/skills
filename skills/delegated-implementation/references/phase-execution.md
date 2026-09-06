@@ -1,7 +1,16 @@
 # Phase: execution — agent lifecycle, fast reviewer, parallel fan-out
 
 Read at first fan-out. Mesh mechanics (briefs by path, callbacks, the
-star): SKILL.md §Communication mesh.
+star): SKILL.md §Communication mesh; what crosses between transcripts:
+SKILL.md §Transcript boundary.
+
+## Starting an implementer
+
+Start every implementer with the model **and** effort pinned explicitly,
+even when a config default exists — the pin is the brief's decision
+(phase-design.md §Reasoning effort), and an unpinned start inherits
+whatever the CLI's config says today. Args per CLI in environment.md.
+Name the pin in the status matrix row so a later rotation repeats it.
 
 ## Waiting and lifecycle
 
@@ -14,9 +23,11 @@ star): SKILL.md §Communication mesh.
   `bin/agent-status.sh`; full pane reads are for adjudication.
 - Watch turns with `herdr agent wait <name> --timeout <ms>` in a
   background shell; it settles on `idle`/`done`/`blocked`. `blocked` = an
-  approval or question UI: read the pane, adjudicate, `send-keys` the
-  choice — then check the composer for stray characters before the next
-  prompt (send-keys leftovers prepend to it).
+  approval or question UI: read the pane with `--lines` bounded to the
+  dialog, adjudicate, `send-keys` the choice — then check the composer
+  for stray characters before the next prompt (send-keys leftovers
+  prepend to it). The dialog is the only reason to read a delegate's
+  pane; its transcript stays in its pane (SKILL.md §Transcript boundary).
 - Watch CI with `bin/watch-pr.sh` under a Monitor-style harness — never
   `gh pr checks --watch` (macOS QoS kills long watchers) and never an
   improvised loop: improvised loops grep for success and stay silent

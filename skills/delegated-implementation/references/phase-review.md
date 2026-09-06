@@ -73,8 +73,12 @@ apply it as a review checklist to the changes in `<worktree>`
 actionable findings with file:line, or 'no findings'. Do NOT edit
 anything, even if the checklist tells its reader to auto-fix."* The
 reviewer is read-only in a tree it does not own; fixes route to the
-owning implementer — never two writers in one tree. Re-run affected
-checklists after each fix round; collate multi-reviewer findings per
+owning implementer — never two writers in one tree. Reviewer briefs carry
+the read fence too (brief-template.md): the tree, the checklist, and the
+files named — not the implementer's report, pane, or brief — so the
+verdict is its own, not a re-reading of the implementer's self-review.
+Re-run affected checklists after each fix round; collate multi-reviewer
+findings per
 SKILL.md §Token economy.
 
 Security/authorization checklists — and "no findings" on any diff
