@@ -202,7 +202,9 @@ Two further readings worth keeping:
   per-domain-judge option is permitted but unbuilt — e.g. a
   design-specialized agent owning UI verdicts instead of the orchestrator.
   Build only when a real need shows up; it needs a trust profile, a written
-  standard, and a matrix entry before it may own verdicts.
+  standard, and a matrix entry before it may own verdicts. The split that
+  *is* built: a UI *verifier* pane captures evidence (the model strongest
+  at computer use), the orchestrator keeps the verdict.
 - **Graph/ledger/milestone machinery is design, not yet battle-tested.**
   phase-design.md §Task shape, the ledger, and
   quiesce→teardown→compact→re-fan-out were

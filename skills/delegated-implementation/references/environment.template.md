@@ -72,16 +72,16 @@ Date every number; ratios move:
 | Runner | Model | Billing here | API list (in/out per MTok) | Relative |
 |---|---|---|---|---|
 | Orchestrator | [model] | [subscription/API] | [$ / $] | 1× (the ceiling) |
-| Orchestrator's subagents | [pinned cheaper model] | [same pool] | [$ / $] | [ratio] |
 | Implementer | [model] | [subscription flat-rate?] | [$ / $] | [marginal ≈ 0 if flat] |
 | Fast reviewer | [model] | [subscription flat-rate?] | [$ / $] | [marginal ≈ 0 if flat] |
 
 Routing rule: work that needs neither the orchestrator's accumulated
 context nor its authority (git, gate verdicts, adjudication) never runs on
-the orchestrator's model. Note here how the orchestrator's harness pins
-subagent models — including whether unpinned subagents silently inherit the
-expensive session model (Claude Code's do: pass `model` explicitly on every
-search/mechanical spawn).
+the orchestrator's model. State whether the orchestrator's harness
+subagents are used at all: the default here is no — every delegate is a
+pane, so the fan-out stays visible and nothing inherits the session model
+unseen. If you do allow them, note how their model is pinned (Claude
+Code's inherit the session model unless `model` is passed).
 
 ## Workflow scripts (`bin/`)
 

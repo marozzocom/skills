@@ -38,7 +38,7 @@ flat-rate subscriptions are not free either: effort and volume draw down
 their own usage windows and add latency — which is why the implementer's
 effort is a per-brief pin, not a ceiling. Whatever needs neither your
 accumulated context nor your authority (git, gate verdicts,
-adjudication) runs on a delegate or a cheaper subagent, and
+adjudication) runs on a delegate, and
 deterministic workflow steps run as `bin/` scripts — reviewed once,
 token-free thereafter. Delegate output is *accessible*, never
 *broadcast*: it enters your context only as the artifacts §Transcript
@@ -243,7 +243,6 @@ that is a callback, not a read.
 - **Batch callbacks** — enforced by the brief's callback line above.
 - **Delegate collation:** three or more reviewer reports on one tree →
   the cheapest suitable leaf per environment.md's cost table — a fresh
-  delegate session, or a harness subagent only when the work must stay
-  inside the harness; never the implementer whose diff is under review —
+  delegate session, never the implementer whose diff is under review —
   merges them into one deduplicated, source-cited list that keeps every
   dissent; you adjudicate the merged list.

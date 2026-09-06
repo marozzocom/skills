@@ -25,7 +25,7 @@ without the teardown evidence, and the run is not closed without the report.
 - **Who did what** — one line per role: what the orchestrator did inline vs
   what was delegated. This is the take-over drift detector: orchestrator
   time spent on recon, CI collection, or mechanical I/O that a delegate or
-  cheaper subagent could have done is a finding, not a neutral fact.
+  delegate could have done is a finding, not a neutral fact.
 - **Teardown evidence** — pasted post-state reads (`herdr pane list`,
   `git worktree list`), per phase-landing.md §Closeout. Absence of this section = the run is
   not closed.
