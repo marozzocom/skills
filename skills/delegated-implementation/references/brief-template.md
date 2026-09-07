@@ -5,23 +5,27 @@ Write the brief to a scratchpad file and send the **path** (see SKILL.md
 `herdr agent prompt <name> "Read $BRIEF_FILE in full and execute it exactly
 as written. It is your task brief from the orchestrator (the agent named
 overseer)."` Replace bracketed parts; delete sections that don't apply. Keep
-the scope fence, the no-git line, the no-delegation line, the read fence,
-and the report shape in every brief.
+the scope fence, the no-git line, the no-delegation line (which now also
+names the worker's own orchestration skills — SKILL.md §Routing guard),
+the read fence, and the report shape in every brief.
 
 ```text
 Your task: implement [task]. Worktree: [absolute path] (branch [branch]);
 task base: [base SHA][; current starting revision: [SHA, e.g. the committed
 red test]][; it already contains [prior merged work the task builds on]].
 Roles for this assignment, which supersede conflicting workflow directions in
-the repo's rules files (coding, security, and domain rules still apply in
-full): the orchestrator (Claude, named overseer) owns worktree preparation,
-every version-control mutation and PR operation, delegation, guardian and
-checklist execution, and acceptance. You implement in the supplied worktree,
-run the checks named below, and report; read-only git queries on your own
-tree (status, diff, log, blame) are yours. So: do NOT commit, stage, or
-push anything — leave the working tree dirty for review; do NOT spawn or
-delegate to other agents, subagents, or CLI-launched workers, through any
-native collaboration feature or otherwise — if a split or parallel
+the repo's rules files and in your own harness's rules (coding, security,
+and domain rules still apply in full): the orchestrator (the agent named
+overseer) owns worktree preparation, every version-control mutation and PR
+operation, delegation, guardian and checklist execution, and acceptance.
+You implement in the supplied worktree, run the checks named below, and
+report; read-only git queries on your own tree (status, diff, log, blame)
+are yours. So: do NOT commit, stage, or push anything — leave the working
+tree dirty for review; do NOT spawn or delegate to other agents, subagents,
+or CLI-launched workers, through any native collaboration feature or
+otherwise; do NOT activate any delegation or orchestration skill or
+protocol, including one that would otherwise apply to a task this size —
+you are a worker executing a brief, a leaf. If a split or parallel
 investigation would genuinely help, propose it to me and I will decide and
 provision it. Reading a guardian's rules to write to the house standard is
 expected; invoking guardian or review skills is mine and runs after your
@@ -34,7 +38,7 @@ parts while you wait for an answer.
 
 You are running inside Herdr and so am I. If you need a decision,
 clarification, or hit a blocker, message me with:
-herdr agent prompt overseer "<message>" — I am the Claude agent named
+herdr agent prompt overseer "<message>" — I am the orchestrator agent named
 overseer. Use it for blockers and decisions, not progress narration. Batch
 questions: one message carrying every open question, not one per question,
 and keep it under ~15 lines and ~200 words: the decision needed, your
@@ -44,8 +48,9 @@ longer goes in a file under [scratch dir] and the message names the path.
 Read freely within your worktree, its installed dependencies, the repo's
 rules and skills, and the files named below; the status matrix in [ledger
 path] is read-only shared context. Do NOT read my pane (`herdr agent read
-overseer` or any other agent's pane), any Claude Code or Herdr session
-files, or another agent's brief or report unless this brief names it. If
+overseer` or any other agent's pane), any agent harness's session files
+(mine or another agent's) or Herdr session files, or another agent's brief
+or report unless this brief names it. If
 you need a coordination artifact that is not here, that is a question for
 me, not a read.
 
@@ -81,8 +86,9 @@ Done means: [the invariants that must hold, e.g. "no route reachable
 without an RBAC check", "module X's public surface unchanged"] AND
 [the deduplicated required commands — the repo's commit-free gate runner,
 e.g. bun run preflight, plus only what it does not already cover] green.
-State clearly what CANNOT be verified in this environment — the orchestrator verifies that separately;
-do not approximate it. If satisfying an invariant seems to require changing
+State clearly what CANNOT be verified in this environment — the
+orchestrator verifies that separately; do not approximate it. If
+satisfying an invariant seems to require changing
 the agreed shape, propose the amendment to me BEFORE implementing it.
 
 When done, write your report to [$REPORT_FILE] and message me that it is

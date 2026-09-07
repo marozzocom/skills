@@ -28,8 +28,9 @@ Name the pin in the status matrix row so a later rotation repeats it.
   for stray characters before the next prompt (send-keys leftovers
   prepend to it). The dialog is the only reason to read a delegate's
   pane; its transcript stays in its pane (SKILL.md §Transcript boundary).
-- Watch CI with `bin/watch-pr.sh` under a Monitor-style harness — never
-  `gh pr checks --watch` (macOS QoS kills long watchers) and never an
+- Watch CI with `bin/watch-pr.sh` under the harness's background monitor
+  — never a long-lived `gh pr checks --watch` (some platforms kill or
+  throttle long watchers silently; notes in environment.md) and never an
   improvised loop: improvised loops grep for success and stay silent
   through failures, which looks identical to "still running".
 

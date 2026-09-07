@@ -27,18 +27,19 @@ without the teardown evidence, and the run is not closed without the report.
   time spent on recon, CI collection, or mechanical I/O that a delegate or
   delegate could have done is a finding, not a neutral fact.
 - **Teardown evidence** — pasted post-state reads (`herdr pane list`,
-  `git worktree list`), per phase-landing.md §Closeout. Absence of this section = the run is
-  not closed.
+  `git worktree list`), per phase-landing.md §Closeout. Absence of this
+  section = the run is not closed.
 - **Highlights and next-run changes** — what worked, what cost a
   round-trip, contract amendments worth keeping. Anything durable graduates
   into `environment.md`, `agent-trust-profiles.md`, or the repo's
   checklists — the report is where those files get their updates from.
-- **Landing state** — per PR: landing mode (`land`/`stage`/`flag`, phase-landing.md
-  §Landing modes) and where it ended: merged; staged pending the single
-  merge (with the preview URL and evidence links); or merged behind flag
-  `<name>` with the exact enable/disable commands. Follow-ups appear only
-  under phase-landing.md §Complete deliverables' conditions, decision-ready — origin, why
-  not closable autonomously, next action, owner.
+- **Landing state** — per PR: landing mode (`land`/`stage`/`flag`,
+  phase-landing.md §Landing modes) and where it ended: merged; staged
+  pending the single merge (with the preview URL and evidence links); or
+  merged behind flag `<name>` with the exact enable/disable commands.
+  Follow-ups appear only under phase-landing.md §Complete deliverables'
+  conditions, decision-ready — origin, why not closable autonomously, next
+  action, owner.
 - **Continuation prompt** — only when the project continues past this run:
   the self-contained fresh-session prompt from the ledger (SKILL.md §Context
   discipline). Omit the section for finished projects.

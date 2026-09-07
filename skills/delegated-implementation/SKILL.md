@@ -1,13 +1,15 @@
 ---
 name: delegated-implementation
 description: "Orchestrate CLI coding agents in Herdr panes as implementers
-and fast reviewers while Claude reviews, verifies, and owns all git
-operations. Use PROACTIVELY, low threshold, whenever starting substantial
-implementation inside a Herdr session (HERDR_ENV=1) — a plan, a feature,
-anything spanning multiple files or needing its own worktree — or when the
-user asks to delegate to a CLI agent or get a second-opinion review. Skip
-for single-file fixes, hotfixes, review-only requests, or when Herdr is
-unavailable. Read the herdr skill first for CLI mechanics."
+and fast reviewers while the orchestrator session reviews, verifies, and
+owns all git operations. Use PROACTIVELY, low threshold, whenever starting
+substantial implementation inside a Herdr session (HERDR_ENV=1) — a plan, a
+feature, anything spanning multiple files or needing its own worktree — or
+when the user asks to delegate to a CLI agent or get a second-opinion
+review. Skip for single-file fixes, hotfixes, review-only requests, or when
+Herdr is unavailable. Never activate in a session that is itself executing
+a brief from an orchestrator: an assigned worker is a leaf (§Routing
+guard). Read the herdr skill first for CLI mechanics."
 ---
 
 # Delegated implementation protocol
@@ -82,6 +84,35 @@ compaction re-read only the phase you are in.
   session start: the environment's default pin unless the brief carries
   an escalation signal (phase-design.md §Reasoning effort). Record the
   pin in the status matrix row.
+
+## Routing guard — supervisor only
+
+This protocol runs in exactly one session per run: the orchestrator's.
+Where the same harness fills both roles — the orchestrator and a worker
+are the same CLI, or a worker's harness carries its own copy of this
+skill and a standing "delegate substantial work" rule — the skill's
+triggers would fire inside the worker too, and the worker would fan out a
+mesh of its own: two ledgers, two writers per worktree, review nobody
+centralizes. So the guard is a rule every installation keeps, in portable
+terms:
+
+- **A session executing an assigned brief is a worker, and a worker is a
+  leaf.** The brief says so (brief-template.md's role and leaf lines), and
+  the worker's own harness rules about delegating, spawning subagents,
+  committing, or opening PRs are superseded for that assignment. A worker
+  does not activate this skill, its harness's delegation features, or any
+  orchestration protocol — however substantial the brief looks. The valve
+  is the callback: propose a split to the orchestrator, who decides.
+- **Detection is textual, not by model or vendor.** You are the worker if
+  your session was started by another agent and your first instruction
+  points you at a brief from "the orchestrator" — the brief's own role
+  paragraph is the signal. Nothing here maps a model or CLI to a role; the
+  mapping lives in environment.md and may change without touching this
+  rule.
+- **Enforcement is local.** environment.md records how the installation
+  keeps the guard mechanical where it can (a worker-side environment
+  variable or rule the brief sets, a harness setting, a pane-level
+  restriction) and where it rests on the brief alone.
 
 ## Autonomy and the contract
 
@@ -213,11 +244,12 @@ that is a callback, not a read.
 
 ## Token economy — mechanics
 
-- **Gate re-runs:** `bin/run-gates.sh <worktree> "<name>:<command>" ...` —
+- **Gate re-runs:** `bin/run-gates.sh WORKTREE "NAME:COMMAND" ...` —
   one verdict line per gate, failure tails only, full logs on disk.
-- **Status probes:** `bin/agent-status.sh <name> [tail-lines]` — one line
-  per poll. Full pane reads are for adjudicating a `blocked` dialog or a
-  suspect state, never routine polling (§Transcript boundary).
+- **Status probes:** `bin/agent-status.sh NAME [TAIL-LINES]` — one line
+  per poll, and the pane read behind it is bounded with `--lines`. Full
+  pane reads are for adjudicating a `blocked` dialog or a suspect state,
+  never routine polling (§Transcript boundary).
 - **Report shape:** a report is read once, so the brief fixes its shape —
   a head of at most ~40 lines (files changed; per check: the exact
   command, exit status or `not run`, verdict, full-log path; the
@@ -227,16 +259,17 @@ that is a callback, not a read.
   are adjudicating. Full logs stay on disk — never a whole test run in
   your context. `not run` is its own state: a binary pass/fail field
   pushes an unavailable check into the wrong column.
-- **Review inventory and scoped reads:** `bin/review-inventory.sh
-  <worktree> <base>` lists every changed path since the task's base —
-  committed, staged, unstaged, untracked; `bin/diff-hunks.sh <worktree>
-  <base> <file> <start>-<end>|all` prints only the hunks overlapping a
-  routing entry's range and exits non-zero when nothing matches. A bare
-  `git diff -- <file>` returns every hunk in the file.
-- **Review threads:** `bin/resolve-thread.sh <owner/repo> <pr>
-  <comment-id> "<message>"` — reply plus resolve, one line back.
-- **Ledger appends:** `bin/ledger-append.sh <ledger> "<entry>"`;
-  structural edits (the status matrix) still use an editor.
+- **Review inventory:** `bin/review-inventory.sh WORKTREE BASE` lists
+  every changed path since the task's base — committed, staged, unstaged,
+  untracked.
+- **Scoped reads:** `bin/diff-hunks.sh WORKTREE BASE FILE START-END|all`
+  prints only the hunks overlapping a routing entry's range and exits
+  non-zero when nothing matches. A bare `git diff -- FILE` returns every
+  hunk in the file.
+- **Review threads:** `bin/resolve-thread.sh OWNER/REPO PR COMMENT-ID
+  "MESSAGE"` — reply plus resolve, one line back.
+- **Ledger appends:** `bin/ledger-append.sh LEDGER "ENTRY"`; structural
+  edits (the status matrix) still use an editor.
 - **No bare `git diff` on a triaged tree** — read only the ranges the
   triage routing file names (phase-review.md §Review), as scoped per-file
   diffs. The full diff enters your context at most once, ideally never.

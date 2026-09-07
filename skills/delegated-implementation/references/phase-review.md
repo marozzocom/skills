@@ -44,9 +44,9 @@ the untracked additions, so it is never the inventory.
 
 On a done-report, first send the fast reviewer — never the implementer
 whose diff it is — a **triage pass**: *"Classify every path in
-<inventory file> against base <sha> — mechanical (rename/generated/
+`<inventory file>` against base `<sha>` — mechanical (rename/generated/
 lockfile/snapshot), routine, or risk-bearing (auth, data, contracts,
-concurrency). Write to <triage file> as a routing manifest: one line per
+concurrency). Write to `<triage file>` as a routing manifest: one line per
 file (`<file> <tier> <one-line reason>`); for a risk-bearing file add one
 line per risk range in NEW-side line numbers (`<file>:<start>-<end> risk
 <reason>`) — hunks of that file outside the named ranges are routine
@@ -128,8 +128,9 @@ Send back constraints, not just symptoms: the gate's first relevant
 error verbatim, what must NOT change (don't weaken a proof, touch
 baselines, cast unsafely), and the re-run in the standard report shape
 (verdict line plus log path — SKILL.md §Token economy). When a gate flags
-something, first ask whether the flagged thing should exist at all — "make the gate
-pass" is the wrong instruction when "delete it" is available.
+something, first ask whether the flagged thing should exist at all —
+"make the gate pass" is the wrong instruction when "delete it" is
+available.
 
 ## Review threads — close the loop yourself
 
@@ -156,7 +157,8 @@ and your tiered review are clean, and only if one holds: the diff touches
 auth/payments/data deletion or migration/infra; residual uncertainty you
 can name; or you and the fast reviewer disagree and the code didn't
 settle it. Routine PRs never qualify. Poll with short foreground checks
-(macOS QoS kills long watchers). Verify every finding against the code —
+where the platform kills long watchers (environment.md). Verify every
+finding against the code —
 bot confidence is not evidence — route real fixes to the implementer,
 close threads per above. Re-trigger only when a fix round materially
 changed risk-bearing code; incremental-review behavior is bot-specific
