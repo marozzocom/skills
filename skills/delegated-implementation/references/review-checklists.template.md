@@ -21,16 +21,18 @@ verification matrix — check → runner → verdict owner → evidence type
   note that the implementer brief overrides it — review is centralized with
   the orchestrator.]
 - **Commit-free gate runner** for brief verification floors: `[command]`.
-- **Review conventions** (phase-landing.md §Landing modes): [what the repo's process
-  actually expects — branch protection, required reviewers, CODEOWNERS,
+- **Review conventions** (phase-landing.md §Landing modes): [what the
+  repo's process actually expects — branch protection, required reviewers,
+  CODEOWNERS,
   required checks, review bots, the rules file's delivery section. If it
   expects other-human review, `stage` is the ceiling regardless of grant.]
-- **Autonomous landing grant** (phase-landing.md §Landing modes): [absent = denied,
-  `stage` is the ceiling. To grant: "granted <date> by <source — repo agent
-  docs section, or the user's explicit directive>", enabling `land`/`flag`
-  under an accepted contract.]
-- **Merge policy table** (phase-landing.md §Merge policy) — default deny: auto-merge
-  on green checks only when *every* changed path is in the safe set. Paths
+- **Autonomous landing grant** (phase-landing.md §Landing modes): [absent =
+  denied, `stage` is the ceiling. To grant: "granted `<date>` by `<source>`"
+  where the source is a repo agent-docs section or the user's explicit
+  directive, enabling `land`/`flag` under an accepted contract.]
+- **Merge policy table** (phase-landing.md §Merge policy) — default deny:
+  auto-merge on green checks only when *every* changed path is in the safe
+  set. Paths
   outside the safe set merge only under the grant above plus an accepted
   `land`/`flag` landing mode — otherwise they wait for the human.
   [Enumerate the repo's safe set here, or point at the repo rules file that
@@ -49,7 +51,8 @@ verification matrix — check → runner → verdict owner → evidence type
 ## Unmapped repos
 
 Discover before reviewing: check the repo rules file (`AGENTS.md`,
-`CLAUDE.md`) for review instructions or embedded checklists, then
-`.claude/skills/` for guardian-style skills. If nothing exists, your tiered
+`CLAUDE.md`, `CONTRIBUTING`) for review instructions or embedded
+checklists, then the repo's skill directories (e.g. `.claude/skills/`) for
+guardian-style skills. If nothing exists, your tiered
 read plus a tightly-scoped fast-reviewer second opinion is the whole pass.
 Record what you find as a new entry above.

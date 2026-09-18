@@ -17,6 +17,11 @@ cp review-checklists.template.md review-checklists.md
 cp agent-trust-profiles.template.md agent-trust-profiles.md
 ```
 
+Check the install with `tests/validate-skill.sh` (frontmatter, references,
+scripts, and no harness or vendor names in the portable files) and run the
+script tests with `tests/run.sh` — both under the system bash, which is
+3.2 on macOS.
+
 Requires [Herdr](https://herdr.dev/) (the skill checks `HERDR_ENV=1`) and a
 companion `herdr` skill covering CLI mechanics — this skill only adds the
 orchestration protocol on top. The protocol itself (roles, briefs, gates,
@@ -25,11 +30,12 @@ the mechanics to tmux or another multiplexer is possible but not done here.
 
 ## Layout
 
-- `SKILL.md` — the core protocol every phase needs: roles, the contract,
-  context discipline, the communication mesh, the transcript boundary,
-  token-economy mechanics, and the phase-file map. Stack-, org-, and
-  machine-agnostic by design; no vendor names anywhere in it, frontmatter
-  included.
+- `SKILL.md` — the core protocol every phase needs: roles, the routing
+  guard, the contract, context discipline, the communication mesh, the
+  transcript boundary, token-economy mechanics, and the phase-file map.
+  Harness-, model-, org-, and machine-agnostic by design; no vendor or
+  harness names anywhere in it, frontmatter included — "the orchestrator"
+  is whichever agent session runs the protocol.
 - `references/phase-design.md`, `phase-execution.md`, `phase-review.md`,
   `phase-landing.md` — the per-phase protocol detail, split so the
   orchestrator reads each phase just-in-time (and re-reads only the current
@@ -56,7 +62,14 @@ the mechanics to tmux or another multiplexer is possible but not done here.
   (committed, staged, unstaged, untracked) so a triage manifest can be
   reconciled by path identity; `diff-hunks.sh` prints only the hunks of
   one file that overlap a routing entry's range against that base, and
-  fails visibly when a range selects nothing.
+  fails visibly when a range selects nothing; `land-pr.sh` lands a
+  worktree as a PR in one process, staging only the paths it is given;
+  `gh-json.sh` is the sourced helper that lets the scripts accept a `gh`
+  that prints JSON inline or a wrapper that prints a JSON file's path.
+- `tests/` — fixture and mock tests for the scripts (`tests/run.sh`; a
+  mock `gh`, a mock `herdr`, throwaway git repos with a local bare
+  "origin"). Nothing in them pushes to, merges on, or comments at a real
+  remote.
 - `scripts/` — does not exist here and is gitignored: it is the slot where an
   installer may overlay machine-local helper scripts.
 
@@ -84,11 +97,12 @@ in `references/review-checklists.md`:
   repo-specific and only visible after reading the code, and one run found a
   third option the other never generated. A skill that forced one answer
   would lock in the worse answer exactly as easily. Gate the design pass
-  (the design gate in phase-design.md) — do not script it. Determinism on a design task
-  buys consistency at the price of the search.
+  (the design gate in phase-design.md) — do not script it. Determinism on
+  a design task buys consistency at the price of the search.
 
-- **Do not make §Task fit (phase-design.md) a capability self-estimate.** The obvious way to
-  write that gate is "judge up front whether this task is big enough" — and
+- **Do not make §Task fit (phase-design.md) a capability self-estimate.**
+  The obvious way to write that gate is "judge up front whether this task
+  is big enough" — and
   that is the version to avoid. It asks for a calibrated self-prediction
   before the code has been read, produced by the same judgment that writes the
   frame, while a standing default-mode rule says to prefer delegating. Three
@@ -162,8 +176,8 @@ Two further readings worth keeping:
   delegated run's review pass caught a user-visible regression before it
   shipped. The solo run shipped a defect of similar severity, caught only
   because a benchmark existed to diff against. That asymmetry is why §Task fit
-  explicitly refuses to gate the review phase — the cheap configuration to try next is
-  solo implementation plus the centralised review pass.
+  explicitly refuses to gate the review phase — the cheap configuration
+  to try next is solo implementation plus the centralised review pass.
 - **Recon target, not delegation, explained most of the artifact spread.** Both
   the delegated and solo runs spent a similar recon budget; they aimed it
   differently. The solo run spent half of its reading the *dependency's* source
@@ -175,8 +189,9 @@ Two further readings worth keeping:
   authoring the brief, never read the library, and hand-rolled substitutes for
   primitives that already existed. The implementer then faithfully built the
   brief. Nothing in the pipeline created a reason for anyone to read the
-  dependency — hence the dependency-scout bullet in phase-design.md §Task shape. Note this cuts
-  *for* the protocol: scouts are read-only, parallel and near-free, so the
+  dependency — hence the dependency-scout bullet in phase-design.md §Task
+  shape. Note this cuts *for* the protocol: scouts are read-only, parallel
+  and near-free, so the
   delegated path can afford this check more easily than a solo run can.
 - **This measured the overhead floor, not the protocol.** The task was one
   node, one layer: no parallel implementers, no milestone gates, no worktree
@@ -197,8 +212,9 @@ Two further readings worth keeping:
   review passes and a mutation test all missed — found only by diffing
   against the other implementation.
 
-- **Per-domain judges.** phase-review.md §Verification ownership says the verdict on a
-  judgment check stays with "you, or one named judge per domain". The
+- **Per-domain judges.** phase-review.md §Verification ownership says the
+  verdict on a judgment check stays with "you, or one named judge per
+  domain". The
   per-domain-judge option is permitted but unbuilt — e.g. a
   design-specialized agent owning UI verdicts instead of the orchestrator.
   Build only when a real need shows up; it needs a trust profile, a written

@@ -2,12 +2,12 @@
 # Rotate a Herdr agent onto a new worktree in one step: quit whatever agent
 # occupies the pane, cd the pane's shell, start a fresh session.
 #
-# Usage: rotate-implementer.sh <agent-name> <pane-id> <worktree-dir> [kind] \
+# Usage: rotate-implementer.sh <agent-name> <pane-id> <worktree-dir> <kind> \
 #          [-- <native agent args>...]
-#   rotate-implementer.sh sol w1:p3 ~/worktrees/task-x codex \
-#     -- -m gpt-5.6-sol -c model_reasoning_effort=high
-#   rotate-implementer.sh rev w1:p4 ~/worktrees/task-x cursor \
-#     -- --model cursor-grok-4.6-high-fast
+#   rotate-implementer.sh impl w1:p3 ~/worktrees/task-x <implementer-kind> \
+#     -- <that CLI's model pin and effort args, from environment.md>
+#   rotate-implementer.sh rev w1:p4 ~/worktrees/task-x <reviewer-kind> \
+#     -- <that CLI's model pin, from environment.md>
 #
 # Args after `--` are forwarded verbatim to `herdr agent start`. Pass the model
 # pin here: references/environment.md requires an explicit pin because ids
@@ -15,9 +15,9 @@
 # its config file defaults to. Omitting them warns on stderr rather than
 # failing. ROTATE_AGENT_ARGS supplies a default when none are given.
 #
-# <kind> is any kind `herdr agent start --kind` accepts (pi, claude, codex,
-# gemini, cursor, devin, agy, cline, omp, mastracode, opencode, copilot, kimi,
-# kiro, droid, amp, grok, hermes, kilo, qodercli, maki). Defaults to codex.
+# <kind> is required and is any kind `herdr agent start --kind` accepts
+# (`herdr agent start --help` lists them). There is no default: a rotation
+# that silently picked a vendor would start the wrong agent in the pane.
 #
 # The pane must exist (create it first: herdr pane split --current
 # --direction right --cwd <dir> --no-focus). Prints the started agent JSON.
@@ -28,11 +28,15 @@
 # concurrently for different (name, pane) pairs — no shared state.
 set -euo pipefail
 
-name=${1:?agent name}
-pane=${2:?pane id}
-dir=${3:?worktree dir}
-kind=${4:-codex}
-shift $(( $# < 4 ? $# : 4 ))
+usage='usage: rotate-implementer.sh <agent-name> <pane-id> <worktree-dir> <kind> [-- <native agent args>...]'
+name=${1:?$usage}
+pane=${2:?$usage}
+dir=${3:?$usage}
+kind=${4:?$usage — <kind> is required (any herdr agent kind; no default)}
+case $kind in
+  --|-*) echo "$usage" >&2; echo "kind must be an agent kind, got '$kind'" >&2; exit 2 ;;
+esac
+shift 4
 # Tolerate the `--` separator being present or absent.
 [ "${1:-}" = "--" ] && shift
 agent_args=("$@")
@@ -64,12 +68,12 @@ await_agent_gone() {
 # agent holds the pane, and the cd would then land in that agent's composer
 # as a prompt — the exact failure this script exists to prevent.
 if pane_has_agent; then
-  # Quit commands. Verified on this machine 2026-08-18 by probe: codex,
-  # cursor, and claude all exit on `/quit`; claude also exits on `/exit`.
-  # Every other kind is ASSUMED to take `/quit` — the escalation ladder below
-  # covers a wrong guess by aborting rather than proceeding, so an unverified
-  # kind costs time, never correctness. If a kind ever needs different
-  # commands, grow this into a case on "$kind". Override for a one-off with
+  # Quit commands. `/quit` first, `/exit` second — the CLIs verified so far
+  # (record yours in environment.md) exit on one of the two. Every other
+  # kind is ASSUMED to take `/quit` — the escalation ladder below covers a
+  # wrong guess by aborting rather than proceeding, so an unverified kind
+  # costs time, never correctness. If a kind ever needs different commands,
+  # grow this into a case on "$kind". Override for a one-off with
   # ROTATE_QUIT_CMD.
   primary='/quit'
   secondary='/exit'
@@ -80,8 +84,9 @@ if pane_has_agent; then
   wait_each=${ROTATE_QUIT_WAIT:-8}
 
   # Escalation ladder. A quit submitted while the TUI is still settling can be
-  # swallowed with no error and no exit (observed on claude: the first `/quit`
-  # left an empty composer and a live agent; an identical retry exited in 2s).
+  # swallowed with no error and no exit (observed on at least one CLI: the
+  # first `/quit` left an empty composer and a live agent; an identical retry
+  # exited in 2s — per-CLI notes in environment.md).
   # So round 2 is a plain retry, and later rounds clear whatever is
   # intercepting input before retrying.
   ladder=(
