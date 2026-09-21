@@ -31,7 +31,7 @@ orchestrator, triaged diff read, checklist pass) per phase-review.md §Review.
   factual claim about existing code the change depends on. Self-review is
   input, not clearance.
 
-## Cursor CLI — cursor-grok-4.6-high-fast (reviewer / investigator)
+## Cursor CLI — grok-4.7-high-fast (reviewer / investigator)
 
 - **"No findings" is grounded:** verified to go beyond reading — it executes
   library internals to check semantics empirically. A clean verdict is worth
