@@ -139,4 +139,30 @@ assert_eq dir-exit 0 "$rc"
 assert_eq dir-commit-both "src/x.txt src/y.txt" "$(git -C "$R" show --name-only --format= HEAD | tr '\n' ' ' | sed 's/ $//')"
 assert_eq dir-clean "" "$(git -C "$R" status --porcelain)"
 
+# --- 10. remote moved (bot pushed a mend commit): rebase once and push -----
+R="$SCRATCH/r10"; make_repo "$R"; : >"$MOCK_LOG"
+echo p >"$R/p.txt"; git -C "$R" add p.txt; git -C "$R" commit -q -m 'feat: p'; git -C "$R" push -q -u origin feat/x
+with_pr 'body'
+B="$SCRATCH/r10-bot"; git clone -q "$R.git" "$B"; git -C "$B" checkout -q feat/x
+git -C "$B" -c user.email=b@example.invalid -c user.name=bot commit -q --allow-empty -m 'fix(ci): mend lint'
+git -C "$B" push -q origin feat/x
+echo q >"$R/q.txt"
+out=$("$L" "$R" --title 'feat: q' --body-file "$body" --stage q.txt 2>&1); rc=$?
+assert_eq rebase-exit 0 "$rc"
+assert_eq rebase-pushed "$(git -C "$R" rev-parse HEAD)" "$(git -C "$R.git" rev-parse feat/x)"
+assert_contains rebase-kept-bot-commit "fix(ci): mend lint" "$(git -C "$R" log --format=%s)"
+
+# --- 11. remote moved with a conflicting commit: fail, tree restored -------
+R="$SCRATCH/r11"; make_repo "$R"; : >"$MOCK_LOG"
+echo one >"$R/c.txt"; git -C "$R" add c.txt; git -C "$R" commit -q -m 'feat: c'; git -C "$R" push -q -u origin feat/x
+with_pr 'body'
+B="$SCRATCH/r11-bot"; git clone -q "$R.git" "$B"; git -C "$B" checkout -q feat/x
+echo bot >"$B/c.txt"; git -C "$B" -c user.email=b@example.invalid -c user.name=bot commit -q -am 'fix(ci): mend'
+git -C "$B" push -q origin feat/x
+echo mine >"$R/c.txt"
+out=$("$L" "$R" --title 'feat: c2' --body-file "$body" --stage c.txt 2>&1); rc=$?
+assert_eq conflict-exit 1 "$rc"
+assert_contains conflict-line "FAILED push: remote moved and rebase onto origin/feat/x conflicts" "$out"
+assert_eq conflict-no-rebase-in-progress 1 "$([[ -d $R/.git/rebase-merge || -d $R/.git/rebase-apply ]] && echo 0 || echo 1)"
+
 finish
