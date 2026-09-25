@@ -171,7 +171,15 @@ fi
 
 push=()
 [[ $NO_VERIFY -eq 1 ]] && push=(--no-verify)
-git push -q ${push[@]+"${push[@]}"} -u origin "$BRANCH" || fail "push: git push (pre-push hook or remote rejected)"
+if ! git push -q ${push[@]+"${push[@]}"} -u origin "$BRANCH"; then
+  # A bot (e.g. a CI mender) may have pushed onto the branch since we last
+  # fetched. Rebase onto it once and retry; anything else is a real failure.
+  git fetch -q origin "$BRANCH" 2>/dev/null || fail "push: git push (pre-push hook or remote rejected)"
+  git merge-base --is-ancestor "origin/$BRANCH" HEAD \
+    && fail "push: git push (pre-push hook or remote rejected)"
+  git rebase -q "origin/$BRANCH" || { git rebase --abort 2>/dev/null; fail "push: remote moved and rebase onto origin/$BRANCH conflicts"; }
+  git push -q ${push[@]+"${push[@]}"} -u origin "$BRANCH" || fail "push: git push after rebasing onto origin/$BRANCH"
+fi
 
 if [[ -n $existing ]]; then
   if [[ -n $RUN_ID ]] && ! jq -e --arg m "<!-- herdr-run: $RUN_ID -->" '(.body // "") | contains($m)' <<<"$url_json" >/dev/null; then
