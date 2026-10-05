@@ -138,36 +138,9 @@ what still rests on the brief text alone:
 
 ## Workflow scripts (`bin/`)
 
-Deterministic steps run as scripts, not re-derived prose. Ship with the
-skill:
-
-- `bin/watch-pr.sh` — CI poll loop for a background monitor: reads
-  `gh pr view --json statusCheckRollup` (never `gh pr checks`, whose
-  non-zero exit on failed *and* pending checks hides failures), normalizes
-  CheckRun and StatusContext records, emits every terminal state, treats
-  an empty check list as pending, retries transport failures visibly.
-- `bin/run-report.sh` — deterministic half of the closeout report.
-- `bin/rotate-implementer.sh` — worktree rotation; agent kind required.
-- `bin/run-gates.sh` — acceptance gate runner: one verdict line per gate,
-  failure tails only.
-- `bin/agent-status.sh` — one-line agent liveness probe; the pane read is
-  bounded with `--lines`.
-- `bin/resolve-thread.sh` — review-thread reply + resolve in one call.
-- `bin/ledger-append.sh` — timestamped ledger append.
-- `bin/review-inventory.sh` — every changed path since the task base,
-  untracked included.
-- `bin/diff-hunks.sh` — only the hunks of a file overlapping a routing
-  entry's line range, against the task base.
-- `bin/land-pr.sh` — stage the `--stage` paths only → commit (hooks on)
-  → push → `gh pr create --body-file` → optional auto-merge → run marker,
-  as one process so a slow commit hook cannot be orphaned by an agent turn
-  ending. Refuses pre-existing staged changes and stops before mutation
-  when dirty paths are not named (`--allow-unlanded` prints them instead).
-  `--attribution "<line>"` keeps a harness-required final line last.
-- `bin/gh-json.sh` — sourced helper: accepts inline JSON from the native
-  `gh` or a JSON-file path from a wrapper.
-
-Add machine-local ones under `scripts/` (gitignored) and note them here.
+The generic helpers ship with the skill and are described once, in
+README.md §Layout. Record here only machine-local helpers (under
+`scripts/`, gitignored) and the notes below.
 
 ### `gh` and CI watcher notes
 
@@ -192,16 +165,12 @@ recording to a host the PR renderer can fetch, its size limits, and how
 you confirm the rendered body shows the image or video]. Never hot-link
 media from a host the renderer cannot authenticate against.
 
-## Run marker — pinning PRs to runs
+## Dependent PRs — [stacking tool, or delete this section]
 
-Every PR a run opens carries `<!-- herdr-run: <run-id> -->` in its body
-(invisible when rendered). Lookup:
-
-```bash
-gh pr list --repo [owner/repo] --state all --limit 100 \
-  --search "herdr-run: <run-id> in:body" --json number,title \
-  --jq '.[] | "#\(.number) \(.title)"'
-```
+phase-landing.md §Merge policy, *Dependent PRs*, is the protocol. Record the tool, its
+install check, its docs link, and the commands for create / update after
+a lower layer merges / merge — plus anything it cannot do yet (e.g.
+auto-merge on a stacked PR).
 
 ## Org and repos
 
