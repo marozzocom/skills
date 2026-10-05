@@ -4,7 +4,7 @@ Write the brief to a scratchpad file and send the **path** (see SKILL.md
 §Communication mesh — inlining the body fails silently past a few KB):
 `herdr agent prompt <name> "Read $BRIEF_FILE in full and execute it exactly
 as written. It is your task brief from the orchestrator (the agent named
-overseer)."` Replace bracketed parts; delete sections that don't apply. Keep
+[prefix]-overseer)."` Replace bracketed parts; delete sections that don't apply. Keep
 the scope fence, the no-git line, the no-delegation line (which now also
 names the worker's own orchestration skills — SKILL.md §Routing guard),
 the read fence, and the report shape in every brief.
@@ -16,7 +16,7 @@ red test]][; it already contains [prior merged work the task builds on]].
 Roles for this assignment, which supersede conflicting workflow directions in
 the repo's rules files and in your own harness's rules (coding, security,
 and domain rules still apply in full): the orchestrator (the agent named
-overseer) owns worktree preparation, every version-control mutation and PR
+[prefix]-overseer) owns worktree preparation, every version-control mutation and PR
 operation, delegation, guardian and checklist execution, and acceptance.
 You implement in the supplied worktree, run the checks named below, and
 report; read-only git queries on your own tree (status, diff, log, blame)
@@ -38,8 +38,8 @@ parts while you wait for an answer.
 
 You are running inside Herdr and so am I. If you need a decision,
 clarification, or hit a blocker, message me with:
-herdr agent prompt overseer "<message>" — I am the orchestrator agent named
-overseer. Use it for blockers and decisions, not progress narration. Batch
+herdr agent prompt [prefix]-overseer "<message>" — I am the orchestrator agent named
+[prefix]-overseer. Use it for blockers and decisions, not progress narration. Batch
 questions: one message carrying every open question, not one per question,
 and keep it under ~15 lines and ~200 words: the decision needed, your
 recommendation, the path:line behind it, and what waiting costs. Anything
@@ -48,7 +48,7 @@ longer goes in a file under [scratch dir] and the message names the path.
 Read freely within your worktree, its installed dependencies, the repo's
 rules and skills, and the files named below; the status matrix in [ledger
 path] is read-only shared context. Do NOT read my pane (`herdr agent read
-overseer` or any other agent's pane), any agent harness's session files
+[prefix]-overseer` or any other agent's pane), any agent harness's session files
 (mine or another agent's) or Herdr session files, or another agent's brief
 or report unless this brief names it. If
 you need a coordination artifact that is not here, that is a question for
@@ -122,8 +122,8 @@ question block — the pane keeps its context for the run.
 
 ```text
 You are the oracle for this run: an advisor to the orchestrator (the agent
-named overseer) on what the human means and what they would want. You
-advise; overseer decides. Read-only: do NOT edit files other than your
+named [prefix]-overseer) on what the human means and what they would want. You
+advise; [prefix]-overseer decides. Read-only: do NOT edit files other than your
 answer file, run version-control commands, start or message other agents,
 or activate any delegation, orchestration, or review skill or protocol —
 you are a leaf. Do NOT read any agent's pane, any agent harness's session
@@ -139,5 +139,5 @@ Answer in [answer file], at most ~40 lines: your recommendation; your
 confidence (high/medium/low) and what it rests on; what the human would
 most likely object to in each option; what evidence would change your
 answer. If the question itself is the wrong question, say so first. Then
-message me one line: herdr agent prompt overseer "oracle: [answer file]".
+message me one line: herdr agent prompt [prefix]-overseer "oracle: [answer file]".
 ```

@@ -223,12 +223,21 @@ Durable state lives in files, not your context window.
 
 ## Communication mesh
 
+**Every agent name carries the run prefix.** Herdr agent names are
+global across workspaces, and several orchestrated runs can be live at
+once; a bare `overseer` or `impl` lets one run's callback land in
+another's session. At ledger creation, pick a short context-specific
+prefix from the run slug — `PREFIX=$(bin/run-prefix.sh <slug>)`
+sanitizes it and suffixes `-2`, `-3`… if any live agent already uses it
+— and record it in the ledger header next to the run id. Name every
+agent of the run `$PREFIX-<role>` (`-overseer`, `-impl`, `-impl-2`,
+`-review`, `-oracle`, `-ui`); below, `<prefix>-overseer` means yours.
 Name yourself once so delegates can address you:
-`herdr agent rename "$HERDR_PANE_ID" overseer`.
+`herdr agent rename "$HERDR_PANE_ID" "$PREFIX-overseer"`.
 
 Every brief carries the callback line: *"If you need a decision,
 clarification, or hit a blocker, message me with:
-`herdr agent prompt overseer "<message>"` — blockers and decisions, not
+`herdr agent prompt <prefix>-overseer "<message>"` — blockers and decisions, not
 progress narration; batch every open question into one message, and keep
 it under ~15 lines and ~200 words — decision needed, your recommendation,
 the path:line behind it, what waiting costs; anything longer goes in a
@@ -248,7 +257,7 @@ Send briefs as a **path, never inline text**:
 ```bash
 herdr agent prompt <name> "Read $BRIEF_FILE in full and execute it exactly as
 written. It is your task brief from the orchestrator (the agent named
-overseer)."
+<prefix>-overseer)."
 ```
 
 Inlining fails silently past a few KB on at least one CLI — the agent
@@ -281,7 +290,7 @@ Nothing of yours leaves except the brief and the ledger's status matrix.
 The fence is on *coordination* artifacts, not on source: a delegate reads
 its worktree, installed dependencies, repo rules, and any file the brief
 names freely — that is how it settles claims. It never reads your pane
-(`herdr agent read overseer` works on any pane — every brief forbids it),
+(`herdr agent read <prefix>-overseer` works on any pane — every brief forbids it),
 your harness's session files, or a peer's pane, brief, or report the
 brief did not name. Your transcript holds the human's words, the forks
 you rejected, and peers' unadjudicated claims; a delegate that reads it

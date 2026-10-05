@@ -58,6 +58,7 @@ the mechanics to tmux or another multiplexer is possible but not done here.
   `agent-status.sh` is a one-line liveness probe; `resolve-thread.sh`
   replies to and resolves a PR review thread in one call;
   `ledger-append.sh` appends a timestamped ledger entry;
+  `run-prefix.sh` picks the run's collision-free agent-name prefix;
   `review-inventory.sh` lists every path changed since the task base
   (committed, staged, unstaged, untracked) so a triage manifest can be
   reconciled by path identity; `diff-hunks.sh` prints only the hunks of
