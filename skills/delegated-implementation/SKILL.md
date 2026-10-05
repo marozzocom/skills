@@ -194,7 +194,7 @@ Durable state lives in files, not your context window.
   `bin/ledger-append.sh` (§Token economy).
 - Assign a **run id** (`YYYY-MM-DD-<slug>`) at ledger creation; every PR
   the run opens carries `<!-- herdr-run: <run-id> -->` in its body
-  (invisible when rendered; lookup command in environment.md).
+  (invisible when rendered; lookup in phase-landing.md §Merge policy).
 - Head the ledger with a **status matrix**: agent, role, worktree, owned
   paths, state, waiting-on. Herdr shows liveness; the matrix adds
   semantics. Status is advisory — some CLIs misreport (environment.md);

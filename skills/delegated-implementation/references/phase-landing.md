@@ -79,6 +79,18 @@ hides unlanded work. On a branch whose PR already exists it commits and
 pushes the update (or says `unchanged`). Read the script's last line and
 confirm with `gh pr view` before recording the PR in the ledger.
 
+**Dependent PRs.** When one PR builds on another, use the stacking tool
+environment.md names, never a hand-built chain of PRs based on feature
+branches plus manual rebases. You own the stack checkout; implementer
+worktrees stay outside stack bookkeeping, one per PR as always. Merge
+bottom-up. PRs that do not depend on each other are not a stack — they
+stay plain PRs off trunk.
+
+**Finding a run's PRs.** Every PR carries the run marker (SKILL.md
+§Context discipline); `bin/run-report.sh` finds them by it, and ad hoc:
+`gh pr list --repo <owner/repo> --state all --limit 100 --search
+"herdr-run: <run-id> in:body" --json number,title,state`.
+
 ## Before landing — the plan matches the diff
 
 A milestone does not land while its plan or ADR describes something the
