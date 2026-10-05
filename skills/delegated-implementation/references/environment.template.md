@@ -58,6 +58,33 @@ and infra details here and out of SKILL.md.
   allowlist configuration that lets read-only work run without stalls, and
   the stricter-settings fallback.]
 
+## Oracle — [CLI and model, or delete this section]
+
+SKILL.md §Advisors. One long-lived read-only pane per run.
+
+- **Model and start:** `[model id]`, started with whatever the CLI offers
+  to remove its edit, delegation, and skill tools (the routing guard made
+  mechanical — record what was verified):
+
+  ```bash
+  herdr agent start oracle --kind [kind] --pane <id> -- [model args] [tool restrictions]
+  ```
+
+- **Billing:** [which allowance it draws on — often the orchestrator's
+  own, at a heavier weight — and the per-run consult budget that follows.]
+
+## Classifier — [service, or delete this section]
+
+SKILL.md §Advisors.
+
+- **Helper:** `[script path] <request.json>` — [request shape, output
+  shape (one line per question), model pin, timeout.]
+- **Credential:** [where the key comes from; never in argv, never logged.]
+- **Thresholds:** [per question kind: the threshold that triggers
+  escalation, dated, and how calibration is recorded.]
+- **Data rules:** [what may be sent (pane text, callbacks, diff hunks,
+  frames) and what never is.]
+
 ## External review bot — [bot name, or delete this section]
 
 - **Enablement:** [which repos, manual/auto, billing model.]
@@ -68,8 +95,9 @@ and infra details here and out of SKILL.md.
 
 ## Cost table — marginal cost per role, and the routing rule
 
-The orchestrator deliberately runs the best available model (judge/overseer
-quality is where model strength pays); its context window and its usage
+The orchestrator deliberately runs a frontier model (judge/overseer
+quality is where model strength pays; an oracle covers any judgment
+another model does better); its context window and its usage
 allowance are the scarcest resources in the mesh. State how each role is
 actually billed here — a subscription window is a quota, not a price, and
 API list prices are reference only unless a role really runs on the API.
@@ -80,6 +108,8 @@ Date every number; ratios move:
 | Orchestrator | [model] | [subscription/API] | [$ / $ per MTok] | 1× |
 | Implementer | [model] | [flat-rate?] | [$ / $ per MTok] | [≈0 if flat] |
 | Fast reviewer | [model] | [flat-rate?] | [$ / $ per MTok] | [≈0 if flat] |
+| Oracle | [model] | [whose allowance?] | [$ / $ per MTok] | [per consult] |
+| Classifier | [model] | [API, per token?] | [$ per MTok] | [per call] |
 
 Routing rule: work that needs neither the orchestrator's accumulated
 context nor its authority (git, gate verdicts, adjudication) never runs on

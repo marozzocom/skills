@@ -244,6 +244,12 @@ Two further readings worth keeping:
   is reasoned, not measured: record in the run report which escalations
   paid (a fix round avoided) and which defaults failed (a second fix round
   on a default-pinned node), and prune the list from that.
+- **Advisors — built 2026-10, unmeasured.** SKILL.md §Advisors adds an
+  optional oracle (a model stronger at reading intent, consulted at
+  decision points) and a classifier (a cheap typed-judgment service that
+  may escalate, never relax). Record in the run report which oracle
+  consults changed a decision and which classifier calls fired above
+  threshold and were right; drop either role if it stops paying.
 - **Ledger format.** Free-form file today. If runs get long enough that
   resuming from summary+ledger is common, a light structure (per-node
   status table, decision log, amendment log) may earn its keep.

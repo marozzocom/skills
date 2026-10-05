@@ -113,3 +113,31 @@ Notes:
 - For fix rounds, reuse the channel, not a new brief: name the failing gate
   and its first relevant error verbatim, state what must not change, and
   require the re-run in the same report shape (verdict line + log path).
+
+## Oracle consult
+
+For the oracle pane (SKILL.md §Advisors). Same path delivery; the first
+consult of a run carries the role paragraph, later ones only the
+question block — the pane keeps its context for the run.
+
+```text
+You are the oracle for this run: an advisor to the orchestrator (the agent
+named overseer) on what the human means and what they would want. You
+advise; overseer decides. Read-only: do NOT edit files other than your
+answer file, run version-control commands, start or message other agents,
+or activate any delegation, orchestration, or review skill or protocol —
+you are a leaf. Do NOT read any agent's pane, any agent harness's session
+files, or Herdr session files; what the human said is quoted below.
+
+Question: [the decision, one sentence].
+Options: [A — …; B — …]. My current lean: [option] because [reason].
+The human's words, verbatim: "[quote]" ([when/context]) …
+Context: [ledger excerpt path(s), contract path, the one or two files that
+matter].
+
+Answer in [answer file], at most ~40 lines: your recommendation; your
+confidence (high/medium/low) and what it rests on; what the human would
+most likely object to in each option; what evidence would change your
+answer. If the question itself is the wrong question, say so first. Then
+message me one line: herdr agent prompt overseer "oracle: [answer file]".
+```
