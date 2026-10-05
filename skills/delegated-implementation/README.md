@@ -58,6 +58,7 @@ the mechanics to tmux or another multiplexer is possible but not done here.
   `agent-status.sh` is a one-line liveness probe; `resolve-thread.sh`
   replies to and resolves a PR review thread in one call;
   `ledger-append.sh` appends a timestamped ledger entry;
+  `run-prefix.sh` picks the run's collision-free agent-name prefix;
   `review-inventory.sh` lists every path changed since the task base
   (committed, staged, unstaged, untracked) so a triage manifest can be
   reconciled by path identity; `diff-hunks.sh` prints only the hunks of
@@ -244,6 +245,12 @@ Two further readings worth keeping:
   is reasoned, not measured: record in the run report which escalations
   paid (a fix round avoided) and which defaults failed (a second fix round
   on a default-pinned node), and prune the list from that.
+- **Advisors — built 2026-10, unmeasured.** SKILL.md §Advisors adds an
+  optional oracle (a model stronger at reading intent, consulted at
+  decision points) and a classifier (a cheap typed-judgment service that
+  may escalate, never relax). Record in the run report which oracle
+  consults changed a decision and which classifier calls fired above
+  threshold and were right; drop either role if it stops paying.
 - **Ledger format.** Free-form file today. If runs get long enough that
   resuming from summary+ledger is common, a light structure (per-node
   status table, decision log, amendment log) may earn its keep.

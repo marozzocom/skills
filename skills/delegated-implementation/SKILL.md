@@ -30,7 +30,7 @@ the stack (CLIs, models, commands, quirks, repos, the cost table);
 calibrates per-agent trust. Porting = rewriting the references, never the
 protocol files.
 
-Cost principle: the orchestrator runs the best model, and two things
+Cost principle: the orchestrator runs a frontier model, and two things
 about it are scarce — its **context window**, which carries the run's
 judgment and degrades as it fills (compaction is lossy), and its
 **usage allowance**, the tightest in the mesh whether billed per token
@@ -84,6 +84,53 @@ compaction re-read only the phase you are in.
   session start: the environment's default pin unless the brief carries
   an escalation signal (phase-design.md §Reasoning effort). Record the
   pin in the status matrix row.
+
+## Advisors — oracle and classifier (optional)
+
+environment.md may pin two advisors. Both advise; neither holds
+authority. You decide, and the ledger records the advice beside the
+decision ("oracle: X; decided Y because Z"). Neither touches a worktree,
+git, or a peer.
+
+- **Oracle** — a model stronger than you at reading intent, run as one
+  long-lived read-only pane per run so its picture of the human's goals
+  accumulates. Consult it where the risk is misreading *what the human
+  meant*, not where a fact can be checked:
+  - before asking for contract acceptance — does the contract say what
+    the human asked for, and what would they push back on;
+  - when deciding whether an amendment or callback is in scope or a
+    scope change / goal-altering (§Autonomy — the line that decides
+    whether the human is asked);
+  - adjudications that turn on intent or taste rather than evidence —
+    two delegates read the frame differently, a written standard leaves
+    room;
+  - before killing or redirecting a line of work the human started.
+
+  Not for code facts (verify those against the code), routine triage, or
+  a second review. A consult is a brief by path like any other — the
+  question, the options with your current lean, the human's own words
+  quoted verbatim, the ledger excerpts that matter — answered in a file:
+  recommendation, confidence, what would change it, bounded like a report
+  head (brief-template.md §Oracle consult). Quote the human; never point
+  the oracle at your session files (§Transcript boundary). It is usually
+  the costliest seat per token: decision points only, a handful per run.
+  When it disagrees with you on intent and the call is hard to reverse,
+  that disagreement is itself a reason to ask the human.
+- **Classifier** — a cheap, fast typed-judgment service (a yes/no
+  probability, one-of-N, a graded score) behind a helper script, for
+  narrow repeated questions: what a callback asks for, whether it
+  introduces user-facing vocabulary or changes scope, which escalation
+  signals a frame carries, whether a hunk touches a risk surface, whether
+  a CI failure matches a known flake. Rules:
+  - **It may escalate, never relax** — the triage asymmetry. Above
+    threshold it raises scrutiny (read the hunk, raise the effort pin,
+    take the callback to the human); below threshold it never removes a
+    control you would otherwise apply.
+  - Never the sole basis for a git, merge, gate, or security verdict.
+  - Thresholds are policy in environment.md; record each call's question,
+    answer, and threshold in the ledger so they can be calibrated.
+  - Send the minimum state that answers the question; never secrets or
+    credentials. Data rules per environment.md.
 
 ## Routing guard — supervisor only
 
@@ -176,12 +223,21 @@ Durable state lives in files, not your context window.
 
 ## Communication mesh
 
+**Every agent name carries the run prefix.** Herdr agent names are
+global across workspaces, and several orchestrated runs can be live at
+once; a bare `overseer` or `impl` lets one run's callback land in
+another's session. At ledger creation, pick a short context-specific
+prefix from the run slug — `PREFIX=$(bin/run-prefix.sh <slug>)`
+sanitizes it and suffixes `-2`, `-3`… if any live agent already uses it
+— and record it in the ledger header next to the run id. Name every
+agent of the run `$PREFIX-<role>` (`-overseer`, `-impl`, `-impl-2`,
+`-review`, `-oracle`, `-ui`); below, `<prefix>-overseer` means yours.
 Name yourself once so delegates can address you:
-`herdr agent rename "$HERDR_PANE_ID" overseer`.
+`herdr agent rename "$HERDR_PANE_ID" "$PREFIX-overseer"`.
 
 Every brief carries the callback line: *"If you need a decision,
 clarification, or hit a blocker, message me with:
-`herdr agent prompt overseer "<message>"` — blockers and decisions, not
+`herdr agent prompt <prefix>-overseer "<message>"` — blockers and decisions, not
 progress narration; batch every open question into one message, and keep
 it under ~15 lines and ~200 words — decision needed, your recommendation,
 the path:line behind it, what waiting costs; anything longer goes in a
@@ -201,7 +257,7 @@ Send briefs as a **path, never inline text**:
 ```bash
 herdr agent prompt <name> "Read $BRIEF_FILE in full and execute it exactly as
 written. It is your task brief from the orchestrator (the agent named
-overseer)."
+<prefix>-overseer)."
 ```
 
 Inlining fails silently past a few KB on at least one CLI — the agent
@@ -234,7 +290,7 @@ Nothing of yours leaves except the brief and the ledger's status matrix.
 The fence is on *coordination* artifacts, not on source: a delegate reads
 its worktree, installed dependencies, repo rules, and any file the brief
 names freely — that is how it settles claims. It never reads your pane
-(`herdr agent read overseer` works on any pane — every brief forbids it),
+(`herdr agent read <prefix>-overseer` works on any pane — every brief forbids it),
 your harness's session files, or a peer's pane, brief, or report the
 brief did not name. Your transcript holds the human's words, the forks
 you rejected, and peers' unadjudicated claims; a delegate that reads it
