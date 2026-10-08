@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # rotate-implementer.sh: the agent kind is required and never defaulted.
 # (The live rotation itself needs a Herdr session and is not exercised.)
+# shellcheck source=tests/lib.sh
 . "$(dirname "$0")/lib.sh"
 R="$BIN_DIR/rotate-implementer.sh"
 
@@ -16,6 +17,7 @@ out=$(HERDR_ENV='' "$R" impl w1:p1 "$SCRATCH" anykind 2>&1); rc=$?
 assert_eq kind-ok-then-env-check 1 "$rc"
 assert_contains kind-ok-then-env-msg "not inside a Herdr session" "$out"
 
+# shellcheck disable=SC2016 # Match the literal parameter expansion in the script.
 assert_eq no-default-kind 0 "$(grep -c 'kind=\${4:-' "$R")"
 
 finish

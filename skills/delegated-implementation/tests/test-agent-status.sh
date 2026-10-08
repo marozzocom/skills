@@ -2,6 +2,7 @@
 # agent-status.sh against the mock herdr: the pane read is bounded with
 # --lines, the tail is the last N non-empty lines, and tail-lines is
 # validated.
+# shellcheck source=tests/lib.sh
 . "$(dirname "$0")/lib.sh"
 A="$BIN_DIR/agent-status.sh"
 

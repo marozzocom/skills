@@ -10,7 +10,7 @@ bash=${TEST_BASH:-/bin/bash}
 fail=0; n=0
 for t in "$here"/test-*.sh; do
   n=$((n + 1))
-  if out=$("$bash" "$t" 2>&1); then
+  if out=$(unset BASH_ENV ENV; "$bash" "$t" 2>&1); then
     echo "PASS $(basename "$t")"
   else
     fail=1

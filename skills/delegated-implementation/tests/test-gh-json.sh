@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # gh-json.sh: inline JSON, JSON-file path, and everything that is neither.
+# shellcheck source=tests/lib.sh
 . "$(dirname "$0")/lib.sh"
+# shellcheck source=bin/gh-json.sh
 . "$BIN_DIR/gh-json.sh"
 
 f="$SCRATCH/x.json"; printf '{"a":1}\n' >"$f"
