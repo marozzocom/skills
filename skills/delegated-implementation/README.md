@@ -1,92 +1,42 @@
-# delegated-implementation — maintainer notes
+# delegated-implementation — orientation
 
-For humans and skill-editing sessions only. Nothing here is loaded when the
-skill runs — operational instructions belong in SKILL.md and references/;
-this file holds setup, the roadmap, and design rationale that would
-otherwise waste context tokens.
+For humans and skill-editing sessions. Nothing here is loaded when the
+skill runs. Installation and per-repo setup: [SETUP.md](SETUP.md). The
+agent entrypoint is [SKILL.md](SKILL.md).
 
-## Setup
+## What it is
 
-The skill reads three local-by-nature reference files that are gitignored
-here. Create them from their templates and fill in your stack:
+A protocol for an orchestrator agent that runs CLI coding agents in
+sibling [Herdr](https://herdr.dev/) panes: implementers write code in
+their own worktrees, fast reviewers triage and run checklists, an
+optional oracle advises on intent, an optional classifier raises
+scrutiny. The orchestrator keeps design authority, review, independent
+verification, and every git, PR, and merge operation. The protocol is
+harness-, vendor-, and model-agnostic; everything local lives in
+gitignored reference files created from templates.
 
-```bash
-cd references
-cp environment.template.md environment.md
-cp review-checklists.template.md review-checklists.md
-cp agent-trust-profiles.template.md agent-trust-profiles.md
-```
+## Where things live
 
-Check the install with `tests/validate-skill.sh` (frontmatter, references,
-scripts, and no harness or vendor names in the portable files) and run the
-script tests with `tests/run.sh` — both under the system bash, which is
-3.2 on macOS.
+| File | Read by | When | Holds |
+|---|---|---|---|
+| [SKILL.md](SKILL.md) | orchestrator | on activation | routing, roles, guard, contract, context, mesh, helper index |
+| [references/phase-design.md](references/phase-design.md) | orchestrator | before the contract | task fit, task shape, effort pins, briefs |
+| [references/phase-execution.md](references/phase-execution.md) | orchestrator | first fan-out | agent lifecycle, fast reviewer, parallel implementers |
+| [references/phase-review.md](references/phase-review.md) | orchestrator | first done-report | verification ownership, tiered review, checklists, threads |
+| [references/phase-landing.md](references/phase-landing.md) | orchestrator | contract and landing | authorization, landing modes, merge policy, closeout |
+| [references/classifier.md](references/classifier.md) | orchestrator | when a classifier is pinned | the one classifier policy: checkpoints, helper, recording, experiments |
+| [references/classifier/](references/classifier/) | `bin/classify-escalate.sh` | each checkpoint call | versioned question sets |
+| [references/brief-template.md](references/brief-template.md) | orchestrator | writing a brief | implementer and oracle brief skeletons |
+| [references/run-report.md](references/run-report.md) | orchestrator | closeout | report sections |
+| `references/environment.md` | orchestrator | as phases point to it | local stack: CLIs, model pins, commands, quirks, billing, repos |
+| `references/review-checklists.md` | orchestrator | review and landing | per-repo checklists, grants, safe-set tables |
+| `references/agent-trust-profiles.md` | orchestrator | review | per-agent verified behavior |
+| `bin/*.sh` | orchestrator | as SKILL.md §Helpers lists | deterministic helpers; each header comment is its contract |
+| `tests/` | maintainers | before every change | offline fixture and mock tests, skill validation |
 
-Requires [Herdr](https://herdr.dev/) (the skill checks `HERDR_ENV=1`) and a
-companion `herdr` skill covering CLI mechanics — this skill only adds the
-orchestration protocol on top. The protocol itself (roles, briefs, gates,
-tiered review, verification ownership) is multiplexer-agnostic; adapting
-the mechanics to tmux or another multiplexer is possible but not done here.
-
-## Layout
-
-- `SKILL.md` — the core protocol every phase needs: roles, the routing
-  guard, the contract, context discipline, the communication mesh, the
-  transcript boundary, token-economy mechanics, and the phase-file map.
-  Harness-, model-, org-, and machine-agnostic by design; no vendor or
-  harness names anywhere in it, frontmatter included — "the orchestrator"
-  is whichever agent session runs the protocol.
-- `references/phase-design.md`, `phase-execution.md`, `phase-review.md`,
-  `phase-landing.md` — the per-phase protocol detail, split so the
-  orchestrator reads each phase just-in-time (and re-reads only the current
-  phase after a milestone compaction) instead of holding the whole protocol
-  resident. Same generic/portable status as SKILL.md.
-- `references/environment.md` — the concrete stack: which CLI/model fills
-  each role, start commands, CLI quirks, org/repo integrations. Porting the
-  skill = rewriting the references, never SKILL.md.
-- `references/review-checklists.md` — per-repo checklist sources and the
-  verification matrix (check → runner → verdict owner → evidence type).
-- `references/agent-trust-profiles.md` — per-agent-kind trust calibration
-  from empirically verified behavior; new kinds start at zero trust.
-- `references/brief-template.md` — the implementer brief skeleton.
-- `bin/` — tracked, generic helpers shipped with the skill.
-  `rotate-implementer.sh` rotates any Herdr agent onto a new worktree in one
-  state-verified step (quit with an escalation ladder → confirmed cd → fresh
-  start with your model pin passed after `--`); `watch-pr.sh` polls CI;
-  `run-report.sh` renders the deterministic half of the closeout report;
-  `run-gates.sh` runs acceptance gates and prints verdict lines only;
-  `agent-status.sh` is a one-line liveness probe; `resolve-thread.sh`
-  replies to and resolves a PR review thread in one call;
-  `ledger-append.sh` appends a timestamped ledger entry;
-  `run-prefix.sh` picks the run's collision-free agent-name prefix;
-  `review-inventory.sh` lists every path changed since the task base
-  (committed, staged, unstaged, untracked) so a triage manifest can be
-  reconciled by path identity; `diff-hunks.sh` prints only the hunks of
-  one file that overlap a routing entry's range against that base, and
-  fails visibly when a range selects nothing; `land-pr.sh` lands a
-  worktree as a PR in one process, staging only the paths it is given;
-  `gh-json.sh` is the sourced helper that lets the scripts accept a `gh`
-  that prints JSON inline or a wrapper that prints a JSON file's path.
-- `tests/` — fixture and mock tests for the scripts (`tests/run.sh`; a
-  mock `gh`, a mock `herdr`, throwaway git repos with a local bare
-  "origin"). Nothing in them pushes to, merges on, or comments at a real
-  remote.
-- `scripts/` — does not exist here and is gitignored: it is the slot where an
-  installer may overlay machine-local helper scripts.
-
-## Per-repo adaptation (once per repository)
-
-Three facts to nail down before the first brief, then record them as an entry
-in `references/review-checklists.md`:
-
-1. **Rules file** the implementer reads first — `AGENTS.md`, `CLAUDE.md`,
-   `CONTRIBUTING`.
-2. **Commit-free gate runner** — one script running lint + type-check + tests
-   without committing. If none exists, list the individual commands in every
-   brief; otherwise gate failures surface at your commit step and cost a full
-   round-trip each.
-3. **Worktree convention** — where task worktrees live and how branches are
-   named. One task = one worktree = one implementer session, always.
+The three unlinked references are local by nature and gitignored; their
+`*.template.md` files are tracked. Model pins and environment details
+belong only there.
 
 ## Anti-goals
 
@@ -131,13 +81,12 @@ in `references/review-checklists.md`:
 ## Why the transcript boundary exists
 
 Two transcripts, two different reasons to keep them apart. The overseer's
-context is the most expensive in the mesh and fills from the inside: every
-pane read, every pasted test run, every narrated callback is a token spent
-on the best model that a verdict line, a report head, or a file path would
-have replaced. So delegate output is *accessible* — the pane, the logs, the
+context is the scarcest in the mesh and fills from the inside: every pane
+read, every pasted test run, every narrated callback is context spent
+where a verdict line, a report head, or a file path would have done. So delegate output is *accessible* — the pane, the logs, the
 full report tail are all there — but never *broadcast*; it enters only in
-the shapes the brief fixed, when the overseer pulls it. The delegate's
-context is flat-rate, so the concern runs the other way: not cost but
+the shapes the brief fixed, when the overseer pulls it. For the
+delegate's context the concern runs the other way: not cost but
 authority. The overseer's transcript holds the human's words, the forks the
 overseer rejected, and other delegates' claims nobody has adjudicated. A
 delegate that reads it treats all three as instruction, and the star mesh —
@@ -191,9 +140,9 @@ Two further readings worth keeping:
   primitives that already existed. The implementer then faithfully built the
   brief. Nothing in the pipeline created a reason for anyone to read the
   dependency — hence the dependency-scout bullet in phase-design.md §Task
-  shape. Note this cuts *for* the protocol: scouts are read-only, parallel
-  and near-free, so the
-  delegated path can afford this check more easily than a solo run can.
+  shape. Note this cuts *for* the protocol: scouts are read-only and run in
+  parallel on delegates, so the delegated path can afford this check
+  without spending the orchestrator's own context.
 - **This measured the overhead floor, not the protocol.** The task was one
   node, one layer: no parallel implementers, no milestone gates, no worktree
   isolation for concurrent writers, nothing overflowing a single context. The
@@ -235,9 +184,9 @@ Two further readings worth keeping:
   has an entry, treat its UI evidence as local-run screenshots.
 - **Implementer-internal scouts.** Currently a flat leaf rule: delegates
   never spawn subagents. The considered-and-deferred alternative: allow
-  read-only, low-effort scouts inside the implementer's own worktree
-  (implementer tokens are flat-rate, so cost is nil). Deferred for
-  enforceability — revisit if the leaf rule measurably slows implementers.
+  read-only, low-effort scouts inside the implementer's own worktree,
+  drawing on the implementer's allowance rather than the orchestrator's.
+  Deferred for enforceability — revisit if the leaf rule measurably slows implementers.
 - **Reasoning-effort routing — built 2026-09, unmeasured.** phase-design.md
   §Reasoning effort pins the environment's default effort per brief and
   escalates on named signals (security, concurrency, seams, named
@@ -247,10 +196,15 @@ Two further readings worth keeping:
   on a default-pinned node), and prune the list from that.
 - **Advisors — built 2026-10, unmeasured.** SKILL.md §Advisors adds an
   optional oracle (a model stronger at reading intent, consulted at
-  decision points) and a classifier (a cheap typed-judgment service that
-  may escalate, never relax). Record in the run report which oracle
-  consults changed a decision and which classifier calls fired above
-  threshold and were right; drop either role if it stops paying.
+  decision points) and a classifier (a typed-judgment service that may
+  escalate, never relax). The classifier runs through a fail-closed
+  helper with versioned question sets, records a baseline and an
+  independent outcome per call, samples its no-signals, and runs one
+  bounded experiment per substantive run (references/classifier.md). Its
+  helper is tested offline only: no live accuracy has been measured, and
+  every shipped threshold is uncalibrated. Record in the run report which
+  oracle consults changed a decision; drop either role if it stops
+  paying.
 - **Ledger format.** Free-form file today. If runs get long enough that
   resuming from summary+ledger is common, a light structure (per-node
   status table, decision log, amendment log) may earn its keep.

@@ -24,8 +24,8 @@ without the teardown evidence, and the run is not closed without the report.
   estimate it into a number.
 - **Who did what** — one line per role: what the orchestrator did inline vs
   what was delegated. This is the take-over drift detector: orchestrator
-  time spent on recon, CI collection, or mechanical I/O that a delegate or
-  delegate could have done is a finding, not a neutral fact.
+  time spent on recon, CI collection, or mechanical I/O that a delegate
+  could have done is a finding, not a neutral fact.
 - **Teardown evidence** — pasted post-state reads (`herdr pane list`,
   `git worktree list`), per phase-landing.md §Closeout. Absence of this
   section = the run is not closed.
@@ -33,10 +33,18 @@ without the teardown evidence, and the run is not closed without the report.
   round-trip, contract amendments worth keeping. Anything durable graduates
   into `environment.md`, `agent-trust-profiles.md`, or the repo's
   checklists — the report is where those files get their updates from.
-- **Landing state** — per PR: landing mode (`land`/`stage`/`flag`,
-  phase-landing.md §Landing modes) and where it ended: merged; staged
-  pending the single merge (with the preview URL and evidence links); or
-  merged behind flag `<name>` with the exact enable/disable commands.
+- **Classifier** — only when one is configured (classifier.md): calls per
+  checkpoint with ESCALATE / NO-SIGNAL / fail-closed counts; agreement
+  with your recorded baselines; outcomes known so far; the sampled
+  NO-SIGNAL re-checks and any misses; the run's experiment and its keep /
+  revise / drop verdict — or the concrete skip reason. Counts only; no
+  accuracy claims beyond them.
+- **Landing state** — per PR: landing mode (`land`/`stage`/`flag`/`local`,
+  phase-landing.md §Landing modes), the authorization relied on, and
+  where it ended: merged; staged pending the single merge (with the
+  preview URL and evidence links); merged behind flag `<name>` with the
+  exact enable/disable commands; or kept local (branch and path). List
+  every worktree closeout kept and why (phase-landing.md §Closeout).
   Follow-ups appear only under phase-landing.md §Complete deliverables'
   conditions, decision-ready — origin, why not closable autonomously, next
   action, owner.

@@ -66,8 +66,8 @@ fan-out that would clearly cramp the tab — give the agent its own tab:
 `herdr tab create --cwd <dir>` (returns the tab; read the new pane_id
 from `herdr pane list`). Width thresholds per CLI in environment.md.
 
-Fan out early (scouts) and late (reviewers) by preference — read-only,
-conflict-free, cheap. Concurrent *writers* are the expensive width, paid
+Fan out early (scouts) and late (reviewers) by preference — read-only and
+conflict-free. Concurrent *writers* are the expensive width, paid
 in merge conflicts and in confusion about which tree a finding refers to.
 
 The invariant that does not scale away: every diff is still triaged in

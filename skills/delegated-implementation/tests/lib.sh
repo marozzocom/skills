@@ -3,11 +3,13 @@
 # mock `gh` / `herdr` binaries. Bash 3.2 compatible (no mapfile, no
 # associative arrays, no ${var,,}).
 set -u
+unset BASH_ENV ENV
 
 TESTS_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck disable=SC2034  # used by the sourcing tests
 BIN_DIR=$(cd "$TESTS_DIR/../bin" && pwd)
 SCRATCH=$(mktemp -d "${TMPDIR:-/tmp}/di-tests.XXXXXX")
+SCRATCH=$(cd "$SCRATCH" && pwd)
 MOCK_BIN="$SCRATCH/mockbin"
 MOCK_LOG="$SCRATCH/mock.log"
 mkdir -p "$MOCK_BIN"
@@ -38,6 +40,13 @@ assert_not_contains() { # <label> <needle> <haystack>
     return 1 ;;
   esac
   return 0
+}
+# Verify the actual child-shell lookup, not merely this shell's PATH.
+assert_child_resolves() { # <command> <expected path>
+  local actual
+  # shellcheck disable=SC2016 # Expand positional arguments in the child shell.
+  actual=$("$BASH" --noprofile --norc -c 'command -v "$1"' _ "$1")
+  assert_eq "child-resolves-$1" "$2" "$actual"
 }
 finish() {
   if [ "$_failures" = 0 ]; then echo "$_checks checks ok"; exit 0; fi
@@ -133,6 +142,8 @@ MOCK
 chmod +x "$MOCK_BIN/herdr"
 
 export PATH="$MOCK_BIN:$PATH" GH_SCENARIO HERDR_SCENARIO MOCK_LOG
+assert_child_resolves gh "$MOCK_BIN/gh"
+assert_child_resolves herdr "$MOCK_BIN/herdr"
 
 # --- git fixture -------------------------------------------------------------
 # make_repo <dir>: a repo on branch feat/x with one commit, tracking a

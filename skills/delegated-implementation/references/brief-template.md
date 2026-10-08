@@ -32,9 +32,12 @@ expected; invoking guardian or review skills is mine and runs after your
 report.
 
 Proceed autonomously on routine implementation choices within the scope
-below. Batch questions for the named ambiguities, any scope or invariant
-change, missing authority, and blockers — and keep working on independent
-parts while you wait for an answer.
+below, including any copy or label changes this brief specifies. Batch
+questions for the named ambiguities, any scope or invariant change,
+missing authority, any new user-facing product or domain semantics this
+brief does not specify (a new label, a visible enum member, what a term
+means to users), and blockers — and keep working on independent parts
+while you wait for an answer.
 
 You are running inside Herdr and so am I. If you need a decision,
 clarification, or hit a blocker, message me with:

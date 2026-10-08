@@ -30,6 +30,12 @@ semantics, design conformance, and adjudication stay with you.
 - The check → runner → verdict-owner → evidence matrix is per-repo in
   review-checklists.md; record per-run deviations in the ledger so "who
   verified this?" is always answerable.
+- **Report facts are checked, not read.** Before judging a done-report,
+  confirm its deterministic facts directly: each named check's exit
+  status and `not run` lines, that every cited log path exists and is
+  non-empty, that the files-changed list matches the review inventory.
+  A missing log or an unexplained `not run` is a red gate, whatever the
+  narrative says.
 
 ## Review — tiered: you keep judgment, delegate I/O
 
@@ -63,7 +69,9 @@ nothing), spot-check the routine set, accept the mechanical set on gates
 green + type-check green + a clean sweep. Never a bare `git diff` once
 the manifest exists. One asymmetry is non-negotiable: triage may
 *escalate* a hunk, never demote one you'd call risky — when in doubt, you
-read it.
+read it. A configured classifier's triage cross-check (classifier.md)
+obeys the same asymmetry: it can send a routine hunk to your deep read,
+never take one out.
 
 The triage lands **before** your deep read: routing your attention is its
 whole purpose. Checklist and aspect passes run on a **settled** tree —

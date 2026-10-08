@@ -3,6 +3,7 @@
 # gh: scoped staging, ambiguous pre-existing staging, unlanded paths,
 # hooks preserved, body-file preservation with marker + attribution, and
 # the existing-PR update / unchanged paths. No real remote is touched.
+# shellcheck source=tests/lib.sh
 . "$(dirname "$0")/lib.sh"
 L="$BIN_DIR/land-pr.sh"
 S=$GH_SCENARIO

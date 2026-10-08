@@ -21,17 +21,10 @@ each skill's `README.md` for setup.
 
 ## Install
 
-Symlink (or copy) a skill into your skills directory and create its local
-reference files from the templates:
-
-```bash
-git clone https://github.com/marozzocom/skills.git
-ln -s "$(pwd)/skills/skills/delegated-implementation" ~/.claude/skills/
-cd skills/skills/delegated-implementation/references
-cp environment.template.md environment.md          # then fill these in
-cp review-checklists.template.md review-checklists.md
-cp agent-trust-profiles.template.md agent-trust-profiles.md
-```
+Symlink (or copy) a skill's directory into your skills directory, then
+follow that skill's own setup — its `README.md`, or for
+`delegated-implementation` its [SETUP.md](skills/delegated-implementation/SETUP.md),
+which is the single source for that skill's installation.
 
 ## License
 

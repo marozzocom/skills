@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # run-prefix.sh against the mock herdr: slug sanitizing, the 12-char cut,
 # and suffixing when a live agent already carries the prefix.
+# shellcheck source=tests/lib.sh
 . "$(dirname "$0")/lib.sh"
 P="$BIN_DIR/run-prefix.sh"
 

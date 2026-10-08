@@ -2,6 +2,7 @@
 # watch-pr.sh against the mock gh: success, failure, cancellation, pending
 # and empty rollups, both record types, inline and file-path output, quiet
 # wrappers, and transport-failure retry/exhaustion.
+# shellcheck source=tests/lib.sh
 . "$(dirname "$0")/lib.sh"
 W="$BIN_DIR/watch-pr.sh"
 S=$GH_SCENARIO

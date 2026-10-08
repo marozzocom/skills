@@ -2,40 +2,47 @@
 
 Read with SKILL.md before the contract or any brief.
 
-## Task fit — check the lower bound, after recon
+## Task fit — decide after recon, from what the recon showed
 
 §Task shape bounds the top; this bounds the bottom: delegation's fixed
-overhead (brief, report round-trips, worktree, pane) dominates a small,
-well-specified change.
+overhead (brief, report round-trips, worktree, pane) can dominate a
+small, well-specified change. SKILL.md §Routing runs first — a worker
+stops there, an explicit "do it yourself" or "delegate this" decides the
+question, and a review-only request never reaches this gate.
 
-**Do not size up front.** Pre-recon sizing is a self-prediction at the
-moment you know least, made by the same judgment that writes the frame,
-under a standing pro-delegation default — it gets rationalised, not
-evaluated. Decide at the design gate's recon pass, from observed signals.
+**Do not size up front, and do not size by label.** "Quick fix",
+"hotfix", and "one file" describe the request, not the work; a
+pre-recon guess is a self-prediction at the moment you know least. Decide
+at the design gate's recon pass, from observed signals.
 
 Delegate if **any** holds: two-plus disjoint file sets could run in
 parallel; more than one landable milestone; a migration, sweep, or audit
-across many call sites; the surface to read exceeds what you want resident
-in your own context; a plan or ADR already breaks it into phases.
+across many call sites; the surface to read exceeds what you want
+resident in your own context; a plan or ADR already breaks it into
+phases.
 
-Implement directly only if **all** hold: one app or package, single-digit
+Implement directly if **all** hold: one app or package, single-digit
 file count, nothing shardable, no migration character, and recon already
-put the code in front of you. Ambiguous → delegate: a wasted small
-delegation costs latency; an undelegated large task risks a blown context
-and an abandoned run.
+put the code in front of you. A deliverable that is prose whose
+content is your own judgment — a policy, a design note, a review — is
+also direct: writing it is the judgment. Otherwise — or when the signals conflict —
+delegate: a wasted small delegation costs latency; an undelegated large
+task risks a blown context and an abandoned run. Urgency is not a
+signal either way; an urgent fix gets the same recon, just a shorter one.
 
-This bound gates *implementation* only — never read-only fan-out (scouts,
-triage, checklist passes carry no brief/worktree/pane overhead), so
-"implement directly" never means "read everything yourself": an
+This bound gates *implementation* only, never read-only fan-out: an
 adjudication-shaped task (compare N implementations, audit N call sites)
-still fans out the read. Nor does the verdict switch off the review half
-(phase-review.md) or the design gate — typing the code yourself changes
+still fans out the read. Nor does the verdict switch off the design gate
+or the review half (phase-review.md) — typing the code yourself changes
 who implements the frame, not whether the frame is right. The specific
 failure the gate exists for: one agent pre-decides a fork, gets no
-critique, implements its own answer faithfully, and every gate goes green.
+critique, implements its own answer faithfully, and every gate goes
+green. Implementing directly also keeps the repo's isolation rules: its
+worktree and branch convention, never the user's checkout unless the
+repo says so (SKILL.md §Routing).
 
 Record the verdict as one ledger line naming the deciding signal. If it
-takes more than a line to settle, that is the signal: delegate.
+takes more than a line to settle, delegate.
 
 ## Task shape — graphs, milestones, gates
 
@@ -47,7 +54,9 @@ judge, then brief the next layer — or stop.
   ("scouts → design gate → 2 implementers → review gate → integration"),
   explicit stop criteria ("if the migration touches >N call sites, stop
   and report").
-- **The design gate is the default first gate.** Layer 1's brief carries
+- **The design gate is the default first gate**, sized to the open
+  questions: a direct change with no open fork needs only the frame line
+  in the ledger, no reviewer fan-out. Layer 1's brief carries
   the design; nothing downstream corrects a wrong frame. Fan the fast
   reviewer over the open questions, one agent per question, then state the
   frame in the ledger: what the task asks, each pre-decided decision
@@ -98,6 +107,11 @@ Raise to the **escalation pin** when the brief carries any of:
   group, an unavailable service). Diagnose first; escalate for unresolved
   reasoning only.
 
+When a classifier is configured, its effort-signal set (classifier.md)
+is a cross-check on this list, never a substitute: a signal it raises that
+you had not flagged sends you back to the frame; a signal it misses that
+you flagged still escalates.
+
 Keep the default for well-specified slices whose frame cites `file:line`,
 mechanical sweeps, test-first briefs, docs, and fix rounds that name the
 exact error. Never size by line count or repository size. The default is
@@ -138,10 +152,13 @@ Use `references/brief-template.md`. The load-bearing parts:
   most sensitive to two rules that conflict — resolve the conflict in the
   brief, never leave it to the model.
 - **One bounded initiative line** in every fresh brief: proceed on routine
-  choices within scope; batch questions for named ambiguities, scope or
-  invariant changes, missing authority, and blockers; keep working on
-  independent parts while waiting. Newer models ask where older ones
-  assumed — say which you want.
+  choices within scope — including copy or label changes the brief
+  specifies; batch questions for named ambiguities, scope or invariant
+  changes, missing authority, new user-facing product or domain semantics
+  the brief does not specify, and blockers; keep working on independent
+  parts while waiting. Newer models ask where older ones assumed — say
+  which you want. The callback screen (classifier.md) asks about exactly
+  this line, so keep the two worded alike.
 - **Verification floor**, including the repo's commit-free gate runner
   (review-checklists.md) — without it, gate failures surface at your
   commit step and cost a round-trip each.
