@@ -1,0 +1,38 @@
+{
+  "set": "effort-signals",
+  "revision": "2026-10-07.1",
+  "calibration": "uncalibrated",
+  "description": "One Noul per escalation signal in phase-design.md Reasoning effort, over a brief's scope and frame. State: {\"frame\": <brief scope and frame text>}. The second-fix-round signal is a count and is checked in code, not here.",
+  "questions": {
+    "security_or_authorization": {
+      "type": "noul",
+      "instructions": "Does this task change or depend on security or authorization semantics — authentication, permission checks, access control, secrets handling?",
+      "escalate": {"at_or_above": 0.5}
+    },
+    "concurrency_or_ordering": {
+      "type": "noul",
+      "instructions": "Does this task touch concurrency, ordering, or cache-coherence invariants — races, locking, retries, event ordering, cache invalidation?",
+      "escalate": {"at_or_above": 0.5}
+    },
+    "data_integrity_or_irreversible": {
+      "type": "noul",
+      "instructions": "Does this task touch data integrity or an irreversible transition — deletion, migration or its rollback, idempotent replay, deploy-ordering compatibility — even if the edit itself is mechanically uniform?",
+      "escalate": {"at_or_above": 0.5}
+    },
+    "parallel_contract": {
+      "type": "noul",
+      "instructions": "Does this task define or implement a contract that another parallel implementer must meet?",
+      "escalate": {"at_or_above": 0.5}
+    },
+    "named_ambiguity": {
+      "type": "noul",
+      "instructions": "Does the frame leave a named ambiguity where the implementer must propose the shape before implementing?",
+      "escalate": {"at_or_above": 0.5}
+    },
+    "nonuniform_migration": {
+      "type": "noul",
+      "instructions": "Is this a migration or sweep whose call sites are not mechanically identical?",
+      "escalate": {"at_or_above": 0.5}
+    }
+  }
+}

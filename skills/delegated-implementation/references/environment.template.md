@@ -28,9 +28,8 @@ and infra details here and out of SKILL.md.
     -- [model args] [escalated effort args]
   ```
 
-- **Subscription check** (SKILL.md precondition): `[login status command]`
-  must report a subscription login, not an API key — flat-rate implementer
-  tokens are part of the cost model.
+- **Login check** (SKILL.md precondition): `[login status command]` and
+  the billing path it should report (subscription or API key).
 - **Worktree rotation helper:** `bin/rotate-implementer.sh <name> <pane>
   <worktree> <kind> -- [model args]` — quit → cd pane → start in one step,
   per (name, pane). The kind is required (no vendor default); pass the pin
@@ -75,15 +74,20 @@ SKILL.md §Advisors. One long-lived read-only pane per run.
 
 ## Classifier — [service, or delete this section]
 
-SKILL.md §Advisors.
+Policy, checkpoints, thresholds, and experimentation live in
+`references/classifier.md`; record only local facts here.
 
-- **Helper:** `[script path] <request.json>` — [request shape, output
-  shape (one line per question), model pin, timeout.]
+- **Service and model pin:** [service, `[model id]`, pinned so recorded
+  outcomes stay comparable; re-check thresholds after a re-pin.]
+- **Transport** for `bin/classify-escalate.sh … -- TRANSPORT`: `[command]`
+  — receives the request file's path, prints the raw response JSON, exits
+  non-zero on any failure (HTTP error, timeout, missing credential).
 - **Credential:** [where the key comes from; never in argv, never logged.]
-- **Thresholds:** [per question kind: the threshold that triggers
-  escalation, dated, and how calibration is recorded.]
-- **Data rules:** [what may be sent (pane text, callbacks, diff hunks,
-  frames) and what never is.]
+- **Local question sets:** [paths of any repo-specific sets, e.g. a CI
+  known-flake Choice; the generic sets ship in `references/classifier/`.]
+- **Data rules:** [what may be sent (callbacks, frame text, paths, diff
+  hunks, CI log excerpts) and what never is (secrets, credentials,
+  customer data).]
 
 ## External review bot — [bot name, or delete this section]
 
@@ -93,23 +97,20 @@ SKILL.md §Advisors.
 - **Behavior notes:** [incremental review, effort routing, and anything else
   configured account-side.]
 
-## Cost table — marginal cost per role, and the routing rule
+## Billing and the routing rule
 
-The orchestrator deliberately runs a frontier model (judge/overseer
-quality is where model strength pays; an oracle covers any judgment
-another model does better); its context window and its usage
-allowance are the scarcest resources in the mesh. State how each role is
-actually billed here — a subscription window is a quota, not a price, and
-API list prices are reference only unless a role really runs on the API.
-Date every number; ratios move:
+State how each role is actually billed here — a subscription window is a
+quota, not a price, and API list prices are reference only unless a role
+really runs on the API. Date every number and record only what you have
+checked; leave a cell "not checked" rather than estimate it:
 
-| Runner | Model | Billing here | API list (in/out) | Relative |
-|---|---|---|---|---|
-| Orchestrator | [model] | [subscription/API] | [$ / $ per MTok] | 1× |
-| Implementer | [model] | [flat-rate?] | [$ / $ per MTok] | [≈0 if flat] |
-| Fast reviewer | [model] | [flat-rate?] | [$ / $ per MTok] | [≈0 if flat] |
-| Oracle | [model] | [whose allowance?] | [$ / $ per MTok] | [per consult] |
-| Classifier | [model] | [API, per token?] | [$ per MTok] | [per call] |
+| Runner | Model | Billing here | API list (in/out), date |
+|---|---|---|---|
+| Orchestrator | [model] | [subscription/API] | [$ / $ per MTok] |
+| Implementer | [model] | [subscription/API] | [$ / $ per MTok] |
+| Fast reviewer | [model] | [subscription/API] | [$ / $ per MTok] |
+| Oracle | [model] | [whose allowance?] | [$ / $ per MTok] |
+| Classifier | [model] | [API, per token?] | [$ per MTok] |
 
 Routing rule: work that needs neither the orchestrator's accumulated
 context nor its authority (git, gate verdicts, adjudication) never runs on
