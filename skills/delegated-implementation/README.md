@@ -151,6 +151,12 @@ Two further readings worth keeping:
 
 ## Roadmap / to evaluate
 
+- **Decompose into a scaffolded skill set — proposal 2026-10-25.**
+  [docs/decomposition-proposal.md](docs/decomposition-proposal.md): vendor
+  guidance reviewed, benefits stated with their evidence grade, a per-node
+  transport rule (direct / native subagent / Herdr delegate), a six-skill
+  layout, and a migration order. Nothing in it is loaded at runtime.
+
 - **Judge-panel the frame, not just the implementation.** The protocol names the
   judge-panel pattern but applies it nowhere near the brief, which is where
   the variance actually is. For design-heavy tickets: generate two
