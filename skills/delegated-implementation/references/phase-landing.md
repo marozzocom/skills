@@ -47,7 +47,7 @@ it.
 - **`land` — autonomous merge.** Needs a standing grant for the repo plus
   the accepted contract. For acceptance criteria that gates and evidence
   verify without human judgment: open the PR, drive checks green,
-  external bot only per phase-review.md's criteria, merge, tear down,
+  external bot only per independent-review's criteria, merge, tear down,
   report done.
 - **`stage` — one click left.** For results the human plausibly wants to
   see first — visual or UX judgment, walkthroughs, prose they will read,
@@ -122,7 +122,7 @@ marker; ad hoc: `gh pr list --repo <owner/repo> --state all --limit 100
 A milestone does not land while its plan or ADR describes something the
 diff does not do. Sweep the ledger's amendments against the repo's plan
 document and confirm each accepted drift was written back
-(phase-review.md §Plan drift). If the repo ships a spec-review skill, its
+(independent-review §Plan drift). If the repo ships a spec-review skill, its
 verdict on the final diff should be `VERIFIED` against the amended plan.
 
 ## Complete deliverables — close the loops, don't report them

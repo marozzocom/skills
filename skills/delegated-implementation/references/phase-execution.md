@@ -71,7 +71,7 @@ conflict-free. Concurrent *writers* are the expensive width, paid
 in merge conflicts and in confusion about which tree a finding refers to.
 
 The invariant that does not scale away: every diff is still triaged in
-your session, risk-bearing code read line-by-line (phase-review.md).
+your session, risk-bearing code read line-by-line (independent-review).
 Reviews serialize through you — pipeline them, queue fix rounds per
 worktree; 2–3 concurrent implementers in practice. If review throughput
 lags, stagger starts or shrink the pool. Never thin the review.

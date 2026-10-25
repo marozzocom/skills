@@ -21,7 +21,7 @@ scrutiny where your own pass might have missed something.
 - **Never a permission.** "Not a scope change" authorizes nothing; it
   only means this check found no reason for more scrutiny.
 - **Never a verdict.** Gates, security semantics, merges, and acceptance
-  keep their owners (phase-review.md §Verification ownership).
+  keep their owners (independent-review §Verification ownership).
 - **Never for exact facts.** Exit codes, `not run` lines, whether a log
   file exists, whether a path is in a set, counts, fix-round numbers —
   check those with code or a direct read. Ask a classifier only what code

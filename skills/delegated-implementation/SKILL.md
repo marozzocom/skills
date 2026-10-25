@@ -27,10 +27,12 @@ a CLI is on a different billing path than environment.md records, tell
 the user before spending on it.
 
 The protocol is generic; the references are local. `environment.md` pins
-the stack (CLIs, models, commands, quirks, repos, billing);
-`review-checklists.md` maps repos to checklists and landing policy;
-`agent-trust-profiles.md` calibrates per-agent trust. Porting means
-rewriting those references, never the protocol files. Setup: SETUP.md.
+the stack (CLIs, models, commands, quirks, repos, billing). The review
+half is the companion **`independent-review`** skill, whose local
+references `review-checklists.md` (per-repo checklists and landing
+policy) and `agent-trust-profiles.md` (per-agent trust) this protocol
+reads too. Porting means rewriting those references, never the protocol
+files. Setup: SETUP.md.
 
 ## Routing — decide the run's shape first
 
@@ -68,9 +70,10 @@ compaction re-read only the phase you are in.
   pins, briefs. Before the contract or any brief.
 - `references/phase-execution.md` — starting and waiting on agents, the
   fast reviewer, parallel implementers. At first fan-out.
-- `references/phase-review.md` — verification ownership, tiered review,
-  checklists, fix rounds, review threads, previews, external bot. At the
-  first done-report.
+- `references/phase-review.md` — loads the `independent-review` skill
+  (verification ownership, tiered review, checklists, fix rounds, review
+  threads, previews, external bot) and adds the delegated-run specifics.
+  At the first done-report, and before committing a direct change.
 - `references/phase-landing.md` — authorization, landing modes, merge
   policy, complete deliverables, closeout. At contract acceptance and
   again when landing begins.
@@ -252,15 +255,7 @@ gap is a callback, not a read.
 
 Each script's header comment is its full contract.
 
-- `run-gates.sh WORKTREE "NAME:COMMAND" ...` — your acceptance re-run: one
-  verdict line per gate, failure tails only, logs on disk.
 - `agent-status.sh NAME [TAIL-LINES]` — one-line liveness probe.
-- `review-inventory.sh WORKTREE BASE` — every path changed since the task
-  base: committed, staged, unstaged, untracked.
-- `diff-hunks.sh WORKTREE BASE FILE START-END|all` — only the hunks a
-  routing entry names; exits non-zero when nothing matches.
-- `resolve-thread.sh OWNER/REPO PR COMMENT-ID "MESSAGE"` — reply and
-  resolve.
 - `ledger-append.sh LEDGER "ENTRY"` — timestamped append.
 - `run-prefix.sh SLUG` — collision-free agent-name prefix.
 - `rotate-implementer.sh` — move an agent onto a new worktree with its pin.
@@ -280,8 +275,11 @@ the head's deterministic facts directly — exit codes, `not run` lines,
 whether each named log exists — never by reading narrative or asking a
 classifier.
 
-No bare `git diff` on a triaged tree: read only the ranges the triage
-routing file names (phase-review.md §Review). Three or more reviewer
-reports on one tree → a fresh, cheap delegate merges them into one
-deduplicated, source-cited list that keeps every dissent; you adjudicate
-the merged list.
+Review helpers — `run-gates.sh`, `review-inventory.sh`, `diff-hunks.sh`,
+`resolve-thread.sh` — live in the `independent-review` skill at
+`${CLAUDE_SKILL_DIR}/../independent-review/bin/`. No bare `git diff` on a
+triaged tree: read only the ranges the triage routing file names
+(independent-review §Tiered review). Three or more reviewer reports on
+one tree → a fresh, cheap delegate merges them into one deduplicated,
+source-cited list that keeps every dissent; you adjudicate the merged
+list.
