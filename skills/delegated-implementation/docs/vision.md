@@ -98,11 +98,38 @@ the protocol reaches for another transport instead of accepting the gap.
    report. An experiment that stops paying is dropped; one that pays is
    promoted into the default table.
 
-8. **Humans handle exceptions, not routine.** After one explicit
-   acceptance of the contract, the overseer runs autonomously. Back to
-   the human go scope changes, safety, tripped stop criteria, missing
-   authority, and product semantics the contract does not settle. Silence
-   is not a blocker. Asking twice for the same permission is a defect.
+8. **Verifiable before it starts.** A node is briefed only when the
+   contract already names what will prove it done: the invariants and
+   the exact checks whose green output settles them, with their owners
+   (phase-review.md §Verification ownership). If that cannot be written,
+   the work is not ready, and the next step is a scout or a design pass,
+   not an implementer. The one exception is declared, never implied: an
+   exploratory node aims at a "v0" and says so in the contract, with what
+   it is meant to teach and how it will be judged (a demo, a measurement,
+   a decision it unblocks). Exploratory work still lands only under the
+   review half; what it skips is formal acceptance, not scrutiny.
+
+9. **Human judgment is designed in, not fallen back on.** Where the
+   operator would want a say is decided at the contract, from what the
+   work touches (product semantics, irreversible transitions, scope,
+   spend), and those points are scheduled into the graph as gates with
+   the question already framed and the options already costed. Reaching
+   the human is then a planned step the run was built around, never an
+   escape hatch, and never the place a run stops because it ran out of
+   ideas. After acceptance the overseer runs autonomously between those
+   gates; silence is not a blocker; asking twice for the same permission
+   is a defect. A question that was not planned is itself a finding:
+   record why the contract missed it.
+
+10. **Decide where the better option is still available.** Every
+    decision is taken at the point of most information and most options,
+    and never from a corner. That means: recon before the frame, the
+    frame before the brief, the brief after the previous gate; cheap,
+    reversible actions ahead of expensive, irreversible ones; the
+    alternative kept open until the evidence that closes it is in the
+    ledger. A default is a considered starting point, not the residue of
+    exhaustion. If the only options left are "stop" and "force it", the
+    error happened earlier, and the run report names where.
 
 ## How disagreements are settled
 
@@ -116,6 +143,12 @@ the protocol reaches for another transport instead of accepting the gap.
   amendment; both see the data.
 
 ## What this protects against
+
+- A run that begins before anyone can say what would prove it done.
+- The human consulted as a last resort instead of at the points the
+  contract foresaw, or a run ending because reaching the human was the
+  only move left.
+- Decisions made from a corner, where the better option is already gone.
 
 - The model rationalising a transport choice from a self-estimate instead
   of from signals.

@@ -152,9 +152,9 @@ Two further readings worth keeping:
 ## Roadmap / to evaluate
 
 - **Shared vision — charter 2026-10-25.** [docs/vision.md](docs/vision.md):
-  what the human and the model each get from the protocol, eight
-  principles (the overseer's context first; outcomes decide; independence
-  where it pays), how disagreements settle, and mutual commitments. The
+  what the human and the model each get from the protocol, ten
+  principles (the overseer's context first; outcomes decide; verifiable
+  before it starts; human judgment designed in; decide with options open), how disagreements settle, and mutual commitments. The
   proposal below implements it.
 - **Decompose into a scaffolded skill set — proposal 2026-10-25.**
   [docs/decomposition-proposal.md](docs/decomposition-proposal.md): vendor
