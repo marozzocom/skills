@@ -20,7 +20,7 @@ gitignored reference files created from templates.
 | File | Read by | When | Holds |
 |---|---|---|---|
 | [SKILL.md](SKILL.md) | orchestrator | on activation | routing, roles, guard, contract, context, mesh, helper index |
-| [references/phase-design.md](references/phase-design.md) | orchestrator | before the contract | task fit, task shape, effort pins, briefs |
+| [references/phase-design.md](references/phase-design.md) | orchestrator | before the contract | loads the [`design-gate`](../design-gate/) skill; delegated-run specifics; briefs |
 | [references/phase-execution.md](references/phase-execution.md) | orchestrator | first fan-out | agent lifecycle, fast reviewer, parallel implementers |
 | [references/phase-review.md](references/phase-review.md) | orchestrator | first done-report | loads the [`independent-review`](../independent-review/) skill; delegated-run specifics |
 | [references/phase-landing.md](references/phase-landing.md) | orchestrator | contract and landing | authorization, landing modes, merge policy, closeout |
@@ -38,7 +38,9 @@ The three unlinked references are local by nature and gitignored; their
 `*.template.md` files are tracked. Model pins and environment details
 belong only there. The review helpers (`run-gates`, `review-inventory`,
 `diff-hunks`, `resolve-thread`) moved to `independent-review` with
-migration step 2 of the [decomposition proposal](docs/decomposition-proposal.md).
+migration step 2 of the [decomposition proposal](docs/decomposition-proposal.md);
+task fit, task shape, the contract, and effort moved to `design-gate`
+with step 3.
 
 ## Anti-goals
 
@@ -53,7 +55,8 @@ migration step 2 of the [decomposition proposal](docs/decomposition-proposal.md)
   (the design gate in phase-design.md) — do not script it. Determinism on
   a design task buys consistency at the price of the search.
 
-- **Do not make §Task fit (phase-design.md) a capability self-estimate.**
+- **Do not make the transport gate (design-gate §6) a capability
+  self-estimate.**
   The obvious way to write that gate is "judge up front whether this task
   is big enough" — and
   that is the version to avoid. It asks for a calibrated self-prediction
@@ -96,7 +99,7 @@ one adjudicator, one ledger — quietly becomes a shared scratchpad. Hence
 the brief as the delegate's whole world, the ledger's status matrix as the
 only broadcast, and every gap a callback rather than a read.
 
-## Why §Task fit exists — the measured comparison
+## Why the transport gate (design-gate §6) exists — the measured comparison
 
 One ticket, ~700 lines, single app, well specified, implemented three times:
 twice through this protocol and once by the orchestrator model alone with no
@@ -127,7 +130,7 @@ Two further readings worth keeping:
 - **The review half carried its weight; the delegation half did not.** The
   delegated run's review pass caught a user-visible regression before it
   shipped. The solo run shipped a defect of similar severity, caught only
-  because a benchmark existed to diff against. That asymmetry is why §Task fit
+  because a benchmark existed to diff against. That asymmetry is why design-gate §6
   explicitly refuses to gate the review phase — the cheap configuration
   to try next is solo implementation plus the centralised review pass.
 - **Recon target, not delegation, explained most of the artifact spread.** Both
@@ -141,8 +144,7 @@ Two further readings worth keeping:
   authoring the brief, never read the library, and hand-rolled substitutes for
   primitives that already existed. The implementer then faithfully built the
   brief. Nothing in the pipeline created a reason for anyone to read the
-  dependency — hence the dependency-scout bullet in phase-design.md §Task
-  shape. Note this cuts *for* the protocol: scouts are read-only and run in
+  dependency — hence the dependency-scout rule in design-gate §1. Note this cuts *for* the protocol: scouts are read-only and run in
   parallel on delegates, so the delegated path can afford this check
   without spending the orchestrator's own context.
 - **This measured the overhead floor, not the protocol.** The task was one
@@ -185,7 +187,7 @@ Two further readings worth keeping:
   *is* built: a UI *verifier* pane captures evidence (the model strongest
   at computer use), the orchestrator keeps the verdict.
 - **Graph/ledger/milestone machinery is design, not yet battle-tested.**
-  phase-design.md §Task shape, the ledger, and
+  design-gate §4, the ledger, and
   quiesce→teardown→compact→re-fan-out were
   reasoned out in a 2026-08 design pass, unlike the CLI quirk material,
   which was learned from real failures. Treat the first substantial
@@ -200,8 +202,9 @@ Two further readings worth keeping:
   read-only, low-effort scouts inside the implementer's own worktree,
   drawing on the implementer's allowance rather than the orchestrator's.
   Deferred for enforceability — revisit if the leaf rule measurably slows implementers.
-- **Reasoning-effort routing — built 2026-09, unmeasured.** phase-design.md
-  §Reasoning effort pins the environment's default effort per brief and
+- **Reasoning-effort routing — built 2026-09, unmeasured.** design-gate §7
+  decides and phase-design.md pins the environment's default effort per
+  brief and
   escalates on named signals (security, concurrency, seams, named
   ambiguity, non-mechanical migrations, second fix round). The signal list
   is reasoned, not measured: record in the run report which escalations

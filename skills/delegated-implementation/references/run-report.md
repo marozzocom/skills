@@ -23,7 +23,7 @@ without the teardown evidence, and the run is not closed without the report.
   is not reliably observable from the CLIs — say "not measured", never
   estimate it into a number.
 - **Per-node outcomes** — one row per graph node, the table the
-  transport rule (phase-design.md §Task fit) is revised from. Columns:
+  transport rule (design-gate §6) is revised from. Columns:
   node; transport (`direct`, `native` subagent, or `delegate` pane) and
   the deciding signal from the ledger line; implementer model family and
   effort pin, or `self`; reviewer model families; fix rounds; review

@@ -12,21 +12,23 @@ The single source for installing and adapting this skill. Orientation:
   `bash` — the scripts target the system bash, which is 3.2 on macOS.
 - At least one implementer CLI and one fast-reviewer CLI that Herdr can
   host. An oracle and a classifier are optional.
-- The companion `independent-review` skill, installed in the same skills
-  directory (this protocol loads it at review time and calls its helpers
-  by `${CLAUDE_SKILL_DIR}/../independent-review/bin/`). Its own
-  [README](../independent-review/README.md) covers its two local
-  references.
+- The companion `design-gate` and `independent-review` skills, installed
+  in the same skills directory: this protocol loads `design-gate` before
+  the contract or any brief, and `independent-review` at review time
+  (calling its helpers by `${CLAUDE_SKILL_DIR}/../independent-review/bin/`).
+  Their READMEs: [design-gate](../design-gate/README.md),
+  [independent-review](../independent-review/README.md).
 
 ## Install
 
-Symlink (or copy) this skill and `independent-review` into your
-harness's skills directory, then create the local references from their
-templates:
+Symlink (or copy) this skill, `design-gate`, and `independent-review`
+into your harness's skills directory, then create the local references
+from their templates:
 
 ```bash
 git clone https://github.com/marozzocom/skills.git
 ln -s "$(pwd)/skills/skills/delegated-implementation" ~/.claude/skills/
+ln -s "$(pwd)/skills/skills/design-gate" ~/.claude/skills/
 ln -s "$(pwd)/skills/skills/independent-review" ~/.claude/skills/
 cp skills/skills/delegated-implementation/references/environment.template.md \
    skills/skills/delegated-implementation/references/environment.md
@@ -91,7 +93,7 @@ lists the fields):
 
 The protocol files — SKILL.md, the phase references, the brief and
 run-report templates, classifier.md, the question sets, and `bin/` — are
-generic, as is the `independent-review` skill. Porting to another
+generic, as are the `design-gate` and `independent-review` skills. Porting to another
 machine, org, or agent stack means rewriting the three local references
 (and providing a transport, if you use a classifier), never the protocol
 files. The protocol is

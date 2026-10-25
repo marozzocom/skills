@@ -1,134 +1,50 @@
-# Phase: design — task fit, task shape, briefs
+# Phase: design — load the design-gate skill, then write briefs
 
-Read with SKILL.md before the contract or any brief.
+Read with SKILL.md before the contract or any brief. The design half of
+this protocol lives in the **`design-gate`** skill, installed alongside
+this one: invoke it (the Skill tool, or read
+`${CLAUDE_SKILL_DIR}/../design-gate/SKILL.md`) and run it in full —
+recon, the cited frame, the independent critique, the task shape and stop
+criteria, the contract, the per-node transport choice, and the per-node
+reasoning effort. SKILL.md §Routing runs first: a worker stops there, an
+explicit "do it yourself" or "delegate this" is recorded as the transport
+signal, and a review-only request never reaches the gate.
 
-## Task fit — decide after recon, from what the recon showed
+What this protocol adds for a delegated run:
 
-§Task shape bounds the top; this bounds the bottom: delegation's fixed
-overhead (brief, report round-trips, worktree, pane) can dominate a
-small, well-specified change. SKILL.md §Routing runs first — a worker
-stops there, an explicit "do it yourself" or "delegate this" decides the
-question, and a review-only request never reaches this gate.
-
-**Do not size up front, and do not size by label.** "Quick fix",
-"hotfix", and "one file" describe the request, not the work; a
-pre-recon guess is a self-prediction at the moment you know least. Decide
-at the design gate's recon pass, from observed signals.
-
-Delegate if **any** holds: two-plus disjoint file sets could run in
-parallel; more than one landable milestone; a migration, sweep, or audit
-across many call sites; the surface to read exceeds what you want
-resident in your own context; a plan or ADR already breaks it into
-phases.
-
-Implement directly if **all** hold: one app or package, single-digit
-file count, nothing shardable, no migration character, and recon already
-put the code in front of you. A deliverable that is prose whose
-content is your own judgment — a policy, a design note, a review — is
-also direct: writing it is the judgment. Otherwise — or when the signals conflict —
-delegate: a wasted small delegation costs latency; an undelegated large
-task risks a blown context and an abandoned run. Urgency is not a
-signal either way; an urgent fix gets the same recon, just a shorter one.
-
-This bound gates *implementation* only, never read-only fan-out: an
-adjudication-shaped task (compare N implementations, audit N call sites)
-still fans out the read. Nor does the verdict switch off the design gate
-or the review half (phase-review.md) — typing the code yourself changes
-who implements the frame, not whether the frame is right. The specific
-failure the gate exists for: one agent pre-decides a fork, gets no
-critique, implements its own answer faithfully, and every gate goes
-green. Implementing directly also keeps the repo's isolation rules: its
-worktree and branch convention, never the user's checkout unless the
-repo says so (SKILL.md §Routing).
-
-Record the verdict as one ledger line naming the transport — `direct`,
-`native` (a subagent of your own harness, worktree-isolated for writes),
-or `delegate` (a pane) — and the deciding signal; the run report's
-per-node table (run-report.md) is rendered from these lines, so write one
-for every node, including direct ones. If it takes more than a line to
-settle, delegate.
-
-## Task shape — graphs, milestones, gates
-
-Work runs as a layered graph: fan out a layer, collect at a **gate**,
-judge, then brief the next layer — or stop.
-
-- **Up-front (the contract the human accepts once):** goals, a
-  feasibility scout pass under real uncertainty, the layer skeleton
-  ("scouts → design gate → 2 implementers → review gate → integration"),
-  explicit stop criteria ("if the migration touches >N call sites, stop
-  and report").
-- **The design gate is the default first gate**, sized to the open
-  questions: a direct change with no open fork needs only the frame line
-  in the ledger, no reviewer fan-out. Layer 1's brief carries
-  the design; nothing downstream corrects a wrong frame. Fan the fast
-  reviewer over the open questions, one agent per question, then state the
-  frame in the ledger: what the task asks, each pre-decided decision
-  **with its supporting `file:line`**, the forks and why the loser lost,
-  the scope fence. A decision without a citation is a question — send it
-  to a scout, the reviewer, or the human. Then hand the frame itself to
-  the fast reviewer — *"which of these decisions is wrong or
-  under-considered, and what did I not consider?"* — before any
-  implementation starts. If the repo ships a plan-review skill, run it on
-  the frame here too.
-- **Point a scout at the dependency, not just your own code:** someone
-  reads the source or typings of what you build on — what it guarantees,
-  its normalisation and removal semantics, what hooks it already exposes,
-  whether it solves this outright. A frame built on an assumed library
-  contract passes every gate; the hand-rolled substitute looks correct in
-  review because the reviewer shares the assumption.
-- **Write briefs just-in-time**, after judging the previous layer at its
-  gate — briefs written earlier are fiction. Gates are where re-planning
-  and killing happen; a gate passed mechanically isn't a gate.
-- **Results travel by file:** briefs go by path, reports to a named
-  `$REPORT_FILE`, the next brief says "read `<report>` first". You judge
-  reports; you don't ferry them through your context.
-- **Sizing:** each node's diff reviewable in one sitting; each gate lands
-  a reviewable artifact (merged PR or integration-branch commit), not a
-  pile of dirty worktrees. Width stays 2–3 implementers (reviews
-  serialize through you — phase-execution.md §Parallel implementers);
-  graphs extend depth, not width. What can't be a sequence of landable
-  gates is a multi-session project — plan it as one.
-
-## Reasoning effort — set per brief, escalated on evidence
-
-The implementer's reasoning effort is pinned at session start (the ladder
-and the exact args per CLI in environment.md), so it is decided where the
-brief is written, per node. Default is the environment's **default pin**.
-Raise to the **escalation pin** when the brief carries any of:
-
-- security or authorization semantics;
-- concurrency, ordering, or cache-coherence invariants;
-- data integrity and irreversible transitions — deletion, migration
-  rollback, idempotent replay, deploy-ordering compatibility — even when
-  the edit itself is mechanically uniform;
-- a contract two parallel implementers must meet;
-- a named ambiguity where the implementer must propose the shape first;
-- a migration whose call sites are not mechanically identical;
-- a second fix round on the same node after a red gate, once you have
-  ruled out the causes more thinking cannot fix — a wrong frame, stale
-  evidence, an environment failure (missing secrets, an inert vendor
-  group, an unavailable service). Diagnose first; escalate for unresolved
-  reasoning only.
-
-When a classifier is configured, its effort-signal set (classifier.md)
-is a cross-check on this list, never a substitute: a signal it raises that
-you had not flagged sends you back to the frame; a signal it misses that
-you flagged still escalates.
-
-Keep the default for well-specified slices whose frame cites `file:line`,
-mechanical sweeps, test-first briefs, docs, and fix rounds that name the
-exact error. Never size by line count or repository size. The default is
-a measured policy, not a documented equivalence with the previous pin:
-record effort, CLI version, task type, fix rounds, and callback causes per
-node so the run report can compare like with like. Record the pin in the
-status matrix row and the ledger's brief entry. A mid-task escalation is a
-rotation onto the same worktree
-(`bin/rotate-implementer.sh` with the higher pin — a rotation without the
-pin silently drops to the config default) and the re-brief says "read
-your previous report first". Never a level that enables the CLI's own
-delegation or multi-agent mode — it breaks the leaf rule; environment.md
-names any such level so it is never chosen by accident.
+- **The `delegate` transport is a pane.** Its fixed overhead — brief file,
+  report round-trips, worktree, pane start, approval dialogs — is what
+  design-gate §6 weighs against a one-node task. Its advantages here are
+  the ones only an external process gives: a different vendor's model as
+  implementer or reviewer, a billing path cheaper than yours, a run that
+  spans sessions on the ledger, and a pane the human can read and steer.
+  A `native` node is your own harness's subagent; a `delegate` node is
+  briefed per §Briefs below.
+- **Critique and scouts fan out on the fast reviewer** (phase-execution.md
+  §Fast reviewer), one pane per open question, read-only. The dependency
+  scout is a delegate too: it runs in parallel and spends none of your
+  context.
+- **Effort is a start-time pin.** The ladder and the exact args per CLI
+  are in environment.md; design-gate §7 decides the level, this protocol
+  pins it when the agent starts (phase-execution.md §Starting an
+  implementer) and records it in the status matrix row and the ledger's
+  brief entry. A mid-task escalation is a rotation onto the same worktree
+  (`bin/rotate-implementer.sh` with the higher pin — a rotation without
+  the pin silently drops to the config default) and the re-brief says
+  "read your previous report first". Never a level that enables the CLI's
+  own delegation or multi-agent mode — it breaks the leaf rule;
+  environment.md names any such level so it is never chosen by accident.
+  A configured classifier's effort-signal set (classifier.md) is a
+  cross-check on design-gate §7's list, never a substitute.
+- **Record per node, every node:** one ledger line with transport,
+  deciding signal, and effort pin (`direct` nodes included — the run
+  report's per-node table is rendered from these lines, and a missing row
+  is a missing data point). Record effort, CLI version, task type, fix
+  rounds, and callback causes per node so the report compares like with
+  like.
+- **Width.** Two or three concurrent implementer panes in practice;
+  reviews serialize through you (phase-execution.md §Parallel
+  implementers). Graphs extend depth, not width.
 
 ## Briefs
 

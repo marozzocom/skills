@@ -52,9 +52,10 @@ files. Setup: SETUP.md.
    contract, no landing mode, no worktree you write to; a short notes file
    stands in for the ledger. If the findings call for changes, that is a
    new implementation decision — return to step 2.
-4. **Implementation:** recon first, then phase-design.md §Task fit decides
-   delegate versus direct from what the recon observed — never from the
-   request's label ("quick fix", "hotfix", "one file").
+4. **Implementation:** recon first, then the `design-gate` skill (loaded
+   via phase-design.md) decides the transport per node — direct, native
+   subagent, or delegate pane — from what the recon observed, never from
+   the request's label ("quick fix", "hotfix", "one file").
 5. **Implementing directly** changes who types, nothing else: the repo's
    isolation rules still apply (its worktree and branch convention — not
    the user's checkout unless the repo says so), the design gate and the
@@ -66,8 +67,10 @@ files. Setup: SETUP.md.
 Read a phase file on entering its phase, not up front; after a milestone
 compaction re-read only the phase you are in.
 
-- `references/phase-design.md` — task fit, task shape and gates, effort
-  pins, briefs. Before the contract or any brief.
+- `references/phase-design.md` — loads the `design-gate` skill (recon,
+  frame, critique, task shape, contract, transport and effort per node)
+  and adds the delegated-run specifics and brief authoring. Before the
+  contract or any brief.
 - `references/phase-execution.md` — starting and waiting on agents, the
   fast reviewer, parallel implementers. At first fan-out.
 - `references/phase-review.md` — loads the `independent-review` skill
@@ -99,7 +102,8 @@ compaction re-read only the phase you are in.
   cwds are fixed: a new worktree means restarting the agent
   (`bin/rotate-implementer.sh`).
 - The implementer's reasoning effort is pinned per brief at session start
-  (phase-design.md §Reasoning effort); record the pin in the status matrix.
+  (design-gate §7 decides; phase-design.md pins); record the pin in the
+  status matrix.
 
 ## Advisors — oracle and classifier (optional)
 
@@ -153,9 +157,11 @@ contract already specifies is routine work, not a product decision.
 Everything else: decide and record in the ledger.
 
 Before any run that delegates implementation or lands autonomously
-(`land`/`flag`), get one explicit acceptance of the contract: goals,
-graph skeleton (phase-design.md §Task shape), stop criteria, and landing
-mode (phase-landing.md). A direct change landing as `stage` or `local`
+(`land`/`flag`), get one explicit acceptance of the contract as
+design-gate §5 defines it: goals as invariants, graph skeleton and stop
+criteria, what proves each node done (or its declared exploratory
+status), the planned human gates, and the landing mode
+(phase-landing.md). A direct change landing as `stage` or `local`
 needs no separate acceptance — the request is its contract. After acceptance, silence from the human is not a
 blocker. Ask for a permission once: when the human has granted it for
 this run, record their words in the ledger and act on them rather than

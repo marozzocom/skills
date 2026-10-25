@@ -43,7 +43,7 @@ works. Each uses a versioned question set under
 | Triage cross-check | hunks triage labelled mechanical or routine — all of them, or a sample chosen before looking on a large diff | `triage-risk.json` | the file path and the hunk | deep-read the hunk |
 | CI failure | a red CI job you would otherwise treat as a known flake | local set (environment.md) | the failing job name and the first relevant error | investigate the failure instead of re-running it |
 
-The fix-round effort signal (phase-design.md §Reasoning effort) is a
+The fix-round effort signal (design-gate §7) is a
 count, not a question — it has no classifier entry.
 
 A fail-closed result (exit 3: unavailable, timed out, invalid) escalates
