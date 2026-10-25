@@ -22,21 +22,23 @@ gitignored reference files created from templates.
 | [SKILL.md](SKILL.md) | orchestrator | on activation | routing, roles, guard, contract, context, mesh, helper index |
 | [references/phase-design.md](references/phase-design.md) | orchestrator | before the contract | task fit, task shape, effort pins, briefs |
 | [references/phase-execution.md](references/phase-execution.md) | orchestrator | first fan-out | agent lifecycle, fast reviewer, parallel implementers |
-| [references/phase-review.md](references/phase-review.md) | orchestrator | first done-report | verification ownership, tiered review, checklists, threads |
+| [references/phase-review.md](references/phase-review.md) | orchestrator | first done-report | loads the [`independent-review`](../independent-review/) skill; delegated-run specifics |
 | [references/phase-landing.md](references/phase-landing.md) | orchestrator | contract and landing | authorization, landing modes, merge policy, closeout |
 | [references/classifier.md](references/classifier.md) | orchestrator | when a classifier is pinned | the one classifier policy: checkpoints, helper, recording, experiments |
 | [references/classifier/](references/classifier/) | `bin/classify-escalate.sh` | each checkpoint call | versioned question sets |
 | [references/brief-template.md](references/brief-template.md) | orchestrator | writing a brief | implementer and oracle brief skeletons |
 | [references/run-report.md](references/run-report.md) | orchestrator | closeout | report sections |
 | `references/environment.md` | orchestrator | as phases point to it | local stack: CLIs, model pins, commands, quirks, billing, repos |
-| `references/review-checklists.md` | orchestrator | review and landing | per-repo checklists, grants, safe-set tables |
-| `references/agent-trust-profiles.md` | orchestrator | review | per-agent verified behavior |
+| `../independent-review/references/review-checklists.md` | orchestrator | review and landing | per-repo checklists, grants, safe-set tables (local to that skill) |
+| `../independent-review/references/agent-trust-profiles.md` | orchestrator | review | per-agent verified behavior (local to that skill) |
 | `bin/*.sh` | orchestrator | as SKILL.md §Helpers lists | deterministic helpers; each header comment is its contract |
 | `tests/` | maintainers | before every change | offline fixture and mock tests, skill validation |
 
 The three unlinked references are local by nature and gitignored; their
 `*.template.md` files are tracked. Model pins and environment details
-belong only there.
+belong only there. The review helpers (`run-gates`, `review-inventory`,
+`diff-hunks`, `resolve-thread`) moved to `independent-review` with
+migration step 2 of the [decomposition proposal](docs/decomposition-proposal.md).
 
 ## Anti-goals
 

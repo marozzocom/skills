@@ -3,13 +3,13 @@
 Copy this file to `review-checklists.md` (gitignored) and add an entry the
 first time you delegate in a new repo. Machine-local map from repo → the
 review checklists the orchestrator runs after an implementer's done-report
-(phase-review.md §Review checklists). The skill body stays repo-agnostic;
+(independent-review §Review checklists). The skill body stays repo-agnostic;
 everything repo-specific about reviewing lives here.
 
 Each entry answers four questions: where the checklists live, how changed
 files map to them, which domains escalate past the fast reviewer, and the
 verification matrix — check → runner → verdict owner → evidence type
-(phase-review.md §Verification ownership).
+(independent-review §Verification ownership).
 
 ## [org/repo] (`[local path]`)
 

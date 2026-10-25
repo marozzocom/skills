@@ -12,28 +12,37 @@ The single source for installing and adapting this skill. Orientation:
   `bash` — the scripts target the system bash, which is 3.2 on macOS.
 - At least one implementer CLI and one fast-reviewer CLI that Herdr can
   host. An oracle and a classifier are optional.
+- The companion `independent-review` skill, installed in the same skills
+  directory (this protocol loads it at review time and calls its helpers
+  by `${CLAUDE_SKILL_DIR}/../independent-review/bin/`). Its own
+  [README](../independent-review/README.md) covers its two local
+  references.
 
 ## Install
 
-Symlink (or copy) the skill directory into your harness's skills
-directory, then create the three local references from their templates:
+Symlink (or copy) this skill and `independent-review` into your
+harness's skills directory, then create the local references from their
+templates:
 
 ```bash
 git clone https://github.com/marozzocom/skills.git
 ln -s "$(pwd)/skills/skills/delegated-implementation" ~/.claude/skills/
-cd skills/skills/delegated-implementation/references
-cp environment.template.md environment.md
+ln -s "$(pwd)/skills/skills/independent-review" ~/.claude/skills/
+cp skills/skills/delegated-implementation/references/environment.template.md \
+   skills/skills/delegated-implementation/references/environment.md
+cd skills/skills/independent-review/references
 cp review-checklists.template.md review-checklists.md
 cp agent-trust-profiles.template.md agent-trust-profiles.md
 ```
 
 Fill them in: `environment.md` pins the stack (CLIs, models, start
 commands, quirks, billing, routing-guard enforcement, repos);
-`review-checklists.md` holds per-repo checklists, review conventions,
-autonomous-landing grants, and safe-set tables; `agent-trust-profiles.md`
-records verified per-agent behavior. All three are gitignored, as is a
-`scripts/` directory where an installer may overlay machine-local helpers
-(a classifier transport, for example).
+`review-checklists.md` (in `independent-review`) holds per-repo
+checklists, review conventions, autonomous-landing grants, and safe-set
+tables; `agent-trust-profiles.md` (same place) records verified per-agent
+behavior. All three are gitignored, as is a `scripts/` directory where an
+installer may overlay machine-local helpers (a classifier transport, for
+example).
 
 ## Optional: a classifier
 
@@ -62,7 +71,8 @@ model:
 ## Per-repo adaptation (once per repository)
 
 Before the first brief in a repo, record an entry in
-`references/review-checklists.md` (the template lists the fields):
+`independent-review`'s `references/review-checklists.md` (its template
+lists the fields):
 
 1. **Rules file** the implementer reads first — `AGENTS.md`, `CLAUDE.md`,
    `CONTRIBUTING`.
@@ -81,8 +91,9 @@ Before the first brief in a repo, record an entry in
 
 The protocol files — SKILL.md, the phase references, the brief and
 run-report templates, classifier.md, the question sets, and `bin/` — are
-generic. Porting to another machine, org, or agent stack means rewriting
-the three local references (and providing a transport, if you use a
-classifier), never the protocol files. The protocol is
+generic, as is the `independent-review` skill. Porting to another
+machine, org, or agent stack means rewriting the three local references
+(and providing a transport, if you use a classifier), never the protocol
+files. The protocol is
 multiplexer-agnostic in principle, but its mechanics are written for
 Herdr.

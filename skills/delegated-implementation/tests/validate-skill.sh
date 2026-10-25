@@ -24,17 +24,21 @@ printf '%s\n' "$fm" | grep -q '^[a-z][a-z_-]*:' || err "frontmatter has no keys"
 for f in SKILL.md references/phase-*.md references/brief-template.md references/run-report.md; do
   while IFS= read -r ref; do
     case $ref in
-      references/environment.md|references/review-checklists.md|references/agent-trust-profiles.md)
+      references/environment.md)
         # Installation-local files are distributed as portable templates.
         [ -e "$ref" ] || [ -e "${ref%.md}.template.md" ] || err "$f references missing $ref and template" ;;
+      references/review-checklists.md|references/agent-trust-profiles.md)
+        # Owned by the companion independent-review skill.
+        [ -e "../independent-review/${ref%.md}.template.md" ] || err "$f references $ref but independent-review lacks its template" ;;
       references/*|bin/*) [ -e "$ref" ] || err "$f references missing $ref" ;;
       *) [ -e "references/$ref" ] || err "$f references missing references/$ref" ;;
     esac
   done < <(grep -o -E '(references/[a-z-]+\.(template\.)?md|bin/[a-z-]+\.sh|phase-[a-z]+\.md|brief-template\.md|run-report\.md)' "$f" | sort -u)
 done
 # local-by-nature references have templates
-for local in environment review-checklists agent-trust-profiles; do
-  [ -e "references/$local.template.md" ] || err "missing references/$local.template.md"
+[ -e references/environment.template.md ] || err "missing references/environment.template.md"
+for local in review-checklists agent-trust-profiles; do
+  [ -e "../independent-review/references/$local.template.md" ] || err "companion skill lacks references/$local.template.md"
 done
 
 # --- scripts ---------------------------------------------------------------
@@ -79,7 +83,8 @@ for f in references/classifier/*.json; do
   portable+=("$f")
 done
 pattern='claude|anthropic|codex|openai|gpt-|cursor|grok|gemini|copilot|sonnet|opus|bugbot|gh-media|macos|darwin'
-hits=$(grep -n -i -E "$pattern" "${portable[@]}" || true)
+# The harness's skill-directory variable is a mechanism, not a vendor name.
+hits=$(grep -n -i -E "$pattern" "${portable[@]}" | grep -v 'CLAUDE_SKILL_DIR' || true)
 [ -z "$hits" ] || err "vendor/harness names in portable files:
 $hits"
 

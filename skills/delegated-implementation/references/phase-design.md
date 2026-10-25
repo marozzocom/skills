@@ -198,7 +198,7 @@ Use `references/brief-template.md`. The load-bearing parts:
   that CLI's hooks. A fix that needed to touch the test has shown only
   that the test now agrees with the code; send it back with the test
   restored. Delegate-written tests still get the mutation check
-  (phase-review.md §Verification ownership) — red-then-green proves the
+  (independent-review §Verification ownership) — red-then-green proves the
   test sees the bug, not that it pins the invariant.
 - **Fix rounds and re-reviews are briefs**, bound by all of the above —
   and nothing reviews them, so they carry the settled decisions *and the
