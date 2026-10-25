@@ -151,6 +151,17 @@ Two further readings worth keeping:
 
 ## Roadmap / to evaluate
 
+- **Shared vision — charter 2026-10-25.** [docs/vision.md](docs/vision.md):
+  what the human and the model each get from the protocol, ten
+  principles (the overseer's context first; outcomes decide; verifiable
+  before it starts; human judgment designed in; decide with options open), how disagreements settle, and mutual commitments. The
+  proposal below implements it.
+- **Decompose into a scaffolded skill set — proposal 2026-10-25.**
+  [docs/decomposition-proposal.md](docs/decomposition-proposal.md): vendor
+  guidance reviewed, benefits stated with their evidence grade, a per-node
+  transport rule (direct / native subagent / Herdr delegate), a six-skill
+  layout, and a migration order. Nothing in it is loaded at runtime.
+
 - **Judge-panel the frame, not just the implementation.** The protocol names the
   judge-panel pattern but applies it nowhere near the brief, which is where
   the variance actually is. For design-heavy tickets: generate two
