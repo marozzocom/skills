@@ -166,4 +166,43 @@ assert_eq conflict-exit 1 "$rc"
 assert_contains conflict-line "FAILED push: remote moved and rebase onto origin/feat/x conflicts" "$out"
 assert_eq conflict-no-rebase-in-progress 1 "$([[ -d $R/.git/rebase-merge || -d $R/.git/rebase-apply ]] && echo 0 || echo 1)"
 
+# --- 12. a non-trunk --base fails before mutation; the override proceeds ---
+R="$SCRATCH/r12"; make_repo "$R"; no_pr; : >"$MOCK_LOG"
+echo s >"$R/s.txt"
+out=$("$L" "$R" --title 'feat: s' --body-file "$body" --stage s.txt --base feat/lower 2>&1); rc=$?
+assert_eq non-trunk-exit 1 "$rc"
+assert_contains non-trunk-line "FAILED base: feat/lower is not the trunk (main)" "$out"
+assert_contains non-trunk-names-stacking "stacking tool" "$out"
+assert_eq non-trunk-no-commit 1 "$(git -C "$R" rev-list --count HEAD)"
+git -C "$R" diff --cached --quiet; assert_eq non-trunk-index-clean 0 "$?"
+assert_eq non-trunk-no-gh-call "" "$(cat "$MOCK_LOG")"
+git -C "$R" push -q origin main:release/1
+out=$("$L" "$R" --title 'feat: s' --body-file "$body" --stage s.txt --base release/1 --allow-non-trunk-base 2>&1); rc=$?
+assert_eq override-exit 0 "$rc"
+assert_contains override-create-base "--base release/1" "$(grep 'gh pr create' "$MOCK_LOG")"
+echo t >"$R/t.txt"
+out=$("$L" "$R" --title 'feat: t' --body-file "$body" --stage t.txt --base main 2>&1); rc=$?
+assert_not_contains explicit-trunk-not-refused "FAILED base:" "$out"
+
+# --- 13. the trunk comes from origin/HEAD (here master), not a hard-coded main
+R="$SCRATCH/r13"; make_repo "$R"; no_pr; : >"$MOCK_LOG"
+git -C "$R" push -q origin main:master
+git -C "$R" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/master
+echo m >"$R/m.txt"
+out=$("$L" "$R" --title 'feat: m' --body-file "$body" --stage m.txt --base main 2>&1); rc=$?
+assert_eq master-trunk-refuses-main 1 "$rc"
+assert_contains master-trunk-line "FAILED base: main is not the trunk (master)" "$out"
+out=$("$L" "$R" --title 'feat: m' --body-file "$body" --stage m.txt 2>&1); rc=$?
+assert_eq master-trunk-default-exit 0 "$rc"
+assert_contains master-trunk-default-base "--base master" "$(grep 'gh pr create' "$MOCK_LOG")"
+
+# --- 14. updating an existing (e.g. natively stacked) PR without --base -----
+R="$SCRATCH/r14"; make_repo "$R"; : >"$MOCK_LOG"
+echo u >"$R/u.txt"; git -C "$R" add u.txt; git -C "$R" commit -q -m 'feat: u'; git -C "$R" push -q -u origin feat/x
+with_pr 'body'
+echo v >"$R/v.txt"
+out=$("$L" "$R" --title 'feat: v' --body-file "$body" --stage v.txt 2>&1); rc=$?
+assert_eq stacked-update-exit 0 "$rc"
+assert_eq stacked-update-line "PR https://x/pr/9 updated" "$(printf '%s\n' "$out" | tail -n1)"
+
 finish
