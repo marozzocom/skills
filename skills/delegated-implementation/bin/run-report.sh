@@ -54,6 +54,18 @@ cat <<'EOF'
      time. Report only what was measured — delegate-side token spend is not
      observable; never invent it. -->
 
+## Per-node outcomes
+<!-- Orchestrator: one row per node, from the ledger's task-fit and gate
+     lines. Measured values only; `not measured` where not; `none known`
+     for post-landing defects. Include single-node and all-direct runs. -->
+
+| node | transport (signal) | implementer (family, effort) | reviewers (families) | fix rounds | findings by family | defects after landing | overseer wall time |
+|---|---|---|---|---|---|---|---|
+
+## Experiment
+<!-- Orchestrator: what was varied, the judging criterion from the
+     contract, the observation, keep / revise / drop — or why none. -->
+
 ## Highlights and next-run changes
 <!-- Orchestrator: what worked, what cost a round-trip, what the next run
      should do differently. Feed durable items back into the skill's

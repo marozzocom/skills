@@ -41,8 +41,12 @@ green. Implementing directly also keeps the repo's isolation rules: its
 worktree and branch convention, never the user's checkout unless the
 repo says so (SKILL.md §Routing).
 
-Record the verdict as one ledger line naming the deciding signal. If it
-takes more than a line to settle, delegate.
+Record the verdict as one ledger line naming the transport — `direct`,
+`native` (a subagent of your own harness, worktree-isolated for writes),
+or `delegate` (a pane) — and the deciding signal; the run report's
+per-node table (run-report.md) is rendered from these lines, so write one
+for every node, including direct ones. If it takes more than a line to
+settle, delegate.
 
 ## Task shape — graphs, milestones, gates
 
