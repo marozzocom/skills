@@ -1,6 +1,6 @@
 # Proposal: decompose delegated-implementation into a scaffolded skill set
 
-Status: proposal, 2026-10-25. Nothing here is loaded when the skill runs.
+Status: proposal, 2026-10-25. Implements the charter in `vision.md`. Nothing here is loaded when the skill runs.
 For humans and skill-editing sessions. Decisions are marked **Decision**;
 open questions **Open**.
 
