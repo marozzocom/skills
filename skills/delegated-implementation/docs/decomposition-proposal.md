@@ -340,17 +340,23 @@ bot, billing, media, and repo sections are not transport facts;
 
 ## 9. Migration order
 
-1. Land this note. Add the per-node transport and outcome rows to
-   run-report.md so the next runs produce the data (small, independent).
-2. Extract `independent-review` first: it is the measured half, already
-   transport-neutral, and useful on the next direct implementation.
-3. Extract `design-gate`; rewrite §Task fit as the transport table.
-4. Split `delegation-briefs` from `herdr-delegates`; the brief template
-   loses its Herdr-specific lines to the transport annex.
-5. Shrink SKILL.md into the spine; move helpers and tests; update
-   SETUP.md and the repo README.
-6. Run the eval in §8 and the cheap experiment in §5 before touching the
-   decision table again.
+1. ~~Land this note; per-node transport and outcome rows in
+   run-report.md~~ — done (#23, #24).
+2. ~~Extract `independent-review`~~ — done (#25).
+3. ~~Extract `design-gate`; transport table~~ — done (#26); the table
+   lives in `design-gate` §6, not the spine.
+4. ~~Split `delegation-briefs` from `herdr-delegates`~~ — done (#27);
+   `environment.md` stays with the spine.
+5. ~~Shrink SKILL.md into the spine~~ — done (this PR): 291 → 173
+   lines, against a 150-line target; advisors moved to `references/advisors.md`; each child owns
+   its helpers and tests. The directory keeps the name
+   `delegated-implementation` rather than becoming
+   `implementation-orchestration`: the operator's standing instructions
+   on installed machines name it, and a rename is the operator's call.
+6. **Open:** the trigger eval (§8) and the cheap experiment (§5) need a
+   live run and the plugin-eval tooling; neither has been done. Until
+   they are, the transport table in `design-gate` §6 is reasoned, not
+   measured, and the next substantive run is the measurement.
 
 Each step is its own PR; the skill keeps working between them because
 every phase file is already read just-in-time.

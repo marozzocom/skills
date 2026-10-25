@@ -5,9 +5,10 @@ The single source for installing and adapting this skill. Orientation:
 
 ## Requirements
 
-- [Herdr](https://herdr.dev/), with the orchestrator running inside a
-  Herdr pane (`HERDR_ENV=1`), plus a companion `herdr` skill covering its
-  CLI mechanics — this skill adds only the orchestration protocol.
+- For the delegate transport only: [Herdr](https://herdr.dev/), with the
+  orchestrator running inside a Herdr pane (`HERDR_ENV=1`), plus a
+  companion `herdr` skill covering its CLI mechanics. Direct and
+  native-subagent nodes need neither.
 - `git`, `jq`, and `gh` (authenticated for the repos you land in);
   `bash` — the scripts target the system bash, which is 3.2 on macOS.
 - At least one implementer CLI and one fast-reviewer CLI that Herdr can

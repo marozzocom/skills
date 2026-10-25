@@ -6,20 +6,28 @@ agent entrypoint is [SKILL.md](SKILL.md).
 
 ## What it is
 
-A protocol for an orchestrator agent that runs CLI coding agents in
-sibling [Herdr](https://herdr.dev/) panes: implementers write code in
-their own worktrees, fast reviewers triage and run checklists, an
-optional oracle advises on intent, an optional classifier raises
-scrutiny. The orchestrator keeps design authority, review, independent
-verification, and every git, PR, and merge operation. The protocol is
-harness-, vendor-, and model-agnostic; everything local lives in
-gitignored reference files created from templates.
+The spine of an implementation run, and the home of the shared charter
+([docs/vision.md](docs/vision.md)). It holds routing, roles, the
+contract, the ledger, the mesh and transcript rules, and the landing and
+report helpers, and loads one companion skill per phase:
+[`design-gate`](../design-gate/) (frame, contract, transport and effort
+per node), [`delegation-briefs`](../delegation-briefs/) (any handoff),
+[`herdr-delegates`](../herdr-delegates/) (the
+[Herdr](https://herdr.dev/) pane transport — the only part that needs
+Herdr), and [`independent-review`](../independent-review/) (review and
+verification). Implementation runs direct, on a native subagent, or on a
+delegated CLI agent, per node, from observed signals; the orchestrator
+keeps design authority, review, independent verification, and every git,
+PR, and merge operation. Everything local lives in gitignored reference
+files created from templates. The directory keeps its historical name
+because standing instructions on installed machines refer to it.
 
 ## Where things live
 
 | File | Read by | When | Holds |
 |---|---|---|---|
-| [SKILL.md](SKILL.md) | orchestrator | on activation | routing, roles, guard, contract, context, mesh, helper index |
+| [SKILL.md](SKILL.md) | orchestrator | on activation | the spine: routing, phase index, roles, guard, contract, ledger, mesh and transcript rules, helper index |
+| [references/advisors.md](references/advisors.md) | orchestrator | when an oracle or classifier is pinned | the two advisor roles and the escalate-only rule |
 | [references/phase-design.md](references/phase-design.md) | orchestrator | before the contract | loads the [`design-gate`](../design-gate/) skill; delegated-run specifics; briefs |
 | [references/phase-execution.md](references/phase-execution.md) | orchestrator | first fan-out | loads the [`herdr-delegates`](../herdr-delegates/) skill; fast reviewer, CI watching |
 | [references/phase-review.md](references/phase-review.md) | orchestrator | first done-report | loads the [`independent-review`](../independent-review/) skill; delegated-run specifics |
