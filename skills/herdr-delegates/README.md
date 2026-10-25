@@ -12,8 +12,8 @@ starts, brief delivery by path, waiting and blocked dialogs, rotation,
 parallel panes and tabs, teardown order — and nothing about *what* to
 delegate (`design-gate`), *how to brief* (`delegation-briefs`), or *how
 to review the result* (`independent-review`). Extracted from
-`delegated-implementation` (migration step 4 of its
-[decomposition proposal](../delegated-implementation/docs/decomposition-proposal.md)).
+`implementation-orchestration` (migration step 4 of its
+[decomposition proposal](../implementation-orchestration/docs/decomposition-proposal.md)).
 
 Everything vendor-specific — which CLIs fill which roles, model pins and
 effort ladders, start args, quit commands, approval settings, quirks —

@@ -1,4 +1,4 @@
-# delegated-implementation — setup
+# implementation-orchestration — setup
 
 The single source for installing and adapting this skill. Orientation:
 [README.md](README.md).
@@ -29,11 +29,11 @@ skills directory, then create the local references from their templates:
 
 ```bash
 git clone https://github.com/marozzocom/skills.git
-for s in delegated-implementation design-gate delegation-briefs herdr-delegates independent-review; do
+for s in implementation-orchestration design-gate delegation-briefs herdr-delegates independent-review; do
   ln -s "$(pwd)/skills/skills/$s" ~/.claude/skills/
 done
-cp skills/skills/delegated-implementation/references/environment.template.md \
-   skills/skills/delegated-implementation/references/environment.md
+cp skills/skills/implementation-orchestration/references/environment.template.md \
+   skills/skills/implementation-orchestration/references/environment.md
 cd skills/skills/independent-review/references
 cp review-checklists.template.md review-checklists.md
 cp agent-trust-profiles.template.md agent-trust-profiles.md

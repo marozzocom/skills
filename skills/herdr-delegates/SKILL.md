@@ -20,7 +20,7 @@ expects (it names the check). If a CLI is on a different billing path
 than environment.md records, tell the user before spending on it.
 
 `environment.md` is the installation's local stack file —
-`${CLAUDE_SKILL_DIR}/../delegated-implementation/references/environment.md`
+`${CLAUDE_SKILL_DIR}/../implementation-orchestration/references/environment.md`
 — and holds, per CLI: the model pin and effort ladder with exact start
 args, the login check, the quit command, transcript location, approval
 settings, width thresholds, and verified quirks. Nothing vendor-specific

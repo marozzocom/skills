@@ -1,4 +1,4 @@
-# Proposal: decompose delegated-implementation into a scaffolded skill set
+# Proposal: decompose implementation-orchestration into a scaffolded skill set
 
 Status: proposal, 2026-10-25. Implements the charter in `vision.md`. Nothing here is loaded when the skill runs.
 For humans and skill-editing sessions. Decisions are marked **Decision**;
@@ -349,10 +349,9 @@ bot, billing, media, and repo sections are not transport facts;
    `environment.md` stays with the spine.
 5. ~~Shrink SKILL.md into the spine~~ — done (this PR): 291 → 173
    lines, against a 150-line target; advisors moved to `references/advisors.md`; each child owns
-   its helpers and tests. The directory keeps the name
-   `delegated-implementation` rather than becoming
-   `implementation-orchestration`: the operator's standing instructions
-   on installed machines name it, and a rename is the operator's call.
+   its helpers and tests. The directory was renamed from
+   `delegated-implementation` to `implementation-orchestration` in the
+   follow-up PR once the operator updated their standing instructions.
 6. **Open:** the trigger eval (§8) and the cheap experiment (§5) need a
    live run and the plugin-eval tooling; neither has been done. Until
    they are, the transport table in `design-gate` §6 is reasoned, not

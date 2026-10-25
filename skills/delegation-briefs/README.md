@@ -7,9 +7,9 @@ agent entrypoint is [SKILL.md](SKILL.md).
 
 How to hand work to an agent that did not share your conversation, on any
 transport: a native subagent, a worktree-isolated worker, or a delegated
-CLI agent in its own process. Extracted from `delegated-implementation`
+CLI agent in its own process. Extracted from `implementation-orchestration`
 (migration step 4 of its
-[decomposition proposal](../delegated-implementation/docs/decomposition-proposal.md))
+[decomposition proposal](../implementation-orchestration/docs/decomposition-proposal.md))
 because every vendor's guidance converges on the same lesson — the
 delegate needs an objective and an output format — and the parts of a
 good brief that are not transport-specific are most of it.

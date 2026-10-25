@@ -8,13 +8,13 @@ agent entrypoint is [SKILL.md](SKILL.md).
 The planning half of an implementation run as its own skill: recon, a
 cited frame, an independent critique of the frame, the task shape, the
 contract, and the per-node transport and effort decisions. Extracted from
-`delegated-implementation` (migration step 3 of its
-[decomposition proposal](../delegated-implementation/docs/decomposition-proposal.md))
+`implementation-orchestration` (migration step 3 of its
+[decomposition proposal](../implementation-orchestration/docs/decomposition-proposal.md))
 so that the gate runs on every implementation path — direct, native
 subagent, or delegated CLI agent — not only inside a delegated run.
 
 It encodes three of the shared charter's principles directly
-([vision.md](../delegated-implementation/docs/vision.md) §8–10): a node is
+([vision.md](../implementation-orchestration/docs/vision.md) §8–10): a node is
 briefed only when what proves it done is already written; human judgment
 is scheduled into the graph, not fallen back on; and decisions are taken
 where the better option is still available.
