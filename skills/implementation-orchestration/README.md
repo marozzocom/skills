@@ -1,4 +1,4 @@
-# delegated-implementation — orientation
+# implementation-orchestration — orientation
 
 For humans and skill-editing sessions. Nothing here is loaded when the
 skill runs. Installation and per-repo setup: [SETUP.md](SETUP.md). The
@@ -19,8 +19,8 @@ verification). Implementation runs direct, on a native subagent, or on a
 delegated CLI agent, per node, from observed signals; the orchestrator
 keeps design authority, review, independent verification, and every git,
 PR, and merge operation. Everything local lives in gitignored reference
-files created from templates. The directory keeps its historical name
-because standing instructions on installed machines refer to it.
+files created from templates. Until 2026-10-25 this skill was named
+`delegated-implementation`; the git history carries the old name.
 
 ## Where things live
 

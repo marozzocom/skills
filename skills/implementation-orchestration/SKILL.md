@@ -1,5 +1,5 @@
 ---
-name: delegated-implementation
+name: implementation-orchestration
 description: "The spine of an implementation run: routing, roles, the
 contract, the ledger, and the per-node transport — direct, native
 subagent, or delegated CLI agent in a Herdr pane — while this session keeps

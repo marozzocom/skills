@@ -7,8 +7,8 @@ agent entrypoint is [SKILL.md](SKILL.md).
 
 The review half of an implementation run, as its own skill: independent
 verification and tiered review of a diff before it is committed, whoever
-wrote it. Extracted from `delegated-implementation` (migration step 2 of
-its [decomposition proposal](../delegated-implementation/docs/decomposition-proposal.md))
+wrote it. Extracted from `implementation-orchestration` (migration step 2 of
+its [decomposition proposal](../implementation-orchestration/docs/decomposition-proposal.md))
 because the review half is the part that measurably carried its weight
 and the part that applies on every implementation path — direct, native
 subagent, or delegated CLI agent.
@@ -40,7 +40,7 @@ cp agent-trust-profiles.template.md agent-trust-profiles.md
 ```
 
 Requires `git`, `gh` (authenticated for the repos you review in), and the
-system `bash` (3.2 on macOS). Install alongside `delegated-implementation`
+system `bash` (3.2 on macOS). Install alongside `implementation-orchestration`
 when you use that skill: it loads this one at the first done-report and
 calls these helpers by `${CLAUDE_SKILL_DIR}/../independent-review/bin/`.
 
