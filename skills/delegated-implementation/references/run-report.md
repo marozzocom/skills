@@ -22,6 +22,23 @@ without the teardown evidence, and the run is not closed without the report.
   values**: turns, rounds, diff sizes, wall time. Delegate-side token spend
   is not reliably observable from the CLIs — say "not measured", never
   estimate it into a number.
+- **Per-node outcomes** — one row per graph node, the table the
+  transport rule (phase-design.md §Task fit) is revised from. Columns:
+  node; transport (`direct`, `native` subagent, or `delegate` pane) and
+  the deciding signal from the ledger line; implementer model family and
+  effort pin, or `self`; reviewer model families; fix rounds; review
+  findings by reviewer family (count, and how many the implementer's own
+  family also raised); defects found after landing so far (`none known`,
+  never blank); overseer wall time on the node. Only measured values —
+  a cell you cannot measure says `not measured`. Record it every run,
+  including runs with one node and runs implemented entirely direct: the
+  comparison is across runs, so a missing row is a missing data point.
+- **Experiment** — the run's one bounded experiment (docs/vision.md
+  principle 7): what was varied (a transport on a node, a reviewer
+  family, an advisor question set, an effort pin), what the contract said
+  would judge it, the observation, and keep / revise / drop — or the
+  concrete reason the run carried none. A classifier experiment reports
+  here and under **Classifier**.
 - **Who did what** — one line per role: what the orchestrator did inline vs
   what was delegated. This is the take-over drift detector: orchestrator
   time spent on recon, CI collection, or mechanical I/O that a delegate
