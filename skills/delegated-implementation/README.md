@@ -202,8 +202,9 @@ Two further readings worth keeping:
   read-only, low-effort scouts inside the implementer's own worktree,
   drawing on the implementer's allowance rather than the orchestrator's.
   Deferred for enforceability — revisit if the leaf rule measurably slows implementers.
-- **Reasoning-effort routing — built 2026-09, unmeasured.** phase-design.md
-  design-gate §7 decides and phase-design.md pins the environment's default effort per brief and
+- **Reasoning-effort routing — built 2026-09, unmeasured.** design-gate §7
+  decides and phase-design.md pins the environment's default effort per
+  brief and
   escalates on named signals (security, concurrency, seams, named
   ambiguity, non-mechanical migrations, second fix round). The signal list
   is reasoned, not measured: record in the run report which escalations
