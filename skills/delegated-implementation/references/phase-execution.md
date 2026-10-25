@@ -8,7 +8,7 @@ SKILL.md §Transcript boundary.
 
 Start every implementer with the model **and** effort pinned explicitly,
 even when a config default exists — the pin is the brief's decision
-(phase-design.md §Reasoning effort), and an unpinned start inherits
+(design-gate §7), and an unpinned start inherits
 whatever the CLI's config says today. Args per CLI in environment.md.
 Name the pin in the status matrix row so a later rotation repeats it.
 

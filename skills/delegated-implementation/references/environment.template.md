@@ -13,7 +13,7 @@ and infra details here and out of SKILL.md.
 
 ## Implementer — [CLI name]
 
-- **Model:** `[model id]`. **Effort ladder** (phase-design.md §Reasoning
+- **Model:** `[model id]`. **Effort ladder** (design-gate §7; pinned per phase-design.md
   effort): default pin `[level]`, escalation pin `[level]`; levels the
   skill never uses: `[anything that enables the CLI's own delegation or
   multi-agent mode — it breaks the leaf rule]`. [Where the default is

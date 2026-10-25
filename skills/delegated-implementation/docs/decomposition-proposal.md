@@ -254,7 +254,11 @@ child to load when. Triggers on starting implementation work in any
 session, Herdr or not. Advisors move to a reference under it.
 
 **`design-gate`.** phase-design §Task shape and §Reasoning effort, plus
-the dependency-scout rule. Triggers before a contract or any brief,
+the dependency-scout rule, the contract (§5 of the charter's principles 8
+and 9 encoded), and — a change from the first draft — the transport
+table itself, since the per-node transport is decided where the frame is
+known and a standalone user of the gate needs the rule too; the spine
+cites it. Triggers before a contract or any brief,
 including when the orchestrator will implement directly, and when a
 plan or ADR is being reviewed. Model-invocable on its own: this is the
 skill most likely to be picked up outside a delegated run.
