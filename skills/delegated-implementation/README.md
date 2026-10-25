@@ -21,12 +21,12 @@ gitignored reference files created from templates.
 |---|---|---|---|
 | [SKILL.md](SKILL.md) | orchestrator | on activation | routing, roles, guard, contract, context, mesh, helper index |
 | [references/phase-design.md](references/phase-design.md) | orchestrator | before the contract | loads the [`design-gate`](../design-gate/) skill; delegated-run specifics; briefs |
-| [references/phase-execution.md](references/phase-execution.md) | orchestrator | first fan-out | agent lifecycle, fast reviewer, parallel implementers |
+| [references/phase-execution.md](references/phase-execution.md) | orchestrator | first fan-out | loads the [`herdr-delegates`](../herdr-delegates/) skill; fast reviewer, CI watching |
 | [references/phase-review.md](references/phase-review.md) | orchestrator | first done-report | loads the [`independent-review`](../independent-review/) skill; delegated-run specifics |
 | [references/phase-landing.md](references/phase-landing.md) | orchestrator | contract and landing | authorization, landing modes, merge policy, closeout |
 | [references/classifier.md](references/classifier.md) | orchestrator | when a classifier is pinned | the one classifier policy: checkpoints, helper, recording, experiments |
 | [references/classifier/](references/classifier/) | `bin/classify-escalate.sh` | each checkpoint call | versioned question sets |
-| [references/brief-template.md](references/brief-template.md) | orchestrator | writing a brief | implementer and oracle brief skeletons |
+| [references/brief-template.md](references/brief-template.md) | orchestrator | writing a brief | Herdr delivery and callback lines, oracle consult; the brief itself is [`delegation-briefs`](../delegation-briefs/) |
 | [references/run-report.md](references/run-report.md) | orchestrator | closeout | report sections |
 | `references/environment.md` | orchestrator | as phases point to it | local stack: CLIs, model pins, commands, quirks, billing, repos |
 | `../independent-review/references/review-checklists.md` | orchestrator | review and landing | per-repo checklists, grants, safe-set tables (local to that skill) |
@@ -40,7 +40,9 @@ belong only there. The review helpers (`run-gates`, `review-inventory`,
 `diff-hunks`, `resolve-thread`) moved to `independent-review` with
 migration step 2 of the [decomposition proposal](docs/decomposition-proposal.md);
 task fit, task shape, the contract, and effort moved to `design-gate`
-with step 3.
+with step 3; brief authoring to `delegation-briefs` and the pane
+mechanics with `run-prefix`, `rotate-implementer`, `agent-status` to
+`herdr-delegates` with step 4.
 
 ## Anti-goals
 

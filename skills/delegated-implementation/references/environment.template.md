@@ -1,8 +1,11 @@
 # Environment — machine/org-local configuration
 
 Copy this file to `environment.md` (gitignored) and fill it in for your
-machine, org, and agent stack. Everything the protocol in SKILL.md
-parameterizes over lives here: which CLIs fill the implementer and
+machine, org, and agent stack. This is the one local stack file for the
+skill set: `herdr-delegates` reads the CLI sections (implementer, fast
+reviewer, oracle, routing guard) by path; this skill reads the rest
+(classifier, bot, billing, `gh`, media, dependent PRs, repos). Everything
+the protocol parameterizes over lives here: which CLIs fill the implementer and
 fast-reviewer roles, their pinned models and commands, CLI-specific quirks,
 and org/repo integrations. Herdr can host many agent kinds (claude, codex,
 cursor, opencode, copilot, droid, grok, …) — porting the skill to another
@@ -30,7 +33,7 @@ and infra details here and out of SKILL.md.
 
 - **Login check** (SKILL.md precondition): `[login status command]` and
   the billing path it should report (subscription or API key).
-- **Worktree rotation helper:** `bin/rotate-implementer.sh <name> <pane>
+- **Worktree rotation helper:** `herdr-delegates/bin/rotate-implementer.sh <name> <pane>
   <worktree> <kind> -- [model args]` — quit → cd pane → start in one step,
   per (name, pane). The kind is required (no vendor default); pass the pin
   after `--` — a rotation without it drops to the config default; the same

@@ -288,12 +288,13 @@ run-report. Triggers at contract acceptance and when landing begins.
 Overlaps the global CLAUDE.md delivery rules; the skill holds the
 mechanics and modes, CLAUDE.md the policy.
 
-**What stays shared.** `bin/` and `tests/` move to the spine and are
-referenced by path from the children, so helper contracts have one
-home. The three gitignored local references (environment, checklists,
-trust profiles) stay with the skill that reads them: environment under
-`herdr-delegates`, checklists under `independent-review`, trust profiles
-under `independent-review`.
+**What stays shared.** Each child owns the helpers only it uses, with
+their tests; the spine keeps the ledger, landing, report, and classifier
+helpers. Of the three gitignored local references, checklists and trust
+profiles moved to `independent-review` (step 2). `environment.md` stays
+with the spine — a change from the first draft — because its classifier,
+bot, billing, media, and repo sections are not transport facts;
+`herdr-delegates` reads the CLI sections from it by path (step 4).
 
 ## 7. Risks and how the design meets them
 
