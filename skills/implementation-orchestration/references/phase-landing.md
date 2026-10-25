@@ -109,9 +109,17 @@ with `gh pr view` before recording the PR in the ledger.
 
 **Dependent PRs.** When one PR builds on another, use the stacking tool
 environment.md names, never a hand-built chain of feature-branch bases
-and manual rebases. You own the stack checkout; implementer worktrees
-stay outside stack bookkeeping. Merge bottom-up. Independent PRs are not
-a stack.
+and manual rebases. A plain PR based on another PR's branch merges into
+that branch, not the trunk, when the human merges both in quick
+succession — the work silently misses the trunk and has to be re-landed.
+A native stack evaluates each PR against the trunk and blocks merging an
+upper PR before the ones below it. `land-pr.sh` refuses a non-trunk
+`--base` for this reason; `--allow-non-trunk-base` is only for a
+non-stack target the human named. You own the stack checkout;
+implementer worktrees stay outside stack bookkeeping. Merge bottom-up.
+Independent PRs are not a stack. When a later PR depends on one that is
+not yet stacked, hold it locally rather than opening it on the lower
+branch.
 
 **Finding a run's PRs.** `bin/run-report.sh` finds them by the run
 marker; ad hoc: `gh pr list --repo <owner/repo> --state all --limit 100

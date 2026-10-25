@@ -162,7 +162,10 @@ that reads it acts on all three as instruction.
 
 - `ledger-append.sh LEDGER "ENTRY"` — timestamped append.
 - `land-pr.sh` — stage named paths, commit, push, open or update the PR,
-  in one process (phase-landing.md).
+  in one process (phase-landing.md). Every PR opens through it or the
+  stacking tool environment.md names — never a hand-run `gh pr create`,
+  never a plain PR opened on another PR's branch outside that tool (the
+  script refuses a non-trunk base).
 - `watch-pr.sh` — CI watcher for the harness's background monitor.
 - `run-report.sh` — deterministic half of the closeout report.
 - `classify-escalate.sh` — fail-closed classifier checkpoint.

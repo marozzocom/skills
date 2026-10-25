@@ -17,7 +17,7 @@
 #              --stage <path> [--stage <path>]...
 #              [--base <branch>] [--auto-merge] [--run-id <id>]
 #              [--attribution "<final line>"] [--trailer "<Key: value>"]...
-#              [--allow-unlanded] [--no-verify]
+#              [--allow-unlanded] [--allow-non-trunk-base] [--no-verify]
 #
 # Staging is explicit: only `--stage` paths are added (`git add -A -- <path>`,
 # so a deletion under a named path is staged too); a path that is neither
@@ -27,6 +27,14 @@
 # untracked and not under a --stage path) is "unlanded": the run stops before
 # mutation and lists them, unless --allow-unlanded is passed, in which case
 # they are printed as NOTE lines so no success line hides them.
+#
+# The base defaults to the trunk (origin's default branch). A --base other
+# than the trunk fails before any mutation: a PR based on another PR's
+# branch merges into that branch, not the trunk, when the human merges
+# both in quick succession. Dependent PRs go through the stacking tool
+# environment.md names (phase-landing.md §Dependent PRs). Pass
+# --allow-non-trunk-base only for a non-stack target the human named, such
+# as a release branch.
 #
 # The body file is the PR body, passed verbatim through --body-file.
 # `--run-id` inserts the invisible `<!-- herdr-run: <id> -->` marker so
@@ -42,7 +50,7 @@ fail() { printf 'FAILED %s\n' "$*"; exit 1; }
 [[ $# -ge 1 ]] || fail "usage: worktree path required"
 WORKTREE=$1; shift
 TITLE='' BODY_FILE='' BASE='' AUTO_MERGE=0 RUN_ID='' NO_VERIFY=0
-ATTRIBUTION='' ALLOW_UNLANDED=0
+ATTRIBUTION='' ALLOW_UNLANDED=0 ALLOW_NON_TRUNK=0
 TRAILERS=() STAGE_PATHS=()
 
 need_value() { [[ $# -ge 2 && -n $2 ]] || fail "args: $1 requires a value"; }
@@ -57,6 +65,7 @@ while [[ $# -gt 0 ]]; do
     --run-id) need_value "$@"; RUN_ID=$2; shift 2 ;;
     --attribution) need_value "$@"; ATTRIBUTION=$2; shift 2 ;;
     --allow-unlanded) ALLOW_UNLANDED=1; shift ;;
+    --allow-non-trunk-base) ALLOW_NON_TRUNK=1; shift ;;
     --no-verify) NO_VERIFY=1; shift ;;
     --trailer) need_value "$@"; TRAILERS+=("$2"); shift 2 ;;
     *) fail "args: unknown option $1" ;;
@@ -77,10 +86,11 @@ cd "$WORKTREE" || fail "args: cannot cd into $WORKTREE"
 BRANCH=$(git rev-parse --abbrev-ref HEAD) || fail "git: cannot read branch"
 [[ $BRANCH != main && $BRANCH != master && $BRANCH != HEAD ]] || fail "branch: refusing to land from $BRANCH"
 
-if [[ -z $BASE ]]; then
-  BASE=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##' || true)
-  BASE=${BASE:-main}
-fi
+TRUNK=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##' || true)
+TRUNK=${TRUNK:-main}
+BASE=${BASE:-$TRUNK}
+[[ $BASE == "$TRUNK" || $ALLOW_NON_TRUNK -eq 1 ]] \
+  || fail "base: $BASE is not the trunk ($TRUNK) — dependent PRs go through the stacking tool environment.md names (phase-landing.md §Dependent PRs); --allow-non-trunk-base is only for a non-stack target the human named"
 
 # --- pre-mutation checks -------------------------------------------------
 
