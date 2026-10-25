@@ -35,7 +35,7 @@ indirection plus "version control" wording survives common patterns.
 
 ## Oracle consult
 
-For the oracle pane (SKILL.md §Advisors). Same path delivery; the first
+For the oracle pane (references/advisors.md). Same path delivery; the first
 consult of a run carries the role paragraph, later ones only the
 question block — the pane keeps its context for the run.
 

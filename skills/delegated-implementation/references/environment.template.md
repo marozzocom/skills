@@ -62,7 +62,7 @@ and infra details here and out of SKILL.md.
 
 ## Oracle — [CLI and model, or delete this section]
 
-SKILL.md §Advisors. One long-lived read-only pane per run.
+references/advisors.md. One long-lived read-only pane per run.
 
 - **Model and start:** `[model id]`, started with whatever the CLI offers
   to remove its edit, delegation, and skill tools (the routing guard made
