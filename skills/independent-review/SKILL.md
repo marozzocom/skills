@@ -37,9 +37,12 @@ local, created from the templates beside them).
   pane-hosted CLI when the environment pins one or the human asked.
 - **Risk-bearing surfaces** (auth, permissions, data integrity,
   concurrency, money): your own line-by-line read, **and** where a
-  confidently wrong "clean" is the expensive failure, a reviewer from a
-  **different model family** than the implementer — same-family review
-  shares the implementer's blind spots. A "no findings" from a
+  confidently wrong "clean" is the expensive failure, a reviewer that is
+  preferably a **different vendor** from the diff's author, failing that
+  a **different model family** of the same vendor, never the same model —
+  same-family review shares the author's blind spots, and same-vendor
+  review shares its training. Independence is measured against the
+  author of the diff, not the orchestrator. A "no findings" from a
   same-family fast reviewer on these surfaces is not clearance.
 - **Small direct diffs** (single-digit files, no risk surface): your own
   read against the inventory is the review; no fan-out. Gates and the
