@@ -4,8 +4,9 @@ description: "The Herdr transport for delegated agents: start CLI
 implementers, reviewers, scouts, and advisors in sibling Herdr panes with
 model and effort pinned, name them with a collision-free run prefix,
 deliver briefs by path, wait on turns and adjudicate blocked dialogs with
-bounded pane reads, rotate an agent onto a new worktree, fan out parallel
-implementers across panes and tabs, and tear panes down before worktrees.
+bounded pane reads, rotate an agent onto a new worktree, lay agents out in
+tabs by node within a measured pane budget, run the board pane that shows
+the human the run's state, and tear panes down before worktrees.
 Use when the design gate chose the delegate transport for a node, or the
 user asked to run an agent in a Herdr pane. Requires HERDR_ENV=1 and the
 herdr skill for CLI mechanics. Never activate in a session executing an
@@ -27,20 +28,40 @@ settings, width thresholds, and verified quirks. Nothing vendor-specific
 is written here. Helpers are at `${CLAUDE_SKILL_DIR}/bin/`; each header
 comment is its contract.
 
-## Names — every agent carries the run prefix
+## Names and the run's workspace — everything carries the run prefix
 
-Herdr names are global across workspaces and several runs can be live at
-once. `PREFIX=$(${CLAUDE_SKILL_DIR}/bin/run-prefix.sh <slug>)` picks a
-free one; record it in the ledger header; name agents `$PREFIX-<role>`
-(`-overseer`, `-impl`, `-impl-2`, `-review`, `-oracle`, `-ui`). Name
-yourself once: `herdr agent rename "$HERDR_PANE_ID" "$PREFIX-overseer"`.
+One Herdr server holds every workspace, and several runs can be live at
+once, so agent names and tab labels are namespaced and the run stays in
+one workspace.
+
+- `PREFIX=$(${CLAUDE_SKILL_DIR}/bin/run-prefix.sh <slug>)` picks a prefix
+  no live agent name, tab label, or workspace label uses. Record it in the
+  ledger header and `status-set.sh RUN_DIR init RUN_ID "$PREFIX" "GOAL"`.
+- **The run's workspace is the overseer's** (`HERDR_WORKSPACE_ID`). Open
+  the cockpit once, right after `init`:
+  `${CLAUDE_SKILL_DIR}/bin/run-cockpit.sh RUN_DIR`. It names you
+  `$PREFIX-overseer`, registers you as the run's first agent row (so the
+  board can see you blocked), names your tab `$PREFIX·cockpit`; renames the
+  workspace to `$PREFIX` only when it holds nothing but this run; opens
+  the board pane; and records the workspace, cockpit tab, and pane ids in
+  status.json. Re-running it changes nothing.
+- Agents are `$PREFIX-<role>` (`-impl`, `-impl-2`, `-review`, `-oracle`,
+  `-ui`; per node `-n1-impl`, `-n1-review`). Tabs are `$PREFIX·<group>`
+  (`·cockpit`, `·recon`, `·N1`) and are created only through
+  `${CLAUDE_SKILL_DIR}/bin/run-tab.sh RUN_DIR <group> <cwd>`, which pins
+  the recorded workspace and refuses a label that already exists anywhere
+  on the server. A bare `herdr tab create` without `--workspace` lands in
+  the UI-focused workspace — another run's, as often as not.
+- The board flags any run agent whose pane sits outside the run's
+  workspace; move it (`herdr pane move`) or close and restart it there.
 
 ## Starting an agent — pin model and effort explicitly
 
 Start every agent with the model **and** effort pinned, even when a
 config default exists: the pin is the brief's decision (design-gate §7),
 and an unpinned start inherits whatever the CLI's config says today. Args
-per CLI in environment.md. Record the pin in the status matrix row so a
+per CLI in environment.md. Record the pin, pane, and tab on the agent's status row
+(`status-set.sh RUN_DIR agent NAME pin=… pane=… tab=… state=open`) so a
 later rotation repeats it. A freshly split pane may reject the start with
 `agent_pane_busy`; retry after ~3 s.
 
@@ -116,34 +137,83 @@ mechanical here. If a delegate is ever observed acting on something only
 your pane contained, the fix is mechanical (a per-pane read ACL, session
 files outside the delegate's readable tree), not more prose.
 
-## Parallel implementers
+## Layout — tabs by node, panes within a measured budget
 
-Unique names, one pane + worktree each, disjoint file sets only (shared
-baselines and lockfiles conflict). Panes share your tab for
-glanceability, but each split narrows every pane, and a too-narrow TUI
-breaks silently: prompts dropped with no error, agent stuck `idle`, pane
-reads rendering a few characters per line. On those symptoms — or a
-fan-out that would clearly cramp the tab — give the agent its own tab:
-`herdr tab create --cwd <dir>` (returns the tab; read the new pane_id
-from `herdr pane list`). Width thresholds per CLI in environment.md.
+A tab holds what the human would watch together; a pane is added only if
+it stays readable. A too-narrow TUI breaks silently — prompts dropped
+with no error, agent stuck `idle`, pane reads a few characters per line
+— so the budget is measured, never guessed.
 
-Fan out early (scouts) and late (reviewers) by preference — read-only and
-conflict-free. Concurrent *writers* are the expensive width, paid in merge
-conflicts and in confusion about which tree a finding refers to; two or
-three in practice, because reviews serialize through you.
+- **Budget.** `bin/pane-budget.sh [--pane ID] [--reserve-rows N]` reads
+  the pane's rect from `herdr pane layout` and prints how many agent
+  panes it holds at ≥100 columns × ≥30 rows each (`PANE_MIN_COLS`,
+  `PANE_MIN_ROWS`; environment.md may record a CLI that needs more),
+  capped at 4. It never reports below 1, so also read its `width=` and
+  `height=`: a pane under the minimum in either is too small for an
+  agent at all — use a new tab instead. Run it on the cockpit before the first split and on each
+  new tab before its second pane.
+- **Cockpit tab:** you, with the board strip along the bottom
+  (`--reserve-rows` for it). One agent pane joins only when the budget
+  left is ≥2 — the one that matters most now, usually the active
+  reviewer.
+- **One tab per node,** labelled `<prefix>·<node>`: its implementer, then
+  its reviewer and UI verifier, so a node's story reads in one place.
+  Parallel nodes share a tab only while the budget allows. Open it with
+  `bin/run-tab.sh RUN_DIR <node> <worktree>` (§Names), which prints
+  `tab=<id> pane=<root pane id>` for the agent start.
+- **Read-only scouts and critics share one `<prefix>·recon` tab,** side
+  by side for comparison; each pane closes when its report lands (herdr
+  closes a tab with its last pane). More scouts than the budget run in
+  waves, not in a second recon tab.
+- **At most four live tabs besides the cockpit.** Needing more means too
+  many concurrent writers — two or three in practice, since reviews
+  serialize through you; stagger starts or shrink the pool instead.
+- Writers need disjoint file sets (shared baselines and lockfiles
+  conflict). Fan out early (scouts) and late (reviewers) by preference —
+  read-only and conflict-free.
+
+## The board pane — the human's view of the run
+
+`bin/run-board.sh RUN_DIR` redraws every 15 s from status.json, the
+ledger, `herdr agent list`, `herdr tab list`, and `herdr workspace list`: a **WAITING ON YOU** banner (every
+`status-set.sh human add` item, and any run agent — you included —
+showing `blocked`); the milestone and node checklist with PR and CI; each
+open agent with herdr's status, time in state, tab, and live title; a
+STALE line when the ledger has been silent while agents work; and the
+last ledger entries. It never reads a pane or calls the network, so it
+costs no tokens and stays outside the transcript boundary. It shows only
+what you wrote: an unrecorded transition is invisible on it.
+
+`run-cockpit.sh` opens it below you (§Names). `--board-ratio` (default
+0.65) is the share your pane keeps: on a 71-row tab that leaves the board
+~25 rows; on a shorter strip the board drops the oldest ledger lines
+first. The board is not an agent and has no status row; its pane id is
+in status.json. `run-board.sh RUN_DIR --once --width N` prints one frame
+for a check from your own shell.
 
 ## Teardown — panes first, worktrees second
 
 Close agent panes FIRST (`herdr pane close <pane_id>` — positional ID),
-worktrees SECOND: an agent whose cwd was deleted spins on errors. Walk the
-status matrix: every pane ever opened ends closed. The closeout report's
+worktrees SECOND: an agent whose cwd was deleted spins on errors. Walk
+status.json's agents: every pane ever opened ends closed, its row set to
+`state=closed`. The board pane closes last, after the run report. The closeout report's
 teardown evidence is `herdr pane list` and `git worktree list` pasted
 after the fact (run-report).
 
 ## Helpers — `bin/`
 
-- `run-prefix.sh SLUG` — collision-free agent-name prefix.
+- `run-prefix.sh SLUG` — prefix free across agent names, tab labels,
+  and workspace labels.
+- `run-cockpit.sh RUN_DIR [--board-ratio R] [--no-board]` — name the
+  overseer, its tab, and (when it holds only this run) the workspace;
+  open the board; record the ids. Idempotent.
+- `run-tab.sh RUN_DIR GROUP CWD` — a `$PREFIX·<group>` tab in the run's
+  workspace; refuses duplicates server-wide.
 - `rotate-implementer.sh NAME PANE WORKTREE KIND -- ARGS` — move an agent
   onto a new worktree with its pin.
 - `agent-status.sh NAME [TAIL-LINES]` — one-line liveness probe with a
   bounded pane read.
+- `pane-budget.sh [--pane ID] [--reserve-rows N]` — how many readable
+  agent panes a pane's area holds.
+- `run-board.sh RUN_DIR [--once] [--interval S] [--stale-minutes M]
+  [--width N] [--height N]` — the board pane.

@@ -231,9 +231,11 @@ Two further readings worth keeping:
   every shipped threshold is uncalibrated. Record in the run report which
   oracle consults changed a decision; drop either role if it stops
   paying.
-- **Ledger format.** Free-form file today. If runs get long enough that
-  resuming from summary+ledger is common, a light structure (per-node
-  status table, decision log, amendment log) may earn its keep.
+- **Ledger format.** Entries are free-form; run state is structured in
+  `status.json` (`bin/status-set.sh`, 2026-11-01), rendered into the
+  ledger's status matrix and onto the board pane. `run-report.sh` does
+  not read it yet — the per-node table is still filled from ledger
+  lines; wire it in if that table keeps drifting.
 - **Trust-profile decay.** Profiles record verified behavior per CLI/model
   pin; a model swap invalidates them. No mechanism marks entries stale —
   convention is to re-verify after any pin change in environment.md.
