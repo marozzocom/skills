@@ -4,8 +4,8 @@
 # Prints the run's agent-name prefix (SKILL.md §Communication mesh): the
 # slug lowercased, anything outside [a-z0-9] folded to single dashes, cut
 # to 12 characters. Herdr agent names are global across workspaces, so a
-# prefix is taken when any live agent is named exactly it or starts with
-# "<prefix>-"; the script then appends -2, -3, ... until one is free.
+# prefix is taken by agents named it or "<prefix>-...", tabs labelled it
+# or "<prefix>·...", or a workspace labelled it. Appends -2, -3, ... until free.
 # Every agent of the run is named <prefix>-<role>: <prefix>-overseer,
 # <prefix>-impl, <prefix>-review, <prefix>-oracle, ...
 # Exit: 0 printed a prefix, 1 herdr unavailable, 2 usage.
@@ -22,9 +22,19 @@ list=$(herdr agent list 2>/dev/null) && [ -n "$list" ] ||
   { echo "ERROR: herdr agent list failed — not in a Herdr session?" >&2; exit 1; }
 names=$(printf '%s' "$list" | jq -r '.result.agents[].name // empty') ||
   { echo "ERROR: unreadable herdr agent list" >&2; exit 1; }
+tabs=$(herdr tab list 2>/dev/null) ||
+  { echo "ERROR: herdr tab list failed" >&2; exit 1; }
+tabs=$(printf '%s' "$tabs" | jq -r '.result.tabs[].label // empty') ||
+  { echo "ERROR: unreadable herdr tab list" >&2; exit 1; }
+workspaces=$(herdr workspace list 2>/dev/null) ||
+  { echo "ERROR: herdr workspace list failed" >&2; exit 1; }
+workspaces=$(printf '%s' "$workspaces" | jq -r '.result.workspaces[].label // empty') ||
+  { echo "ERROR: unreadable herdr workspace list" >&2; exit 1; }
 
 taken() {
-  printf '%s\n' "$names" | grep -q -x -e "$1" -e "$1-.*"
+  printf '%s\n' "$names" | grep -q -x -e "$1" -e "$1-.*" ||
+  printf '%s\n' "$tabs" | grep -q -x -e "$1" -e "$1·.*" ||
+  printf '%s\n' "$workspaces" | grep -q -x -F "$1"
 }
 
 prefix=$base

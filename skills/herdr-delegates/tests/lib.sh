@@ -116,11 +116,17 @@ chmod +x "$MOCK_BIN/gh"
 
 # --- mock herdr --------------------------------------------------------------
 #   $HERDR_SCENARIO/agents.json → `herdr agent list` output
+#   $HERDR_SCENARIO/layout.json → `herdr pane layout` output
+#   tabs.json / workspaces.json → list output (empty defaults)
+#   split.json / create.json → optional mutation responses; renames/creates
+#     update the list fixtures, split updates layout, run captures its command.
 #   $HERDR_SCENARIO/pane.txt    → full pane text; `agent read --lines N`
 #                                 returns its last N lines. A read without
 #                                 --lines is logged as UNBOUNDED.
 HERDR_SCENARIO="$SCRATCH/herdr-scenario"
 mkdir -p "$HERDR_SCENARIO"
+printf '{"result":{"tabs":[]}}\n' >"$HERDR_SCENARIO/tabs.json"
+printf '{"result":{"workspaces":[]}}\n' >"$HERDR_SCENARIO/workspaces.json"
 cat >"$MOCK_BIN/herdr" <<'MOCK'
 #!/usr/bin/env bash
 set -u
@@ -128,6 +134,35 @@ S=${HERDR_SCENARIO:?}
 printf 'herdr %s\n' "$*" >>"${MOCK_LOG:?}"
 case "$1 $2" in
   "agent list") cat "$S/agents.json" ;;
+  "tab list") cat "$S/tabs.json" ;;
+  "workspace list") cat "$S/workspaces.json" ;;
+  "pane layout") cat "$S/layout.json" ;;
+  "agent rename")
+    jq --arg p "$3" --arg n "$4" '.result.agents |= map(if .pane_id == $p then .name=$n else . end)' "$S/agents.json" >"$S/agents.tmp"
+    mv "$S/agents.tmp" "$S/agents.json"; echo '{}' ;;
+  "tab rename")
+    jq --arg t "$3" --arg l "$4" '.result.tabs |= map(if .tab_id == $t then .label=$l else . end)' "$S/tabs.json" >"$S/tabs.tmp"
+    mv "$S/tabs.tmp" "$S/tabs.json"; echo '{}' ;;
+  "workspace rename")
+    jq --arg w "$3" --arg l "$4" '.result.workspaces |= map(if .workspace_id == $w then .label=$l else . end)' "$S/workspaces.json" >"$S/workspaces.tmp"
+    mv "$S/workspaces.tmp" "$S/workspaces.json"; echo '{}' ;;
+  "tab create")
+    ws=''; label=''; cwd=''
+    shift 2
+    while [ $# -gt 0 ]; do
+      case $1 in --workspace) ws=$2; shift 2 ;; --label) label=$2; shift 2 ;; --cwd) cwd=$2; shift 2 ;; *) shift ;; esac
+    done
+    [ -f "$S/create.json" ] || printf '{"result":{"tab":{"tab_id":"w1:tnew"},"root_pane":{"pane_id":"w1:pnew"}}}\n' >"$S/create.json"
+    tab=$(jq -r '.result.tab.tab_id' "$S/create.json")
+    jq --arg w "$ws" --arg l "$label" --arg t "$tab" --arg cwd "$cwd" \
+      '.result.tabs += [{workspace_id:$w,label:$l,tab_id:$t,cwd:$cwd}]' "$S/tabs.json" >"$S/tabs.tmp"
+    mv "$S/tabs.tmp" "$S/tabs.json"; cat "$S/create.json" ;;
+  "pane split")
+    [ -f "$S/split.json" ] || printf '{"result":{"pane":{"pane_id":"w1:pboard"}}}\n' >"$S/split.json"
+    pane=$(jq -r '.result.pane.pane_id' "$S/split.json")
+    jq --arg p "$pane" '.result.layout.panes += [{pane_id:$p,rect:{width:158,height:24}}]' "$S/layout.json" >"$S/layout.tmp"
+    mv "$S/layout.tmp" "$S/layout.json"; cat "$S/split.json" ;;
+  "pane run") printf '%s' "$4" >"$S/run-command.txt"; echo '{}' ;;
   "agent read")
     lines=''
     while [ $# -gt 0 ]; do

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Recorded workspace, server-wide namespace collision and opaque result IDs.
+# shellcheck source=lib.sh
+. "$(dirname "$0")/lib.sh"
+T="$BIN_DIR/run-tab.sh"
+run=$SCRATCH/run; mkdir "$run"
+echo '{"prefix":"fixture","herdr":{"workspace":"w1"}}' >"$run/status.json"
+echo '{"result":{"tabs":[{"workspace_id":"w2","tab_id":"w2:t1","label":"fixture·N1"}]}}' >"$HERDR_SCENARIO/tabs.json"
+"$T" "$run" N1 "$SCRATCH" >/dev/null 2>&1; assert_eq collision-any-workspace 1 "$?"
+assert_eq no-collision-create 0 "$(grep -c 'tab create' "$MOCK_LOG")"
+echo '{"result":{"tab":{"tab_id":"w1:t7Q"},"root_pane":{"pane_id":"w1:p8X"}}}' >"$HERDR_SCENARIO/create.json"
+out=$("$T" "$run" N2 "$SCRATCH/a cwd with spaces"); assert_eq create-exit 0 "$?"
+assert_eq result-ids 'tab=w1:t7Q pane=w1:p8X' "$out"
+assert_contains correct-workspace '--workspace w1' "$(cat "$MOCK_LOG")"
+assert_contains labelled '--label fixture·N2' "$(cat "$MOCK_LOG")"
+assert_eq cwd-with-spaces "$SCRATCH/a cwd with spaces" "$(jq -r '.result.tabs[-1].cwd' "$HERDR_SCENARIO/tabs.json")"
+"$T" "$run" N2 "$SCRATCH" >/dev/null 2>&1; assert_eq repeated-label-refused 1 "$?"
+echo '{"prefix":"fixture"}' >"$run/status.json"
+out=$("$T" "$run" N3 "$SCRATCH" 2>&1); assert_eq missing-workspace 1 "$?"
+assert_contains setup-hint 'run run-cockpit.sh first' "$out"
+echo '{"herdr":{"workspace":"w1"}}' >"$run/status.json"
+"$T" "$run" N3 "$SCRATCH" >/dev/null 2>&1; assert_eq missing-prefix 1 "$?"
+"$T" "$run" >/dev/null 2>&1; assert_eq missing-args 2 "$?"
+"$T" "$run" '' "$SCRATCH" >/dev/null 2>&1; assert_eq empty-group 2 "$?"
+finish
