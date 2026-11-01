@@ -65,6 +65,10 @@ finish() {
 #     file       = print the JSON's file path instead of the JSON
 #     file-quiet = like file, but print nothing at all on a non-zero exit
 #   $GH_SCENARIO/pr-create.url     → url printed by `gh pr create`
+#   $GH_SCENARIO/pr-list.json      → `gh pr list ... --json ...` result, before any
+#                                    `--jq` filter (applied with jq -r, as gh does)
+#   $GH_SCENARIO/pr-list.exit      → exit code for pr list (default 0); output
+#                                    honours --limit (default 30) and the 1000 ceiling
 GH_SCENARIO="$SCRATCH/gh-scenario"
 mkdir -p "$GH_SCENARIO"
 cat >"$MOCK_BIN/gh" <<'MOCK'
@@ -109,6 +113,26 @@ case "$1 $2" in
     done
     exit 0 ;;
   "pr merge") exit 0 ;;
+  "pr list")
+    f="$S/pr-list.json"; rc=0
+    [ -f "$S/pr-list.exit" ] && rc=$(cat "$S/pr-list.exit")
+    [ -f "$f" ] || rc=1
+    filter=''; limit=30
+    while [ $# -gt 0 ]; do
+      case $1 in --jq) filter=$2 ;; --limit) limit=$2 ;; esac
+      shift
+    done
+    [ "$rc" = 0 ] || exit "$rc"
+    [ "$limit" -le 1000 ] || limit=1000  # GitHub's search ceiling
+    # gh fetches at most --limit results (default 30); raw bytes pass through
+    # when the fixture is not a JSON array, so tests can feed malformed output.
+    if jq -e 'type == "array"' "$f" >/dev/null 2>&1; then
+      sliced=$(jq -c --argjson n "$limit" '.[:$n]' "$f")
+    else
+      sliced=$(cat "$f")
+    fi
+    if [ -n "$filter" ]; then printf '%s\n' "$sliced" | jq -r "$filter"; exit $?; fi
+    printf '%s' "$sliced"; exit 0 ;;
   *) echo "mock gh: unhandled: $*" >&2; exit 1 ;;
 esac
 MOCK

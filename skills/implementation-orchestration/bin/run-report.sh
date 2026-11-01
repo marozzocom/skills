@@ -24,11 +24,32 @@ echo "Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 echo
 echo "## PRs"
 echo
-gh pr list --repo "$repo" --state all --limit 100 \
-  --search "herdr-run: $run_id in:body" \
-  --json number,title,state,additions,deletions,mergedAt \
-  --jq '.[] | "- #\(.number) \(.title) — \(.state)\(if .mergedAt then " (merged \(.mergedAt))" else "" end), +\(.additions)/-\(.deletions)"' \
-  || echo "- (gh query failed — list PRs manually from the ledger)"
+# gh's search is token-based: it also returns other runs' markers and ids
+# that merely start with this one, so keep only bodies with the exact marker.
+# RUN_REPORT_PR_LIMIT caps the candidates fetched: 1-1000, default 1000 (gh
+# paginates; GitHub search returns at most 1000, so larger values are clamped).
+marker="<!-- herdr-run: $run_id -->"
+limit=${RUN_REPORT_PR_LIMIT:-1000}
+case $limit in ''|*[!0-9]*|0*) echo "run-report.sh: RUN_REPORT_PR_LIMIT must be 1-1000" >&2; exit 2 ;; esac
+[ "${#limit}" -le 4 ] && [ "$limit" -le 1000 ] || limit=1000
+if prs=$(gh pr list --repo "$repo" --state all --limit "$limit" \
+    --search "\"herdr-run: $run_id\" in:body" \
+    --json number,title,state,additions,deletions,mergedAt,body 2>/dev/null); then
+  # Exactly one JSON array, or the response is not trusted (empty included).
+  if lines=$(printf '%s' "$prs" | jq -rs --arg m "$marker" --argjson cap "$limit" '
+      if length == 1 and (.[0] | type) == "array" then .[0] else error("shape") end |
+      (map(select((.body | type) == "string" and (.body | contains($m)))) |
+        map("- #\(.number) \(.title) — \(.state)\(if .mergedAt then " (merged \(.mergedAt))" else "" end), +\(.additions)/-\(.deletions)")) as $rows |
+      if ($rows | length) == 0 then ["- (no PR carries \($m) — check the ledger'"'"'s PR list)"] else $rows end +
+      (if length >= $cap then ["- (warning: gh returned \(length) candidates, the fetch limit; the list may be incomplete — " + (if $cap >= 1000 then "that is GitHub'"'"'s search ceiling, check the ledger" else "raise RUN_REPORT_PR_LIMIT (max 1000) or check the ledger" end) + ")"] else [] end) |
+      .[]' 2>/dev/null); then
+    printf '%s\n' "$lines"
+  else
+    echo "- (could not parse gh output — list PRs manually from the ledger)"
+  fi
+else
+  echo "- (gh query failed — list PRs manually from the ledger)"
+fi
 echo
 echo "## Teardown post-state (evidence, not narrative)"
 echo
