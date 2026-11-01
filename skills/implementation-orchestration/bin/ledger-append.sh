@@ -4,8 +4,9 @@
 # Timestamped, append-only ledger write — a chronological entry costs one
 # command instead of a read-modify-write of the whole file. Echoes the
 # appended line back as confirmation. The orchestrator remains the ledger's
-# only writer; structural edits (the status matrix, rewriting a section)
-# still go through a normal editor.
+# only writer. The status matrix at the ledger head is rendered by
+# status-set.sh and never hand-edited; other structural edits (rewriting a
+# section) still go through a normal editor.
 set -euo pipefail
 
 ledger=${1:?usage: ledger-append.sh <ledger-file> <entry text...>}

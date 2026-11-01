@@ -122,6 +122,9 @@ explicit acceptance of:
   gates you run autonomously; silence is not a blocker; a permission
   granted once is recorded and not asked again. A question that was not
   planned is itself a finding: record why the contract missed it.
+- **Orchestration layer**, where the installation offers a choice (the
+  orchestration skill names the options): it decides whether §6's
+  native-subagent transport exists for this run at all.
 - **Landing mode** and the authority it rests on (the landing skill or
   the repo's own rules say which modes exist and who may grant them).
 
@@ -142,7 +145,7 @@ An explicit request from the human ("do it yourself", "delegate this",
 | Transport | Pick when | Not when |
 |---|---|---|
 | **Direct** — you type, in the repo's isolation (its worktree and branch convention, never the user's checkout unless the repo says so) | one app or package, single-digit files, nothing shardable, sequential and dependent, recon already loaded the code; or the deliverable is prose whose content is your own judgment (a policy, a design note, a review) | the surface to read exceeds what should stay resident in your context |
-| **Native subagent** — your harness's own worker: fresh and worktree-isolated for writes, a fork for a context-dependent sequential step, a read-only explorer for reads | read-only fan-out (scouts, triage, repro hunts, checklist passes); a self-contained write whose brief fits one message and whose result is a summary; a critique or review that must be independent of the author and same-family is acceptable | a different model family is required; the human wants to watch and steer; the node must survive a session boundary |
+| **Native subagent** — your harness's own worker: fresh and worktree-isolated for writes, a fork for a context-dependent sequential step, a read-only explorer for reads | read-only fan-out (scouts, triage, repro hunts, checklist passes); a self-contained write whose brief fits one message and whose result is a summary; a critique or review that must be independent of the author and same-family is acceptable | a different model family is required; the human wants to watch and steer; the node must survive a session boundary; the contract's orchestration layer puts every agent in a visible pane — then a would-be fork is done in your own context, not handed to a pane |
 | **Delegate** — an external agent in its own process (a terminal pane, another vendor's CLI), pinned model and effort | a different vendor is wanted for decorrelated review or for implementation on risk-bearing code; the billing path makes the implementer materially cheaper; the run spans sessions or needs the ledger-and-continuation machinery; the human asked to watch or to delegate | one-node tasks with no cross-family need: the overhead is measured and buys no design improvement |
 
 Signals that favour fan-out, whatever the transport: two-plus disjoint

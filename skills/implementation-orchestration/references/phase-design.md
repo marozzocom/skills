@@ -27,8 +27,8 @@ What this protocol adds for a delegated run:
 - **Effort is a start-time pin.** The ladder and the exact args per CLI
   are in environment.md; design-gate §7 decides the level, this protocol
   pins it when the agent starts (herdr-delegates §Starting an
-  agent) and records it in the status matrix row and the ledger's
-  brief entry. A mid-task escalation is a rotation onto the same worktree
+  agent) and records it on the agent's status row (`status-set.sh
+  RUN_DIR agent NAME pin=…`) and in the ledger's brief entry. A mid-task escalation is a rotation onto the same worktree
   (herdr-delegates `rotate-implementer.sh` with the higher pin — a rotation without
   the pin silently drops to the config default) and the re-brief says
   "read your previous report first". Never a level that enables the CLI's
@@ -43,8 +43,11 @@ What this protocol adds for a delegated run:
   rounds, and callback causes per node so the report compares like with
   like.
 - **Width.** Two or three concurrent implementer panes in practice;
-  reviews serialize through you (herdr-delegates §Parallel
-  implementers). Graphs extend depth, not width.
+  reviews serialize through you. Where each pane goes — cockpit, one tab
+  per node, a shared recon tab — and how many fit is herdr-delegates
+  §Layout. Graphs extend depth, not width.
+- **Orchestration layer.** The contract names it (SKILL.md
+  §Orchestration layer); under `herdr` no node is `native`.
 
 ## Briefs — load the delegation-briefs skill
 

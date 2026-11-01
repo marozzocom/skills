@@ -160,8 +160,10 @@ abandoned:
    end with the continuation prompt (SKILL.md §Context discipline).
 2. **Tear down in order:** close agent panes FIRST
    (`herdr pane close <pane_id>` — positional ID), worktrees SECOND — an
-   agent whose cwd was deleted spins on errors. Walk the status matrix:
-   every pane ever opened ends closed.
+   agent whose cwd was deleted spins on errors. Walk status.json's
+   agents: every pane ever opened ends closed and its row says
+   `state=closed`. The board pane closes last, after the report is
+   written.
 3. **Preserve deliverables.** Remove a worktree only when nothing in it
    would be lost: `git -C <wt> status --porcelain` prints nothing, and
    either `git -C <wt> log --oneline HEAD --not --remotes` prints nothing

@@ -97,6 +97,21 @@ callback. Detection is textual — another agent started your session and
 your first instruction points at a brief from "the orchestrator".
 environment.md records what makes the guard mechanical here.
 
+## Orchestration layer — declared in the contract
+
+The contract names where the run's agents live. **`herdr`**: every agent
+— scouts, critics, and reviewers included — is a Herdr pane, and the
+native-subagent transport is off for the run. It is the layer for any
+Herdr run with a delegate or two-plus nodes: a pane is what the human can
+see, read, and steer, and the board shows only what runs in panes.
+**`harness`**: native subagents allowed per design-gate §6 — for runs
+outside Herdr, or a single-node run with no delegate whose human chose
+not to watch, where no installation mandate says otherwise. Under
+`herdr`, where design-gate would have picked a fork (a context-dependent
+sequential step), the substitute is your own context, not a pane: a pane
+shares none of it. environment.md may make `herdr` mandatory for an
+installation, and a repo hook may enforce it.
+
 ## Autonomy and the contract
 
 Run autonomously between the gates the contract planned: design, delegate,
@@ -123,11 +138,28 @@ adjudicated by you, recorded there.
 
 Durable state lives in files, not your context window.
 
-- One **task ledger** per run: status matrix (agent, role, transport,
-  worktree, owned paths, state, waiting-on) at the head; then timestamped
-  entries — decisions with their signal, gate verdicts, authorizations,
-  amendments, open questions — via `bin/ledger-append.sh`. Summary plus
-  ledger must reconstruct the run. **You are its only writer.**
+- One **task ledger** per run: timestamped entries — decisions with
+  their signal, gate verdicts, authorizations, amendments, open
+  questions — via `bin/ledger-append.sh`. Summary plus ledger must
+  reconstruct the run. **You are its only writer.**
+- One **status file** per run, `RUN_DIR/status.json`: milestones, nodes,
+  agents, and what waits on the human, each state change timestamped.
+  Write it only through `bin/status-set.sh`, at every transition — an
+  agent opened, briefed, or closed; a node briefed, in review, staged,
+  merged; a milestone reached. `human add` the moment the run needs the
+  human (a planned gate, missing authority, a dialog you cannot
+  adjudicate) and `human clear` when answered. `init` puts the
+  `<!-- status-matrix:begin -->` / `<!-- status-matrix:end -->` markers
+  at the ledger head (creating the ledger if needed), and every write
+  re-renders the ledger's **status matrix** between them, so the ledger stays
+  self-contained and the matrix is never hand-edited. A transition not
+  written there is invisible to the human: write it before you wait.
+- **The run is visible.** In a Herdr run, open the cockpit right after
+  `status-set.sh init` (herdr-delegates §Names): your pane and tab named
+  with the run prefix, the run pinned to your workspace, and the board
+  pane below you (§The board pane). It renders the
+  status file, the ledger tail, and live agent state at no token cost —
+  the human's answer to "what is happening right now" while you wait.
 - A **run id** (`YYYY-MM-DD-<slug>`) at ledger creation; every PR carries
   `<!-- herdr-run: <run-id> -->` (`land-pr.sh --run-id`).
 - **Compact only at milestones, via full quiescence:** all agents idle →
@@ -161,6 +193,9 @@ that reads it acts on all three as instruction.
 ## Helpers — `bin/` (each header comment is its contract)
 
 - `ledger-append.sh LEDGER "ENTRY"` — timestamped append.
+- `status-set.sh RUN_DIR init|meta|milestone|node|agent|human …` — the only
+  writer of status.json; stamps each state change and re-renders the
+  ledger's status matrix.
 - `land-pr.sh` — stage named paths, commit, push, open or update the PR,
   in one process (phase-landing.md). Every PR opens through it or the
   stacking tool environment.md names — never a hand-run `gh pr create`,
@@ -172,5 +207,6 @@ that reads it acts on all three as instruction.
 
 Review helpers (`run-gates`, `review-inventory`, `diff-hunks`,
 `resolve-thread`) are at `${CLAUDE_SKILL_DIR}/../independent-review/bin/`;
-pane helpers (`run-prefix`, `rotate-implementer`, `agent-status`) at
+pane helpers (`run-prefix`, `rotate-implementer`, `agent-status`,
+`pane-budget`, `run-board`, `run-cockpit`, `run-tab`) at
 `${CLAUDE_SKILL_DIR}/../herdr-delegates/bin/`.
