@@ -36,7 +36,10 @@ until mkdir "$lock" 2>/dev/null; do
   sleep 0.1
 done
 locked=1
-rm -f "$run"/.status.?????? "$run"/.ledger.?????? "$run"/.ledger-seed.??????
-if [ ! -e "$ledger" ]; then (umask 022; : >"$ledger"); fi
+if [ -L "$ledger" ] || { [ -e "$ledger" ] && [ ! -f "$ledger" ]; }; then
+  echo "ERROR: ledger is not a regular file" >&2
+  exit 1
+fi
+rm -f "$run"/.status-set.tmp.?????? "$run"/.ledger.tmp.?????? "$run"/.ledger-seed.tmp.?????? 2>/dev/null || true
 printf -- '- %s — %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" >>"$ledger"
 tail -n 1 "$ledger"

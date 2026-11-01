@@ -74,8 +74,14 @@ until mkdir "$lock" 2>/dev/null; do
   sleep 0.1
 done
 locked=1
-rm -f "$run"/.status.?????? "$run"/.ledger.?????? "$run"/.ledger-seed.??????
-tmp=$(mktemp "$run/.status.XXXXXX")
+for name in status.json ledger.md; do
+  if [ -L "$run/$name" ] || { [ -e "$run/$name" ] && [ ! -f "$run/$name" ]; }; then
+    fail "$name is not a regular file"
+  fi
+done
+rm -f "$run"/.status-set.tmp.?????? "$run"/.ledger.tmp.?????? "$run"/.ledger-seed.tmp.?????? 2>/dev/null || true
+ledger_source=$run/ledger.md
+tmp=$(mktemp "$run/.status-set.tmp.XXXXXX")
 if [ "$command" = init ]; then
   [ ! -e "$run/status.json" ] || fail "status.json already exists"
   jq -n --arg run "$1" --arg prefix "$2" --arg goal "$3" --arg now "$stamp" \
@@ -104,25 +110,24 @@ else
       else .[$col] += [$defaults + $fields + {($key):$id,since:$now}] end
     end' "$run/status.json" >"$tmp"
 fi
-ledger_source=$run/ledger.md
 if [ -f "$ledger_source" ]; then
   # macOS iconv can reject valid UTF-8; compare jq's decoded bytes instead.
   jq -jn --rawfile l "$ledger_source" '$l' | cmp -s - "$ledger_source" ||
-    fail "ledger.md is not valid UTF-8; fix it before the matrix is re-rendered"
+    fail "ledger.md is unreadable or not valid UTF-8; fix it before the matrix is re-rendered"
 fi
 if [ "$command" = init ]; then
   if [ ! -f "$ledger_source" ]; then
-    ledger_seed=$(mktemp "$run/.ledger-seed.XXXXXX")
+    ledger_seed=$(mktemp "$run/.ledger-seed.tmp.XXXXXX")
     printf '# Ledger — %s\n\n<!-- status-matrix:begin -->\n<!-- status-matrix:end -->\n\n## Entries\n' "$1" >"$ledger_seed"
     ledger_source=$ledger_seed
   elif ! grep -q '<!-- status-matrix:begin -->' "$ledger_source" ||
        ! grep -q '<!-- status-matrix:end -->' "$ledger_source"; then
-    ledger_seed=$(mktemp "$run/.ledger-seed.XXXXXX")
+    ledger_seed=$(mktemp "$run/.ledger-seed.tmp.XXXXXX")
     jq -jn --rawfile l "$ledger_source" '
       "\n<!-- status-matrix:begin -->\n<!-- status-matrix:end -->\n\n" as $markers |
-      ($l|explode|index([10])) as $end |
-      if $end == null then $l, "\n", $markers
-      else $l[:($end+1)], $markers, $l[($end+1):] end' >"$ledger_seed"
+      ($l|split("\n")) as $lines |
+      if ($lines|length) < 2 then $l, "\n", $markers
+      else $lines[0], "\n", $markers, ($lines[1:]|join("\n")) end' >"$ledger_seed"
     ledger_source=$ledger_seed
   fi
 fi
@@ -130,17 +135,17 @@ fi
 # including a missing final newline. Markdown cells escape pipes/newlines.
 if [ -f "$ledger_source" ] && grep -q '<!-- status-matrix:begin -->' "$ledger_source" &&
    grep -q '<!-- status-matrix:end -->' "$ledger_source"; then
-  ledger_tmp=$(mktemp "$run/.ledger.XXXXXX")
+  ledger_tmp=$(mktemp "$run/.ledger.tmp.XXXXXX")
   jq -jn --slurpfile s "$tmp" --rawfile ledger "$ledger_source" '
     def cell: tostring | gsub("<!--"; "<!- -") | gsub("\\|"; "\\|") | gsub("[\r\n]"; " ");
     def row: "| " + (map(cell) | join(" | ")) + " |";
     "<!-- status-matrix:begin -->" as $b | "<!-- status-matrix:end -->" as $e |
-    # jq string index reports byte offsets on some supported versions;
-    # array indices and string slices both count codepoints.
-    ($ledger|explode|index($b|explode)) as $start | ($start + ($b|length)) as $from |
-    ($ledger[$from:]|explode|index($e|explode)) as $end |
-    if $end == null then error("ledger matrix markers out of order") else
-      $ledger[:$from], "\n\n",
+    # Split at the first begin, then the first end after it. Joining the
+    # remaining pieces preserves repeated markers without byte offsets.
+    ($ledger|split($b)) as $parts |
+    ($parts[1:]|join($b)|split($e)) as $tail |
+    if ($tail|length) < 2 then error("ledger matrix markers out of order") else
+      $parts[0], $b, "\n\n",
       (if ($s[0].herdr // {} | length) > 0 then
         "Herdr: " + ($s[0].herdr | to_entries | map(.key + "=" + (.value|cell)) | join(" · ")) + "\n\n"
        else "" end),
@@ -150,12 +155,12 @@ if [ -f "$ledger_source" ] && grep -q '<!-- status-matrix:begin -->' "$ledger_so
       "\n\n",
       ([ ["node","title","state","PR","CI"], ["---","---","---","---","---"],
          ($s[0].nodes[] | [.id,.title,.state,(.pr // ""),.ci]) ] | map(row)|join("\n")),
-      "\n\n", $ledger[($from + $end):]
+      "\n\n", $e, ($tail[1:]|join($e))
     end' >"$ledger_tmp"
 fi
 mode_of() {
   if [ -e "$1" ]; then stat -f %Lp "$1" 2>/dev/null || stat -c %a "$1"
-  else echo 644; fi
+  else printf '%o\n' "$((0666 & ~0$(umask)))"; fi
 }
 chmod "$(mode_of "$run/status.json")" "$tmp"
 if [ -n "$ledger_tmp" ]; then chmod "$(mode_of "$run/ledger.md")" "$ledger_tmp"; fi

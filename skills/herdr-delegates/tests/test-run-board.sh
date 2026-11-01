@@ -101,6 +101,49 @@ assert_eq missing-one-line 1 "$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
 assert_eq tiny-width 5 "$("$B" "$SCRATCH/missing" --once --width 5 | tr -d '\n' | wc -c | tr -d ' ')"
 assert_eq columns-env-width 7 "$(COLUMNS=7 "$B" "$SCRATCH/missing" --once | tr -d '\n' | wc -c | tr -d ' ')"
 assert_eq explicit-width-wins 9 "$(COLUMNS=7 "$B" "$SCRATCH/missing" --once --width 9 | tr -d '\n' | wc -c | tr -d ' ')"
+# Give stdout a real terminal while stdin remains /dev/null. BSD and GNU
+# script have different command syntax; neither requires an interactive tty.
+if command -v script >/dev/null && { [ "$(uname -s)" = Darwin ] || [ "$(uname -s)" = Linux ]; }; then
+  BOARD_PTY_PROBE=$SCRATCH/board-pty.sh
+  BOARD_PTY_BIN=$B
+  export BOARD_PTY_PROBE BOARD_PTY_BIN
+  cat >"$BOARD_PTY_PROBE" <<'PROBE'
+#!/usr/bin/env bash
+unset COLUMNS
+stty rows 12 cols 37 0<&1 || exit 1
+if [ -n "$BOARD_PTY_COLUMNS" ]; then export COLUMNS=$BOARD_PTY_COLUMNS; fi
+set -- "$BOARD_PTY_BIN" "$BOARD_PTY_RUN" --once
+if [ -n "$BOARD_PTY_WIDTH" ]; then set -- "$@" --width "$BOARD_PTY_WIDTH"; fi
+if [ -n "$BOARD_PTY_HEIGHT" ]; then set -- "$@" --height "$BOARD_PTY_HEIGHT"; fi
+exec "$@" </dev/null
+PROBE
+  pty_snapshot() {
+    BOARD_PTY_RUN=$1; BOARD_PTY_COLUMNS=$2; BOARD_PTY_WIDTH=$3; BOARD_PTY_HEIGHT=$4
+    export BOARD_PTY_RUN BOARD_PTY_COLUMNS BOARD_PTY_WIDTH BOARD_PTY_HEIGHT
+    if [ "$(uname -s)" = Darwin ]; then
+      script -q "$SCRATCH/pty.out" /bin/bash "$BOARD_PTY_PROBE" </dev/null >/dev/null 2>&1
+    else
+      # shellcheck disable=SC2016 # Expanded by the shell script launches.
+      script -q -c '/bin/bash "$BOARD_PTY_PROBE"' "$SCRATCH/pty.out" </dev/null >/dev/null 2>&1
+    fi
+    # script can echo an input EOF as ^D followed by backspaces on macOS.
+    tr -d '\r' <"$SCRATCH/pty.out" | sed $'s/.*\b\b//'
+  }
+  snapshot=$(pty_snapshot "$SCRATCH/missing" '' '' '')
+  line=$(printf '%s\n' "$snapshot" | grep '^No status.json')
+  assert_eq stdout-tty-measured-width 37 "${#line}"
+  snapshot=$(pty_snapshot "$SCRATCH/missing" 33 '' '')
+  line=$(printf '%s\n' "$snapshot" | grep '^No status.json')
+  assert_eq columns-over-tty-width 33 "${#line}"
+  snapshot=$(pty_snapshot "$SCRATCH/missing" 33 45 '')
+  line=$(printf '%s\n' "$snapshot" | grep '^No status.json')
+  assert_eq explicit-over-columns-and-tty 45 "${#line}"
+  # The full fixture exceeds 12 protected rows, making measured height visible.
+  snapshot=$(pty_snapshot "$run" '' '' '')
+  assert_contains stdout-tty-measured-height 'lines over height)' "$snapshot"
+  snapshot=$(pty_snapshot "$run" '' 80 100)
+  assert_not_contains explicit-height-over-tty 'lines over height)' "$snapshot"
+fi
 for args in '--width 0' '--width nope' '--interval 0' '--height -1' '--stale-minutes nope' '--unknown'; do
   # shellcheck disable=SC2086
   "$B" "$run" --once $args >/dev/null 2>&1; assert_eq "usage-$args" 2 "$?"

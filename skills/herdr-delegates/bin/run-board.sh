@@ -2,8 +2,8 @@
 # run-board.sh RUN_DIR [--once] [--interval S=15] [--stale-minutes M=20]
 #                     [--width N] [--height N]
 # Reads status.json, ledger.md, herdr agent/tab/workspace list; jq renders each
-# frame. Width: --width, COLUMNS, tty columns, 100. Height: --height, tty rows,
-# otherwise unlimited. Tty size is measured per frame with stty size.
+# frame. Width: --width, COLUMNS, stdout tty columns, 100. Height: --height,
+# stdout tty rows, otherwise unlimited. Measure stdout per frame with stty size.
 # Trim oldest ledger entries, then summarize milestones;
 # protected sections can exceed a height too small to contain them.
 # STATUS_NOW=UTC-ISO overrides the clock for deterministic snapshots/tests.
@@ -41,7 +41,8 @@ trap 'exit 0' HUP INT TERM
 measure_size() {
   local size rows=0 cols=100
   if [ -t 1 ]; then
-    size=$(stty size 2>/dev/null </dev/tty) || size=''
+    # Preserve stdout before command substitution replaces fd 1 with a pipe.
+    { size=$(stty size 0<&3 2>/dev/null); } 3>&1 || size=''
     if [[ $size =~ ^[[:space:]]*([0-9]+)[[:space:]]+([0-9]+)[[:space:]]*$ ]]; then
       rows=${BASH_REMATCH[1]}; cols=${BASH_REMATCH[2]}
       [ "$cols" -gt 0 ] || cols=100
