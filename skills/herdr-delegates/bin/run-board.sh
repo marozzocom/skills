@@ -2,8 +2,9 @@
 # run-board.sh RUN_DIR [--once] [--interval S=15] [--stale-minutes M=20]
 #                     [--width N] [--height N]
 # Reads status.json, ledger.md, herdr agent/tab/workspace list; jq renders each
-# frame. Width: --width, COLUMNS, 100. Height: --height, tty tput lines,
-# otherwise unlimited. Trim oldest ledger entries, then summarize milestones;
+# frame. Width: --width, COLUMNS, tty columns, 100. Height: --height, tty rows,
+# otherwise unlimited. Tty size is measured per frame with stty size.
+# Trim oldest ledger entries, then summarize milestones;
 # protected sections can exceed a height too small to contain them.
 # STATUS_NOW=UTC-ISO overrides the clock for deterministic snapshots/tests.
 # --once emits plain text (no escapes). Looping tty output hides/restores
@@ -14,14 +15,13 @@ trap 'exit 1' ERR
 usage() { echo "usage: run-board.sh RUN_DIR [--once] [--interval S] [--stale-minutes M] [--width N] [--height N]" >&2; exit 2; }
 [ $# -ge 1 ] || usage
 run=$1; shift
-once=0; interval=15; stale=20; width=${COLUMNS:-100}; height=0
-if [ -t 1 ]; then height=$(tput lines 2>/dev/null) || height=0; fi
+once=0; interval=15; stale=20; width=100; height=0; width_set=0; height_set=0
 while [ $# -gt 0 ]; do
   case $1 in
     --once) once=1; shift ;;
     --interval|--stale-minutes|--width|--height)
       [ $# -ge 2 ] || usage
-      case $1 in --interval) interval=$2 ;; --stale-minutes) stale=$2 ;; --width) width=$2 ;; --height) height=$2 ;; esac
+      case $1 in --interval) interval=$2 ;; --stale-minutes) stale=$2 ;; --width) width=$2; width_set=1 ;; --height) height=$2; height_set=1 ;; esac
       shift 2 ;;
     *) usage ;;
   esac
@@ -38,6 +38,20 @@ if [ "$once" = 0 ] && [ -t 1 ]; then tty_loop=1; printf '\033[?25l'; fi
 cleanup() { if [ "$tty_loop" = 1 ]; then printf '\033[0m\033[?25h'; fi; }
 trap cleanup EXIT
 trap 'exit 0' HUP INT TERM
+measure_size() {
+  local size rows=0 cols=100
+  if [ -t 1 ]; then
+    size=$(stty size 2>/dev/null </dev/tty) || size=''
+    if [[ $size =~ ^[[:space:]]*([0-9]+)[[:space:]]+([0-9]+)[[:space:]]*$ ]]; then
+      rows=${BASH_REMATCH[1]}; cols=${BASH_REMATCH[2]}
+      [ "$cols" -gt 0 ] || cols=100
+    fi
+  fi
+  if [ "$width_set" = 0 ]; then width=${COLUMNS:-$cols}; fi
+  if [ "$height_set" = 0 ]; then height=$rows; fi
+  for n in "$width" "$height"; do case $n in ''|*[!0-9]*) usage ;; esac; done
+  [ "$width" -gt 0 ] || usage
+}
 frame() {
   local agents available ledger mtime tabs workspaces
   if [ ! -f "$run/status.json" ]; then
@@ -134,7 +148,7 @@ frame() {
     if $h > 0 then
       until ((lines|length) <= $h or (.ledger|length) == 0; .ledger |= .[1:]) |
       if (lines|length) > $h then
-        .milestones = ([$s.milestones[]? | select(.state == "active") | milestone] +
+        .milestones = (["MILESTONES"] + [$s.milestones[]? | select(.state == "active") | milestone] +
           ([$s.milestones[]? | select(.state == "pending") | milestone]|.[:1]) +
           ([$s.milestones[]? | select(.state == "done")]|length|if . > 0 then ["+\(.) done"] else [] end))
       else . end
@@ -143,6 +157,7 @@ frame() {
     .[] | cut' "$run/status.json"
 }
 while :; do
+  measure_size
   output=$(frame)
   if [ "$tty_loop" = 1 ]; then
     printf '\033[H'

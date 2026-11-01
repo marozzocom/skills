@@ -95,7 +95,7 @@ mkdir "$run/.status.lock"
 SECONDS=0
 out=$("$S" "$run" node N1 ci=pass 2>&1); rc=$?; elapsed=$SECONDS
 assert_eq held-lock-exit 1 "$rc"
-assert_contains lock-recovery "if no writer is running, remove $run/.status.lock" "$out"
+assert_contains lock-recovery "status lock held for 5 s — another writer may be running; if none is, remove $run/.status.lock" "$out"
 bounded=no; if [ "$elapsed" -ge 4 ] && [ "$elapsed" -le 8 ]; then bounded=yes; fi
 assert_eq lock-bounded yes "$bounded"
 held=no; if [ -d "$run/.status.lock" ]; then held=yes; fi
@@ -123,4 +123,35 @@ jq -jRs 'split("<!-- status-matrix:begin -->")[0]' "$marked/ledger.md" >"$SCRATC
 jq -jRs 'split("<!-- status-matrix:end -->")[1]' "$marked/ledger.md" >"$SCRATCH/init-suffix"
 cmp -s "$SCRATCH/before-prefix" "$SCRATCH/init-prefix"; assert_eq init-prefix-identical 0 "$?"
 cmp -s "$SCRATCH/before-suffix" "$SCRATCH/init-suffix"; assert_eq init-suffix-identical 0 "$?"
+# Captured valid UTF-8 that macOS iconv rejects: preserve both outer slices
+# through init and a later matrix rewrite, using the fixture's exact bytes.
+repro=$SCRATCH/utf8-reproducer; mkdir "$repro"
+cp "$TESTS_DIR/fixtures/utf8-valid-iconv-false-reject.md" "$repro/ledger.md"
+for part in prefix suffix; do
+  filter='split("<!-- status-matrix:begin -->")[0]'
+  [ "$part" != suffix ] || filter='split("<!-- status-matrix:end -->")[1]'
+  jq -jRs "$filter" "$repro/ledger.md" >"$SCRATCH/repro-$part"
+done
+"$S" "$repro" init repro repro 'Valid UTF-8 regression' >/dev/null
+assert_eq utf8-reproducer-init 0 "$?"
+for phase in init node; do
+  if [ "$phase" = node ]; then
+    "$S" "$repro" node N1 'title=Rewritten matrix' state=review >/dev/null
+    assert_eq utf8-reproducer-node 0 "$?"
+  fi
+  for part in prefix suffix; do
+    filter='split("<!-- status-matrix:begin -->")[0]'
+    [ "$part" != suffix ] || filter='split("<!-- status-matrix:end -->")[1]'
+    jq -jRs "$filter" "$repro/ledger.md" >"$SCRATCH/repro-current-$part"
+    cmp -s "$SCRATCH/repro-$part" "$SCRATCH/repro-current-$part"
+    assert_eq "utf8-$phase-$part-byte-identical" 0 "$?"
+  done
+done
+empty=$SCRATCH/empty-ledger; mkdir "$empty"
+: >"$empty/ledger.md"
+"$S" "$empty" init empty empty 'Empty ledger' >/dev/null
+assert_eq empty-ledger-init 0 "$?"
+"$S" "$empty" node N1 state=planned >/dev/null
+assert_eq empty-ledger-node 0 "$?"
+assert_eq empty-ledger-markers 1 "$(grep -c '^<!-- status-matrix:end -->$' "$empty/ledger.md")"
 finish

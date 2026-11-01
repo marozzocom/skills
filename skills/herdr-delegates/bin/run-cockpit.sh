@@ -53,7 +53,7 @@ workspace_label=$(jq -r --arg w "$HERDR_WORKSPACE_ID" '[.result.workspaces[]|sel
 if [ "$own" = true ]; then
   if [ "$workspace_label" != "$prefix" ]; then
     herdr workspace rename "$HERDR_WORKSPACE_ID" "$prefix" >/dev/null || fail "workspace rename failed"
-    echo "workspace named $prefix"; changed=1
+    echo "workspace named $prefix (was $workspace_label)"; changed=1
   fi
 else echo "workspace unchanged: shared with other runs"; fi
 board=$(jq -r '.herdr.board_pane // ""' "$status")
@@ -72,7 +72,7 @@ if [ "$no_board" = 0 ]; then
     printf -v board_command '%q %q' "$here/run-board.sh" "$run"
     herdr pane run "$board" "$board_command" >/dev/null || fail "board command failed"
     echo "board opened in $board"; changed=1
-  fi
+  else echo "board reused in $board"; fi
 fi
 if ! jq -e --arg name "$name" --arg pane "$HERDR_PANE_ID" --arg tab "$HERDR_TAB_ID" '
   any(.agents[]; .name == $name and .role == "overseer" and .transport == "direct" and .pane == $pane and .tab == $tab and .state == "open")' "$status" >/dev/null; then

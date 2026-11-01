@@ -175,7 +175,7 @@ with no error, agent stuck `idle`, pane reads a few characters per line
 ## The board pane — the human's view of the run
 
 `bin/run-board.sh RUN_DIR` redraws every 15 s from status.json, the
-ledger, and `herdr agent list`: a **WAITING ON YOU** banner (every
+ledger, `herdr agent list`, `herdr tab list`, and `herdr workspace list`: a **WAITING ON YOU** banner (every
 `status-set.sh human add` item, and any run agent — you included —
 showing `blocked`); the milestone and node checklist with PR and CI; each
 open agent with herdr's status, time in state, tab, and live title; a

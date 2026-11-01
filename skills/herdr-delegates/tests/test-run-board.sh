@@ -50,11 +50,16 @@ printf '%s\n' "$out" | jq -Rs -e 'split("\n")|all(.[];
   (explode|map(if . == 30028 or . == 8986 then 2 elif . == 769 then 0 else 1 end)|add // 0) <= 80)' >/dev/null
 assert_eq display-columns-80 0 "$?"
 assert_eq only-allowed-lists $'herdr agent list\nherdr tab list\nherdr workspace list' "$(sort -u "$MOCK_LOG")"
+# A single waiter leaves room for the compact milestone heading at 14 rows.
+cp "$HERDR_SCENARIO/agents.json" "$SCRATCH/full-agents"
+jq '.result.agents[1].agent_status="idle"' "$HERDR_SCENARIO/agents.json" >"$SCRATCH/compact-agents"
+mv "$SCRATCH/compact-agents" "$HERDR_SCENARIO/agents.json"
 compact=$("$B" "$run" --once --width 80 --height 14)
+cp "$SCRATCH/full-agents" "$HERDR_SCENARIO/agents.json"
 lines=$(printf '%s\n' "$compact" | wc -l | tr -d ' ')
 fits=no; if [ "$lines" -le 14 ]; then fits=yes; fi
 assert_eq compact-height yes "$fits"
-for needle in 'RUN fixture' 'WAITING ON YOU' 'H1: Approve PR' 'N1 Helper scripts' 'fixture-impl' 'fixture-gone' 'STALE:' 'M6 Build' 'M7 Land' '+5 done'; do
+for needle in 'RUN fixture' 'WAITING ON YOU' 'H1: Approve PR' 'MILESTONES' 'N1 Helper scripts' 'fixture-impl' 'fixture-gone' 'STALE:' 'M6 Build' 'M7 Land' '+5 done'; do
   assert_contains "compact-$needle" "$needle" "$compact"
 done
 assert_not_contains compact-later-milestone 'M8 Later' "$compact"
@@ -94,6 +99,8 @@ out=$("$B" "$SCRATCH/missing" --once --width 80); assert_eq missing-exit 0 "$?"
 assert_contains missing-hint 'No status.json' "$out"
 assert_eq missing-one-line 1 "$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
 assert_eq tiny-width 5 "$("$B" "$SCRATCH/missing" --once --width 5 | tr -d '\n' | wc -c | tr -d ' ')"
+assert_eq columns-env-width 7 "$(COLUMNS=7 "$B" "$SCRATCH/missing" --once | tr -d '\n' | wc -c | tr -d ' ')"
+assert_eq explicit-width-wins 9 "$(COLUMNS=7 "$B" "$SCRATCH/missing" --once --width 9 | tr -d '\n' | wc -c | tr -d ' ')"
 for args in '--width 0' '--width nope' '--interval 0' '--height -1' '--stale-minutes nope' '--unknown'; do
   # shellcheck disable=SC2086
   "$B" "$run" --once $args >/dev/null 2>&1; assert_eq "usage-$args" 2 "$?"

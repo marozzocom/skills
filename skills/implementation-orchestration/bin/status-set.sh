@@ -8,6 +8,7 @@
 # init creates a ledger and markers, or inserts markers after its first line.
 # Keys split at the first '='; quote an entire argument containing spaces.
 # STATUS_NOW=UTC-ISO overrides the clock for deterministic callers/tests.
+# STATUS_LOCK_WAIT=seconds overrides the 5 s lock wait (nonnegative decimal).
 # Exit: 0 one confirmation line, 1 I/O/lock failure, 2 usage or invalid field.
 set -euo pipefail
 trap 'exit 1' ERR
@@ -17,6 +18,9 @@ fail() { echo "ERROR: $*" >&2; exit 1; }
 run=$1; command=$2; shift 2
 stamp=${STATUS_NOW:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}
 jq -en --arg s "$stamp" '$s | fromdateiso8601' >/dev/null 2>&1 || usage
+lock_wait=${STATUS_LOCK_WAIT:-5}
+[[ $lock_wait =~ ^[0-9]+([.][0-9]+)?$ ]] || usage
+lock_tries=$(jq -nr --arg s "$lock_wait" '$s|tonumber|. * 10|ceil')
 fields='{}'; id=''; action=''; text=''; collection=''
 case $command in
   init) [ $# -eq 3 ] || usage ;;
@@ -39,36 +43,38 @@ case $command in
         node:state) case $value in planned|briefed|implementing|review|fix|staged|merged|dropped|blocked) ;; *) usage ;; esac ;;
         agent:state) case $value in open|closed) ;; *) usage ;; esac ;;
         node:ci) case $value in none|pending|pass|fail) ;; *) usage ;; esac ;;
-        node:pr) case $value in ''|*[!0-9]*) usage ;; esac ;;
+        node:pr) case $value in *[!0-9]*) usage ;; esac ;;
         *) usage ;;
       esac
       fields=$(jq -cn --argjson f "$fields" --arg k "$key" --arg v "$value" \
-        '$f + {($k): (if $k == "pr" then ($v|tonumber) else $v end)}')
+        '$f + {($k): (if $k == "pr" then (if $v == "" then null else ($v|tonumber) end) else $v end)}')
     done ;;
   human)
     [ $# -ge 2 ] || usage
     action=$1; id=$2
     [ -n "$id" ] || usage
-    case $action in add) [ $# -eq 3 ] || usage; text=$3 ;; clear) [ $# -eq 2 ] || usage ;; *) usage ;; esac ;;
+    case $action in add) [ $# -eq 3 ] && [ "$id" != --all ] || usage; text=$3 ;; clear) [ $# -eq 2 ] || usage ;; *) usage ;; esac ;;
   *) usage ;;
 esac
 [ -d "$run" ] || fail "missing run directory: $run"
+lock=$run/.status.lock
 locked=0; tmp=''; ledger_tmp=''; ledger_seed=''
 cleanup() {
   [ -z "$tmp" ] || rm -f "$tmp"
   [ -z "$ledger_tmp" ] || rm -f "$ledger_tmp"
   [ -z "$ledger_seed" ] || rm -f "$ledger_seed"
-  if [ "$locked" = 1 ]; then rmdir "$run/.status.lock"; fi
+  if [ "$locked" = 1 ]; then rmdir "$lock" 2>/dev/null || true; fi
 }
 trap cleanup EXIT
 trap 'exit 1' HUP INT TERM
 tries=0
-until mkdir "$run/.status.lock" 2>/dev/null; do
+until mkdir "$lock" 2>/dev/null; do
   tries=$((tries + 1))
-  [ "$tries" -lt 50 ] || fail "status lock unavailable after 5 seconds; if no writer is running, remove $run/.status.lock"
+  [ "$tries" -lt "$lock_tries" ] || fail "status lock held for $lock_wait s — another writer may be running; if none is, remove $lock"
   sleep 0.1
 done
 locked=1
+rm -f "$run"/.status.?????? "$run"/.ledger.?????? "$run"/.ledger-seed.??????
 tmp=$(mktemp "$run/.status.XXXXXX")
 if [ "$command" = init ]; then
   [ ! -e "$run/status.json" ] || fail "status.json already exists"
@@ -99,6 +105,11 @@ else
     end' "$run/status.json" >"$tmp"
 fi
 ledger_source=$run/ledger.md
+if [ -f "$ledger_source" ]; then
+  # macOS iconv can reject valid UTF-8; compare jq's decoded bytes instead.
+  jq -jn --rawfile l "$ledger_source" '$l' | cmp -s - "$ledger_source" ||
+    fail "ledger.md is not valid UTF-8; fix it before the matrix is re-rendered"
+fi
 if [ "$command" = init ]; then
   if [ ! -f "$ledger_source" ]; then
     ledger_seed=$(mktemp "$run/.ledger-seed.XXXXXX")
@@ -121,7 +132,7 @@ if [ -f "$ledger_source" ] && grep -q '<!-- status-matrix:begin -->' "$ledger_so
    grep -q '<!-- status-matrix:end -->' "$ledger_source"; then
   ledger_tmp=$(mktemp "$run/.ledger.XXXXXX")
   jq -jn --slurpfile s "$tmp" --rawfile ledger "$ledger_source" '
-    def cell: tostring | gsub("\\|"; "\\|") | gsub("[\r\n]"; " ");
+    def cell: tostring | gsub("<!--"; "<!- -") | gsub("\\|"; "\\|") | gsub("[\r\n]"; " ");
     def row: "| " + (map(cell) | join(" | ")) + " |";
     "<!-- status-matrix:begin -->" as $b | "<!-- status-matrix:end -->" as $e |
     # jq string index reports byte offsets on some supported versions;
@@ -142,6 +153,12 @@ if [ -f "$ledger_source" ] && grep -q '<!-- status-matrix:begin -->' "$ledger_so
       "\n\n", $ledger[($from + $end):]
     end' >"$ledger_tmp"
 fi
+mode_of() {
+  if [ -e "$1" ]; then stat -f %Lp "$1" 2>/dev/null || stat -c %a "$1"
+  else echo 644; fi
+}
+chmod "$(mode_of "$run/status.json")" "$tmp"
+if [ -n "$ledger_tmp" ]; then chmod "$(mode_of "$run/ledger.md")" "$ledger_tmp"; fi
 mv "$tmp" "$run/status.json"; tmp=''
 if [ -n "$ledger_tmp" ]; then mv "$ledger_tmp" "$run/ledger.md"; ledger_tmp=''; fi
 printf 'status updated: %s %s\n' "$command" "$run/status.json"
