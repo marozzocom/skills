@@ -1,16 +1,20 @@
 ---
 name: implementation-orchestration
-description: "The spine of an implementation run: routing, roles, the
-contract, the ledger, and the per-node transport — direct, native
-subagent, or delegated CLI agent in a Herdr pane — while this session keeps
-design authority, independent review, verification, and every git, PR, and
-merge operation. Use PROACTIVELY when starting implementation work (a plan,
-a feature, a fix) or a review-only request, in any session; the delegate
-transport additionally needs a Herdr session (HERDR_ENV=1). Honor an
-explicit request to work directly or to delegate. Never activate in a
-session executing a brief from an orchestrator: an assigned worker is a
-leaf (§Routing guard). Companion skills, loaded by phase: design-gate,
-delegation-briefs, herdr-delegates, independent-review."
+description: >-
+  The spine of an implementation run: routing, roles, the contract, the
+  ledger, and the per-node transport — direct, native subagent, or delegated
+  CLI agent in a Herdr pane — while this session keeps design authority,
+  review, verification, and all git, PR, and merge operations. Use
+  PROACTIVELY when starting implementation work beyond the light lane (one
+  or two small files, no open fork, no risk surface), or when the user asks
+  for another agent's second opinion. Not for questions, explanations,
+  lookups, an investigation the user asked you to do yourself, or a
+  light-lane change: §Routing settles those without a run. The delegate
+  transport needs a Herdr session (HERDR_ENV=1). Honor an explicit request
+  to work directly or to delegate. Never activate in a session executing a
+  brief from an orchestrator: a worker is a leaf (§Routing guard).
+  Companions by phase: design-gate, delegation-briefs, herdr-delegates,
+  independent-review.
 ---
 
 # Implementation orchestration — the spine
@@ -32,24 +36,47 @@ SETUP.md.
 
 1. **Executing an assigned brief?** You are a worker, a leaf — stop here
    (§Routing guard).
-2. **Explicit request wins.** "Do it yourself" → direct; "delegate this"
-   → delegate; recorded in the ledger as the deciding signal. Neither
-   lifts any rule about isolation, review, verification, or authority.
-   "No agents at all" also rules out reviewer agents: then triage and
-   review are yours, to the same standard, and the report says the review
-   was not independent.
-3. **Review-only request** (second opinion, audit, investigation): brief
-   one or more reviewers by path with the read fence (delegation-briefs),
-   or review yourself when asked for your own read; adjudicate, report,
-   tear down. No contract, no landing mode, no worktree you write to; a
-   notes file stands in for the ledger. Findings that call for changes
-   are a new implementation decision — return to step 2.
-4. **Implementation:** recon, then the `design-gate` skill (via
+2. **Not a run.** Questions, explanations, lookups, status checks, and an
+   investigation or review the user asked *you* to do (your own read, not
+   another agent's) take no protocol: no ledger, contract, scouts, or
+   reviewers. Nor do the user's notes, or memory entries that record
+   facts; a memory entry that grants authority or sets a rule is standing
+   agent instructions. Answer or report directly; a change that follows
+   from it is a new decision — return to step 3.
+3. **Explicit request wins.** "Do it yourself" → direct; "delegate this"
+   → delegate, even for a change the light lane would take; recorded in
+   the ledger as the deciding signal. Neither lifts any rule about
+   isolation, review, verification, or authority. "No agents at all" also
+   rules out reviewer agents: then triage and review are yours, to the
+   same standard, and the report says the review was not independent.
+4. **The light lane — a small change.** Decided after recon, never from
+   the request's label ("quick fix" describes the request, not the work).
+   It needs all of: one or two files and a diff readable at a glance
+   (roughly under 100 changed lines); no open fork — recon leaves one
+   obvious way to do it; and no **risk surface**: security, sandbox or
+   permissions, auth, `unsafe` code, data integrity or anything
+   irreversible (migrations, persisted formats, deleting or rewriting
+   user files), concurrency, money, a public interface, dependencies or
+   lockfiles, build, CI, or packaging config, and standing agent
+   instructions (skills, agent instruction files, memory that grants
+   authority or sets a rule). When in doubt, it is not small. Work in the
+   repo's isolation, run its gates, read your own diff against the
+   request, mutation-check any new test, and land by the repo's delivery
+   rules; the commit message or PR body carries the one-line frame and
+   "risk surface: none". No ledger, status file, contract, critique, or
+   reviewer agent. When recon turns up a fork or a risk surface, step 6.
+5. **Second-opinion request** — the user asks for another agent's read,
+   an audit by reviewers, or a multi-reviewer pass: brief one or more
+   reviewers by path with the read fence (delegation-briefs); adjudicate,
+   report, tear down. No contract, no landing mode, no worktree you write
+   to; a notes file stands in for the ledger. Findings that call for
+   changes are a new implementation decision — return to step 3.
+6. **Implementation:** recon, then the `design-gate` skill (via
    phase-design.md) frames the work and chooses the transport per node
    from what the recon observed — never from the request's label.
-5. **Implementing directly** changes who types, nothing else: the repo's
-   isolation rules, the design gate, the review half, and the landing
-   authority rules all still apply.
+7. **Implementing directly** past the light lane changes who types,
+   nothing else: the repo's isolation rules, the design gate, the review
+   half, and the landing authority rules all still apply.
 
 ## Phase files — read just-in-time, each loads its companion skill
 
@@ -76,8 +103,9 @@ After a milestone compaction re-read only the phase you are in.
 - Delegates are leaves: no spawning or sub-delegating, whatever their
   harness or model; every brief says so, with the valve "propose a split
   to me and I decide".
-- You triage every diff, read its risk-bearing code line-by-line, re-run
-  verification yourself before committing, and own commit, PR, and merge.
+- You own commit, PR, and merge. Past the light lane you also triage
+  every diff, read its risk-bearing code line-by-line, and re-run
+  verification yourself before committing.
   Never forward a delegate's claimed results as your verification.
 - One task = one fresh worktree = one fresh implementer session. The
   implementer's reasoning effort is decided per node (design-gate §7) and

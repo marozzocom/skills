@@ -1,16 +1,17 @@
 ---
 name: herdr-delegates
-description: "The Herdr transport for delegated agents: start CLI
-implementers, reviewers, scouts, and advisors in sibling Herdr panes with
-model and effort pinned, name them with a collision-free run prefix,
-deliver briefs by path, wait on turns and adjudicate blocked dialogs with
-bounded pane reads, rotate an agent onto a new worktree, lay agents out in
-tabs by node within a measured pane budget, run the board pane that shows
-the human the run's state, and tear panes down before worktrees.
-Use when the design gate chose the delegate transport for a node, or the
-user asked to run an agent in a Herdr pane. Requires HERDR_ENV=1 and the
-herdr skill for CLI mechanics. Never activate in a session executing an
-assigned brief from an orchestrator."
+description: >-
+  The Herdr transport for delegated agents: start CLI implementers,
+  reviewers, scouts, and advisors in sibling Herdr panes with model and
+  effort pinned, name them with a collision-free run prefix, deliver briefs
+  by path, wait on turns and adjudicate blocked dialogs with bounded pane
+  reads, rotate an agent onto a new worktree, lay agents out in tabs by node
+  within a measured pane budget, run the board pane that shows the human the
+  run's state, and tear panes down before worktrees. Use when the design
+  gate chose the delegate transport for a node, or the user asked to run an
+  agent in a Herdr pane. Requires HERDR_ENV=1 and the herdr skill for CLI
+  mechanics. Never activate in a session executing an assigned brief from an
+  orchestrator.
 ---
 
 # Herdr delegates

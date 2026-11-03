@@ -8,7 +8,8 @@ recon, the cited frame, the independent critique, the task shape and stop
 criteria, the contract, the per-node transport choice, and the per-node
 reasoning effort. SKILL.md §Routing runs first: a worker stops there, an
 explicit "do it yourself" or "delegate this" is recorded as the transport
-signal, and a review-only request never reaches the gate.
+signal, and a request that is not a run, a light-lane change, and a
+second-opinion request never reach the gate.
 
 What this protocol adds for a delegated run:
 

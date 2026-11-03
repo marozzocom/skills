@@ -15,10 +15,32 @@ head -n1 SKILL.md | grep -qx -- '---' || err "SKILL.md must start with a --- fro
 fm=$(awk 'NR==1{next} /^---$/{exit} {print}' SKILL.md)
 name=$(printf '%s\n' "$fm" | sed -n 's/^name:[[:space:]]*//p')
 [ "$name" = "$(basename "$here")" ] || err "frontmatter name '$name' != directory '$(basename "$here")'"
-desc=$(printf '%s\n' "$fm" | awk '/^description:/{flag=1} flag{print}' | sed '1s/^description:[[:space:]]*//' | tr '\n' ' ' | sed 's/^"//; s/"[[:space:]]*$//')
+desc=$(printf '%s\n' "$fm" | awk '/^description:/{flag=1; print; next} flag && /^[a-z][a-z_-]*:/{exit} flag{print}' | sed '1s/^description:[[:space:]]*//; 1s/^[>|][-+]*[[:space:]]*$//' | tr '\n' ' ' | sed 's/[[:space:]][[:space:]]*/ /g; s/^ //; s/ $//; s/^"//; s/"$//')
 [ -n "$desc" ] || err "frontmatter description missing"
 [ "${#desc}" -le 1024 ] || err "description is ${#desc} chars (>1024)"
 printf '%s\n' "$fm" | grep -q '^[a-z][a-z_-]*:' || err "frontmatter has no keys"
+# Claude Code drops a quoted description that spans lines and lists the
+# skill under its first heading instead, so the trigger and its guards never
+# reach the model. One line or a block scalar (`>-` folds); companions too.
+for skill in SKILL.md ../design-gate/SKILL.md ../delegation-briefs/SKILL.md ../herdr-delegates/SKILL.md ../independent-review/SKILL.md; do
+  [ -e "$skill" ] || continue
+  v=$(awk 'NR==1{next} /^---$/{exit} /^description:/{sub(/^description:[[:space:]]*/, ""); if ($0 !~ /^["\047]/) sub(/[[:space:]]+#.*$/, ""); else sub(/["\047][[:space:]]+#[^"\047]*$/, substr($0, 1, 1)); sub(/[[:space:]]+$/, ""); print; exit}' "$skill")
+  nxt=$(awk 'NR==1{next} /^---$/{exit} f{print; exit} /^description:/{f=1}' "$skill")
+  q=$(printf '%s' "$v" | cut -c1)
+  case $q in
+    '>'|'|') ;;
+    '"'|"'")
+      rest=${v#?}
+      case $rest in
+        *"$q") ;;
+        *) err "$skill: quoted description spans lines (use one line or >-)" ;;
+      esac ;;
+    *)
+      case $nxt in
+        [[:space:]]*) err "$skill: plain description spans lines (use one line or >-)" ;;
+      esac ;;
+  esac
+done
 
 # --- referenced files exist ------------------------------------------------
 for f in SKILL.md references/phase-*.md references/brief-template.md references/run-report.md; do

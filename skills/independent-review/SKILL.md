@@ -1,16 +1,19 @@
 ---
 name: independent-review
-description: "Independent verification and tiered review of an implementation
-before it is committed, whoever wrote it — you, a subagent, or a delegated
-CLI agent — and on any done-report. Owns the acceptance re-run of
-deterministic gates, the review inventory and triage, the risk-range deep
-read, mutation checks on new tests, centralized checklists, fix rounds,
-review threads, and the external-bot escalation rule. Use PROACTIVELY
-before committing your own direct implementation of more than a trivial
-diff, when a delegate or subagent reports done, and when asked for a
-second-opinion review. The reviewer is never the author of the diff and
-never shares the author's context. Never activate in a session executing
-an assigned brief from an orchestrator: the orchestrator reviews."
+description: >-
+  Independent verification and tiered review of an implementation before it
+  is committed, whoever wrote it — you, a subagent, or a delegated CLI agent
+  — and on any done-report. Owns the acceptance re-run of deterministic
+  gates, the review inventory and triage, the risk-range deep read, mutation
+  checks on new tests, centralized checklists, fix rounds, review threads,
+  and the external-bot escalation rule. Use PROACTIVELY before committing
+  your own direct implementation beyond the light lane
+  (implementation-orchestration §Routing: one or two small files, no open
+  fork, no risk surface), when a delegate or subagent that changed code
+  reports done, and when the user asks for another agent's second opinion.
+  The reviewer is never the author of the diff and never shares the author's
+  context. Never activate in a session executing an assigned brief from an
+  orchestrator: the orchestrator reviews.
 ---
 
 # Independent review
@@ -35,8 +38,9 @@ local, created from the templates beside them).
 - **Routine diffs:** a fast reviewer of any family, briefed by path with a
   read fence (below). A native subagent is the cheapest transport; a
   pane-hosted CLI when the environment pins one or the human asked.
-- **Risk-bearing surfaces** (auth, permissions, data integrity,
-  concurrency, money): your own line-by-line read, **and** where a
+- **Risk-bearing surfaces** (the spine §Routing risk-surface list:
+  auth, permissions, data integrity, concurrency, money, and the
+  rest): your own line-by-line read, **and** where a
   confidently wrong "clean" is the expensive failure, a reviewer that is
   preferably a **different vendor** from the diff's author, failing that
   a **different model family** of the same vendor, never the same model —
@@ -44,9 +48,9 @@ local, created from the templates beside them).
   review shares its training. Independence is measured against the
   author of the diff, not the orchestrator. A "no findings" from a
   same-family fast reviewer on these surfaces is not clearance.
-- **Small direct diffs** (single-digit files, no risk surface): your own
-  read against the inventory is the review; no fan-out. Gates and the
-  mutation check still run.
+- **Light-lane changes** (spine §Routing) take no skill run: the repo's
+  gates, your own read of the diff, and a mutation check on any new test.
+  Everything past that lane gets a reviewer that is not its author.
 - Record per node in the ledger or notes: who reviewed, which family,
   what they were fenced to. "Who verified this?" must always be
   answerable.
