@@ -1,8 +1,8 @@
 # Phase: review — load the independent-review skill
 
 Read at the first done-report, and before committing a direct
-implementation. The review half of this protocol lives in the
-**`independent-review`** skill, installed alongside this one: invoke it
+implementation past the light lane (SKILL.md §Routing). The review
+half of this protocol lives in the **`independent-review`** skill, installed alongside this one: invoke it
 (the Skill tool, or read `${CLAUDE_SKILL_DIR}/../independent-review/SKILL.md`)
 and follow it in full. Its helpers are at
 `${CLAUDE_SKILL_DIR}/../independent-review/bin/` — `run-gates.sh`,

@@ -1,16 +1,20 @@
 ---
 name: design-gate
-description: "Frame an implementation before anyone implements it: recon,
-the frame (decisions with file:line, forks and why the loser lost, scope
-fence), a dependency scout, an independent critique of the frame, the task
-shape (gates, milestones, stop criteria), the contract (goals, what proves
-each node done, planned human gates, landing mode), the per-node transport
-choice (direct / native subagent / delegate) from observed signals, and
-the per-node reasoning-effort decision. Use PROACTIVELY when starting any
-implementation work — a feature, a fix, a plan to execute, a refactor —
-before writing code or a brief, whether you will implement yourself or
-hand it off; and when reviewing a plan or ADR before it is executed. Never
-activate in a session executing an assigned brief from an orchestrator."
+description: >-
+  Frame an implementation before anyone implements it: recon, the frame
+  (cited decisions, forks, scope fence), a dependency scout, an independent
+  critique of the frame, the task shape (gates, milestones, stop criteria),
+  the contract (goals, what proves each node done, planned human gates,
+  landing mode), the per-node transport choice (direct / native subagent /
+  delegate) from observed signals, and the per-node reasoning-effort
+  decision. Use PROACTIVELY when starting implementation work beyond a small
+  change — a feature, a fix of more than two files or with an open fork or
+  on a risk surface, a plan to execute, a refactor — before writing code or
+  a brief, whether you will implement yourself or hand it off; and when
+  framing a plan or ADR an orchestrated run is about to execute. Not for
+  questions, lookups, or a light-lane change (implementation-orchestration
+  §Routing). Never activate in a session executing an assigned brief from an
+  orchestrator.
 ---
 
 # Design gate
@@ -21,10 +25,13 @@ answer faithfully, and every gate goes green. So the frame is written
 down, cited, critiqued by someone who did not write it, and only then
 built — whoever builds it.
 
-Size the gate to the open questions. A direct change with no open fork
-needs one frame line in the ledger or notes and no fan-out; a feature
-with three forks needs the full pass. Never skip the gate because the
-request sounds small: "quick fix", "hotfix", and "one file" describe the
+Size the gate to the open questions. A light-lane change (spine §Routing:
+one or two small files, no open fork, no risk surface) never reaches
+this gate; its one-line frame goes in the commit message or PR body. A
+direct change past that lane with no open fork needs one frame line in
+the ledger or notes and no fan-out; a feature with three forks needs the
+full pass. The lane is decided after recon, never because the request
+sounds small: "quick fix", "hotfix", and "one file" describe the
 request, not the work.
 
 ## 1. Recon before anything

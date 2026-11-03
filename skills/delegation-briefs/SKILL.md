@@ -1,16 +1,19 @@
 ---
 name: delegation-briefs
-description: "Write the brief that hands work to an agent that did not share
-your conversation — a fresh subagent, a worktree-isolated worker, or a
-delegated CLI agent in another process — and fix the report shape its
-result comes back in. Covers reading order and scope fence, the read fence,
-explicit role assignment, the bounded initiative line, the verification
-floor, 'done means' as invariants plus exact commands, the leaf rule, the
-~40-line report head, two-brief bug fixes, and fix rounds as briefs; with a
-per-transport annex. Use PROACTIVELY whenever you are about to delegate
-implementation, investigation, or review to any agent, whichever transport
-carries it. Never activate in a session executing an assigned brief from an
-orchestrator: a worker is a leaf and writes no briefs."
+description: >-
+  Write the brief that hands work to an agent that did not share your
+  conversation — a fresh subagent, a worktree-isolated worker, or a
+  delegated CLI agent in another process — and fix the report shape its
+  result comes back in. Covers reading order and scope fence, the read
+  fence, explicit role assignment, the bounded initiative line, the
+  verification floor, 'done means' as invariants plus exact commands, the
+  leaf rule, the ~40-line report head, two-brief bug fixes, and fix rounds
+  as briefs; with a per-transport annex. Use PROACTIVELY whenever you are
+  about to delegate implementation, review, or an investigation that feeds
+  an implementation decision to any agent, whichever transport carries it. A
+  read-only lookup spawned to answer a question needs only a clear prompt.
+  Never activate in a session executing an assigned brief from an
+  orchestrator: a worker is a leaf and writes no briefs.
 ---
 
 # Delegation briefs

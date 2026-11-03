@@ -15,7 +15,7 @@ head -n1 SKILL.md | grep -qx -- '---' || err "SKILL.md must start with a --- fro
 fm=$(awk 'NR==1{next} /^---$/{exit} {print}' SKILL.md)
 name=$(printf '%s\n' "$fm" | sed -n 's/^name:[[:space:]]*//p')
 [ "$name" = "$(basename "$here")" ] || err "frontmatter name '$name' != directory '$(basename "$here")'"
-desc=$(printf '%s\n' "$fm" | awk '/^description:/{flag=1} flag{print}' | sed '1s/^description:[[:space:]]*//' | tr '\n' ' ' | sed 's/^"//; s/"[[:space:]]*$//')
+desc=$(printf '%s\n' "$fm" | awk '/^description:/{flag=1; print; next} flag && /^[a-z][a-z_-]*:/{exit} flag{print}' | sed '1s/^description:[[:space:]]*//; 1s/^[>|][-+]*[[:space:]]*$//' | tr '\n' ' ' | sed 's/[[:space:]][[:space:]]*/ /g; s/^ //; s/ $//; s/^"//; s/"$//')
 [ -n "$desc" ] || err "frontmatter description missing"
 [ "${#desc}" -le 1024 ] || err "description is ${#desc} chars (>1024)"
 
