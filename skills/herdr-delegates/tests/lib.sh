@@ -6,6 +6,8 @@ set -u
 unset BASH_ENV ENV HERDR_FLAVOR HERDR_BACKEND_RUN_DIR
 while IFS= read -r hc_var; do unset "$hc_var"; done < <(compgen -v HC_)
 export HERDR_ENV=1
+# Scratch run dirs live under TMPDIR; status-set.sh init refuses that outside tests.
+export STATUS_ALLOW_TMP=1
 
 TESTS_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck disable=SC2034  # used by the sourcing tests

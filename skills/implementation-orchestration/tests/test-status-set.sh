@@ -5,6 +5,29 @@
 S="$BIN_DIR/status-set.sh"
 run="$SCRATCH/run with spaces"; mkdir "$run"
 export STATUS_NOW=2026-11-01T10:00:00Z
+tmprun="$SCRATCH/tmp-run"; mkdir "$tmprun"
+err=$(env -u STATUS_ALLOW_TMP "$S" "$tmprun" init example ex goal 2>&1 >/dev/null); rc=$?
+assert_eq init-refuses-temp-tree 2 "$rc"
+assert_contains init-temp-tree-hint 'implementation-orchestration/runs/<run-id>' "$err"
+assert_eq init-temp-tree-no-status 1 "$([ -e "$tmprun/status.json" ]; echo $?)"
+ln -s "$tmprun" "$SCRATCH/linked-run"
+env -u STATUS_ALLOW_TMP "$S" "$SCRATCH/linked-run" init example ex goal >/dev/null 2>&1
+assert_eq init-refuses-symlink-into-temp 2 "$?"
+tmp_phys=$(cd "$tmprun" && pwd -P)
+err=$(cd "$SCRATCH" && CDPATH="$SCRATCH" env -u STATUS_ALLOW_TMP "$S" tmp-run init example ex goal 2>&1 >/dev/null); rc=$?
+assert_eq init-refuses-relative-under-cdpath 2 "$rc"
+assert_eq init-cdpath-resolves-one-path "ERROR: run directory is under a temp tree that macOS clears: $tmp_phys" "$(printf '%s\n' "$err" | head -1)"
+durable=$(mktemp -d "$HOME/.status-set-test.XXXXXX")
+case $(cd "$durable" && pwd -P)/ in
+  /tmp/*|/private/tmp/*|/var/folders/*|/private/var/folders/*) echo "SKIP durable-dir cases: HOME is under a temp tree" >&2 ;;
+  *)
+    env -u STATUS_ALLOW_TMP "$S" "$durable" init example ex goal >/dev/null 2>&1
+    assert_eq init-accepts-durable-dir 0 "$?"
+    ln -s "$tmprun" "$durable/link-into-temp"
+    env -u STATUS_ALLOW_TMP "$S" "$durable/link-into-temp" init example ex goal >/dev/null 2>&1
+    assert_eq init-refuses-durable-link-into-temp 2 "$?" ;;
+esac
+rm -rf "$durable"
 out=$("$S" "$run" init example ex "A goal with spaces"); rc=$?
 assert_eq init-exit 0 "$rc"
 assert_eq confirmation-lines 1 "$(printf '%s\n' "$out" | wc -l | tr -d ' ')"
