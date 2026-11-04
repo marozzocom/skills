@@ -22,13 +22,15 @@ esac
 [ "$tail_n" -ge 1 ] || { echo "usage: tail-lines must be at least 1" >&2; exit 2; }
 [ "$tail_n" -le 200 ] || { echo "usage: tail-lines above 200 is a pane read, not a probe (use herdr agent read --lines)" >&2; exit 2; }
 
-status=$(herdr agent list 2>/dev/null |
+here=$(cd "$(dirname "$0")" && pwd)
+backend=$here/herdr-backend.sh
+status=$("$backend" agents 2>/dev/null |
   jq -r --arg n "$name" \
-    '.result.agents[] | select(.name == $n) | "\(.agent_status) kind=\(.agent) pane=\(.pane_id)"')
+    '.[] | select(.name == $n) | "\(.status) kind=\(.kind) pane=\(.pane)"')
 [ -n "$status" ] || { echo "ERROR: no agent named $name (herdr agent list)" >&2; exit 1; }
 
 read_n=$((tail_n + 8))
-tail_lines=$(herdr agent read "$name" --source visible --lines "$read_n" 2>/dev/null |
+tail_lines=$("$backend" read-tail "$name" "$read_n" 2>/dev/null |
   sed -e 's/[[:space:]]*$//' | grep -v '^$' | tail -n "$tail_n")
 
 echo "$name: $status"

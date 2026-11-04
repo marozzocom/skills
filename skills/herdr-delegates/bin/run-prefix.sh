@@ -18,20 +18,26 @@ base=$(printf '%s' "$slug" | tr '[:upper:]' '[:lower:]' |
   sed -e 's/[^a-z0-9]\{1,\}/-/g' -e 's/^-//' | cut -c1-12 | sed -e 's/-$//')
 [ -n "$base" ] || { echo "usage: run-slug '$slug' has no letters or digits" >&2; exit 2; }
 
-list=$(herdr agent list 2>/dev/null) && [ -n "$list" ] ||
+here=$(cd "$(dirname "$0")" && pwd)
+backend=$here/herdr-backend.sh
+list=$("$backend" agents 2>/dev/null) && [ -n "$list" ] ||
   { echo "ERROR: herdr agent list failed — not in a Herdr session?" >&2; exit 1; }
-names=$(printf '%s' "$list" | jq -r '.result.agents[].name // empty') ||
+names=$(printf '%s' "$list" | jq -r '.[].name // empty') ||
   { echo "ERROR: unreadable herdr agent list" >&2; exit 1; }
-tabs=$(herdr tab list 2>/dev/null) ||
+tabs=$("$backend" tabs 2>/dev/null) ||
   { echo "ERROR: herdr tab list failed" >&2; exit 1; }
-tabs=$(printf '%s' "$tabs" | jq -r '.result.tabs[].label // empty') ||
+tabs=$(printf '%s' "$tabs" | jq -r '.[].label // empty') ||
   { echo "ERROR: unreadable herdr tab list" >&2; exit 1; }
-workspaces=$(herdr workspace list 2>/dev/null) ||
+workspaces=$("$backend" spaces 2>/dev/null) ||
   { echo "ERROR: herdr workspace list failed" >&2; exit 1; }
-workspaces=$(printf '%s' "$workspaces" | jq -r '.result.workspaces[].label // empty') ||
+workspaces=$(printf '%s' "$workspaces" | jq -r '.[].label // empty') ||
   { echo "ERROR: unreadable herdr workspace list" >&2; exit 1; }
 
+prefixes=$("$backend" prefixes) || exit 1
+prefixes=$(jq -r '.[]' <<<"$prefixes") || exit 1
+
 taken() {
+  printf '%s\n' "$prefixes" | grep -q -x -F "$1" ||
   printf '%s\n' "$names" | grep -q -x -e "$1" -e "$1-.*" ||
   printf '%s\n' "$tabs" | grep -q -x -e "$1" -e "$1·.*" ||
   printf '%s\n' "$workspaces" | grep -q -x -F "$1"

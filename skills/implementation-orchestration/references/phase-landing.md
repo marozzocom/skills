@@ -159,10 +159,11 @@ abandoned:
    spend is not observable — never invent it. If the project continues,
    end with the continuation prompt (SKILL.md §Context discipline).
 2. **Tear down in order:** close agent panes FIRST
-   (`herdr pane close <pane_id>` — positional ID), worktrees SECOND — an
-   agent whose cwd was deleted spins on errors. Walk status.json's
-   agents: every pane ever opened ends closed and its row says
-   `state=closed`. The board pane closes last, after the report is
+   (herdr-delegates `hb close <pane id>`), worktrees SECOND — an agent
+   whose cwd was deleted spins on errors. Walk `hb panes`, not only
+   status.json's agents: every pane the run created — agents and any
+   plain or root shell in a run tab — ends closed, and each agent row
+   says `state=closed`. The board pane closes last, after the report is
    written.
 3. **Preserve deliverables.** Remove a worktree only when nothing in it
    would be lost: `git -C <wt> status --porcelain` prints nothing, and
@@ -179,7 +180,7 @@ abandoned:
    `git worktree remove --force`, `git branch -D`, or `git clean`.
    §Complete deliverables never applies to someone's uncommitted work.
 4. **Verify with a read, not the mutation**, pasted into the report:
-   `herdr pane list` shows only panes you did not create, `git worktree
+   `hb panes` shows only panes you did not create, `git worktree
    list` only trees you did not make plus the ones step 3 kept. Never
    suppress stderr in a teardown chain or emit your own success marker;
    gate any "cleaned up" claim on exit status plus the post-state read.

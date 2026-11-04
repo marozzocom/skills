@@ -2,6 +2,8 @@
 # status-set.sh RUN_DIR init RUN_ID PREFIX "GOAL"
 # status-set.sh RUN_DIR milestone|node|agent ID k=v...
 # status-set.sh RUN_DIR meta workspace=ID cockpit_tab=ID overseer_pane=ID board_pane=ID
+# meta also accepts flavor=tui|app and app-only overseer_id=ADDRESS;
+# overseer_pane remains the physical pane ID (empty outside the window).
 # status-set.sh RUN_DIR human add ID "ACTION" | human clear ID|--all
 #
 # Atomic, mkdir-locked status.json writer; refreshes a marked ledger matrix.
@@ -28,7 +30,8 @@ case $command in
     [ $# -ge 1 ] || usage
     for pair in "$@"; do
       case $pair in *=*) key=${pair%%=*}; value=${pair#*=} ;; *) usage ;; esac
-      case $key in workspace|cockpit_tab|overseer_pane|board_pane) ;; *) usage ;; esac
+      case $key in workspace|cockpit_tab|overseer_pane|board_pane|overseer_id) ;;
+        flavor) case $value in tui|app) ;; *) usage ;; esac ;; *) usage ;; esac
       fields=$(jq -cn --argjson f "$fields" --arg k "$key" --arg v "$value" '$f + {($k):$v}')
     done ;;
   milestone|node|agent)

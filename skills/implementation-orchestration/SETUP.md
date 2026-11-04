@@ -6,7 +6,8 @@ The single source for installing and adapting this skill. Orientation:
 ## Requirements
 
 - For the delegate transport only: [Herdr](https://herdr.dev/), with the
-  orchestrator running inside a Herdr pane (`HERDR_ENV=1`), plus a
+  orchestrator running inside a Herdr session — a TUI pane (`HERDR_ENV=1`)
+  or a desktop-app terminal (`HC_TERMINAL_ID`) — plus a
   companion `herdr` skill covering its CLI mechanics. Direct and
   native-subagent nodes need neither.
 - `git`, `jq`, and `gh` (authenticated for the repos you land in);

@@ -154,4 +154,9 @@ assert_eq empty-ledger-init 0 "$?"
 "$S" "$empty" node N1 state=planned >/dev/null
 assert_eq empty-ledger-node 0 "$?"
 assert_eq empty-ledger-markers 1 "$(grep -c '^<!-- status-matrix:end -->$' "$empty/ledger.md")"
+# App identity and flavor metadata keep the physical pane separate.
+"$S" "$empty" meta flavor=app overseer_id=t1 overseer_pane=pa1 >/dev/null
+assert_eq app-flavor app "$(jq -r .herdr.flavor "$empty/status.json")"
+assert_eq app-distinct-id 't1|pa1' "$(jq -r '.herdr|[.overseer_id,.overseer_pane]|join("|")' "$empty/status.json")"
+"$S" "$empty" meta flavor=other >/dev/null 2>&1; assert_eq app-invalid-flavor 2 "$?"
 finish

@@ -148,4 +148,19 @@ for args in '--width 0' '--width nope' '--interval 0' '--height -1' '--stale-min
   # shellcheck disable=SC2086
   "$B" "$run" --once $args >/dev/null 2>&1; assert_eq "usage-$args" 2 "$?"
 done
+app_fixture
+jq '.herdr={flavor:"app",workspace:"sp1",cockpit_tab:"tb1",overseer_pane:"pa1",overseer_id:"t1"}|
+ .agents += [{name:"fixture-overseer",role:"overseer",state:"open",since:"2026-11-01T11:00:00Z",pane:"pa1",tab:"tb1"}]' "$run/status.json" >"$SCRATCH/status"
+mv "$SCRATCH/status" "$run/status.json"
+jq '.[0].name="different-hc-name"|.[0].status={app:"fixture",state:"blocked"}|.[0].title="REAL OVERSEER"|
+ . + [{address:"tspoof",agent:"fixture",name:"fixture-overseer",state:"live",reported:true,status:{app:"fixture",state:"working"},title:"SPOOF",labels:{}}]' "$HC_SCENARIO/terminals.json" >"$SCRATCH/core"
+mv "$SCRATCH/core" "$HC_SCENARIO/terminals.json"
+out=$("$B" "$run" --once --width 120)
+assert_eq app-board-exit 0 "$?"
+assert_contains app-overseer-by-id 'fixture-overseer: herdr:blocked' "$out"
+assert_contains app-live-title 'REAL OVERSEER' "$out"
+assert_not_contains app-impostor-excluded 'SPOOF' "$out"
+assert_not_contains app-impostor-no-stale 'STALE:' "$out"
+assert_contains app-space-header 'workspace: old space (sp1)' "$out"
+assert_not_contains app-no-transcript 'hc read ' "$(cat "$MOCK_LOG")"
 finish

@@ -40,4 +40,9 @@ out=$("$P" billing 2>&1); rc=$?
 assert_eq herdr-down-exit 1 "$rc"
 assert_contains herdr-down-msg "herdr agent list failed" "$out"
 
+app_fixture
+jq '.[0].name="fixture-overseer"|.[0].labels["run.prefix"]="fixture-2"' "$HC_SCENARIO/terminals.json" >"$SCRATCH/core"
+mv "$SCRATCH/core" "$HC_SCENARIO/terminals.json"
+assert_eq app-names-and-labels fixture-3 "$("$P" fixture)"
+assert_not_contains app-no-tui 'herdr agent' "$(cat "$MOCK_LOG")"
 finish

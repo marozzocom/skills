@@ -7,30 +7,37 @@ consult.
 
 ## Delivery and callback lines for a pane
 
-Write the brief to a scratchpad file and send the path
-(herdr-delegates §Delivering briefs):
+Write the brief to a file in the run folder and send the path
+(herdr-delegates §Delivering briefs; `hb` is its `herdr-backend.sh` helper,
+which speaks whichever Herdr flavor the run is in):
 
 ```bash
-herdr agent prompt <name> "Read $BRIEF_FILE in full and execute it exactly
+hb prompt <name> "Read $BRIEF_FILE in full and execute it exactly
 as written. It is your task brief from the orchestrator (the agent named
 $PREFIX-overseer)."
 ```
 
 Fill the template's `[overseer name]` with `$PREFIX-overseer` and its
-`[callback channel]` with:
+`[callback channel]` from `hb callback-line $PREFIX`, pasted verbatim.
+In the TUI it is a push line; wrap it as:
 
 ```text
 You are running inside Herdr and so am I. Message me with:
-herdr agent prompt [prefix]-overseer "<message>" — I am the orchestrator
-agent named [prefix]-overseer.
+[the callback line] — I am the orchestrator agent named [prefix]-overseer.
 ```
 
+In the desktop app it is the pull wording — write the report or questions
+file the brief names, then end your turn — because some CLIs' tool shells
+cannot reach the app's core. Name a questions file next to the report
+file, and replace every "message me one line" step in the brief with
+"end your turn"; you are watching the turn (herdr-delegates §Two flavors).
+
 The read fence additionally names the pane mechanics: "Do NOT read my pane
-(`herdr agent read [prefix]-overseer` or any other agent's pane), any
+(no pane read of [prefix]-overseer or of any other agent), any
 agent harness's session files (mine or another agent's), or Herdr session
 files." Never write commit or push phrasing into the brief text beyond
 the standard no-git line — PreToolUse hooks that regex command strings
-false-positive on the `herdr agent prompt` invocation; the file
+false-positive on the prompt invocation; the file
 indirection plus "version control" wording survives common patterns.
 
 ## Oracle consult
@@ -58,5 +65,6 @@ Answer in [answer file], at most ~40 lines: your recommendation; your
 confidence (high/medium/low) and what it rests on; what the human would
 most likely object to in each option; what evidence would change your
 answer. If the question itself is the wrong question, say so first. Then
-message me one line: herdr agent prompt [prefix]-overseer "oracle: [answer file]".
+[TUI: message me one line with the callback line: "oracle: [answer file]".
+App: end your turn.]
 ```

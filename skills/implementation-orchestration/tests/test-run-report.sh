@@ -77,4 +77,25 @@ for bad in 0 -5 abc 010 ''; do
   assert_eq "invalid-limit-$bad" 2 "$rc"
   assert_contains "invalid-limit-$bad-msg" 'RUN_REPORT_PR_LIMIT must be 1-1000' "$(cat "$SCRATCH/err")"
 done
+# The shared app stubs exercise teardown through the optional transport helper.
+out=$(
+  . "$TESTS_DIR/../../herdr-delegates/tests/lib.sh"
+  app_fixture
+  "$R" app-run o/r
+)
+assert_contains app-teardown $'pa1\tfixture\tidle\t/tmp/own-worktree' "$out"
+# Installed without herdr-delegates, the report remains useful and has no raw CLI fallback.
+mkdir -p "$SCRATCH/standalone/bin"
+cp "$R" "$SCRATCH/standalone/bin/run-report.sh"
+out=$("$SCRATCH/standalone/bin/run-report.sh" standalone o/r)
+assert_contains standalone-unavailable 'herdr unavailable' "$out"
+# Approved failure-path exception does not change a successful TUI read.
+out=$(
+  . "$TESTS_DIR/../../herdr-delegates/tests/lib.sh"
+  echo '{"result":{"panes":[{"pane_id":"w1:p7","agent":"fixture","agent_status":"done","cwd":"/tmp/worktree"}]}}' >"$HERDR_SCENARIO/panes.json"
+  "$R" success o/r
+  [ "$(grep -c '^herdr pane list$' "$MOCK_LOG")" = 1 ] || exit 1
+)
+assert_eq tui-success-one-read 0 "$?"
+assert_contains tui-success-original-row $'w1:p7\tfixture\tdone\t/tmp/worktree' "$out"
 finish
