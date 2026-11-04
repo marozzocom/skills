@@ -31,11 +31,20 @@ and infra details here and out of SKILL.md.
     -- [model args] [escalated effort args]
   ```
 
+  If the overseer may run in the Herdr desktop app, add the app start line
+  (`herdr-delegates/bin/herdr-backend.sh start <name> [executable] <cwd>
+  --tab <tab> --space <space> --timeout <seconds> -- [args]`) and record,
+  per CLI: any flag the app's core requires, whether it reports status
+  under the core (if not, it is app-unsupported), and whether its tool
+  shell can reach the core (push callbacks) or not (pull).
+
 - **Login check** (SKILL.md precondition): `[login status command]` and
   the billing path it should report (subscription or API key).
-- **Worktree rotation helper:** `herdr-delegates/bin/rotate-implementer.sh <name> <pane>
+- **Worktree rotation helper:** `HERDR_BACKEND_RUN_DIR=<RUN_DIR>
+  herdr-delegates/bin/rotate-implementer.sh <name> <pane>
   <worktree> <kind> -- [model args]` — quit → cd pane → start in one step,
-  per (name, pane). The kind is required (no vendor default); pass the pin
+  per (name, pane); in the desktop app it replaces the terminal by name and
+  prints the new address, so re-record the pane. The kind is required (no vendor default); pass the pin
   after `--` — a rotation without it drops to the config default; the same
   helper on the same worktree is how an effort escalation happens. Record
   the exact invocation here.
@@ -49,11 +58,11 @@ and infra details here and out of SKILL.md.
 
 ## Fast reviewer — [CLI name]
 
-- **Independence:** preferably a different vendor from the implementer,
-  failing that a different model family of the same vendor, never the
-  same model. List the fallback ladder for when this reviewer's quota
-  is exhausted, in that order, so a run never silently falls back to
-  the implementer's own vendor.
+- **Independence:** preferably a different vendor from the implementer;
+  when none is available, a different model family or the same model,
+  always with a fresh context. List the fallback ladder for when this
+  reviewer's quota is exhausted, in that order, so falling back to the
+  implementer's own vendor is a recorded choice, never a silent one.
 - **Model:** `[model id]`; always pin at start:
 
   ```bash

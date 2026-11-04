@@ -3,7 +3,9 @@
 # mock `gh` / `herdr` binaries. Bash 3.2 compatible (no mapfile, no
 # associative arrays, no ${var,,}).
 set -u
-unset BASH_ENV ENV
+unset BASH_ENV ENV HERDR_FLAVOR HERDR_BACKEND_RUN_DIR
+while IFS= read -r hc_var; do unset "$hc_var"; done < <(compgen -v HC_)
+export HERDR_ENV=1
 # Scratch run dirs live under TMPDIR; status-set.sh init refuses that outside tests.
 export STATUS_ALLOW_TMP=1
 
@@ -134,8 +136,17 @@ cat >"$MOCK_BIN/herdr" <<'MOCK'
 set -u
 S=${HERDR_SCENARIO:?}
 printf 'herdr %s\n' "$*" >>"${MOCK_LOG:?}"
+if [ -f "$S/$1-$2.exit" ]; then exit "$(cat "$S/$1-$2.exit")"; fi
 case "$1 $2" in
   "agent list") cat "$S/agents.json" ;;
+  "pane list") cat "$S/panes.json" ;;
+  "agent get")
+    jq -ce --arg id "$3" '.result.agents[]|select(.pane_id==$id or .name==$id)' "$S/agents.json" ;;
+  "agent start") echo '{"result":{"agent":{"pane_id":"w1:p2","agent_status":"idle"}}}' ;;
+  "agent prompt") echo '{"result":{"started":true}}' ;;
+  "agent wait") echo '{"result":{"agent":{"agent_status":"done"}}}' ;;
+  "agent send-keys"|"pane close") echo '{}' ;;
+  "pane get") cat "$S/pane-get.json" ;;
   "tab list") cat "$S/tabs.json" ;;
   "workspace list") cat "$S/workspaces.json" ;;
   "pane layout") cat "$S/layout.json" ;;
@@ -208,4 +219,154 @@ echo ran >>"$dir.hook-ran"
 exit 0
 H
   chmod +x "$dir/.git/hooks/pre-commit"
+}
+
+# App/core fixtures from scout B1-B8 and probe P1-P10. Every call is logged.
+HC_SCENARIO=$SCRATCH/hc-scenario
+APP_SCENARIO=$SCRATCH/app-scenario
+mkdir -p "$HC_SCENARIO" "$APP_SCENARIO"
+export HC_SCENARIO APP_SCENARIO
+cat >"$MOCK_BIN/hc" <<'MOCK'
+#!/usr/bin/env python3
+import json, os, sys
+from pathlib import Path
+s=Path(os.environ['HC_SCENARIO']); a=Path(os.environ['APP_SCENARIO'])
+args=sys.argv[1:]
+with open(os.environ['MOCK_LOG'],'a') as f: f.write('hc '+' '.join(args)+'\n')
+def read(p,default=None): return json.loads(p.read_text()) if p.exists() else default
+def write(p,d): p.write_text(json.dumps(d))
+def opt(k,default=None): return args[args.index(k)+1] if k in args else default
+def out(d): print(json.dumps(d))
+def locate(target):
+ for t in terms:
+  if t['address']==target or t.get('name')==target: return t
+ print(json.dumps({'error':{'kind':'not_found','message':'unknown terminal '+target}}),file=sys.stderr); sys.exit(3)
+try:
+ terms=read(s/'terminals.json',[]); ui=read(a/'ls.json',{'spaces':[],'recent':[]})
+ cmd=args[0]
+ if (s/(cmd+'.exit')).exists(): sys.exit(int((s/(cmd+'.exit')).read_text()))
+ if (s/(cmd+'.response.json')).exists(): out(read(s/(cmd+'.response.json'))); sys.exit(0)
+ if cmd=='ls':
+  out({'hidden_finished':0,'terminals':[dict({k:v for k,v in t.items() if k in ['address','agent','cwd','name','parent','state','turn']},
+   **({'status':t['status']['state']} if isinstance(t.get('status'),dict) else {})) for t in terms if '--all' in args or t.get('state')!='finished']})
+ elif cmd=='get':
+  rc=read(s/'get-errors.json',{}).get(args[1],0)
+  if rc:
+   print(json.dumps({'error':{'kind':'not_found' if rc==3 else 'runtime','message':'fixture get failure'}}),file=sys.stderr); sys.exit(rc)
+  t=locate(args[1]); out(t)
+ elif cmd=='run':
+  if opt('--name') and any(t.get('name')==opt('--name') and t.get('state')=='live' for t in terms):
+   print(json.dumps({'error':{'kind':'name_taken','message':'a live terminal is already named '+opt('--name')}}),file=sys.stderr); sys.exit(1)
+  n=read(s/'counter.json',0)+1; write(s/'counter.json',n); ident='tnew'+str(n)
+  status=read(s/'run-status.json',{'app':'fixture','state':'idle'})
+  argv=args[args.index('--')+1:]; labels={}
+  for i,v in enumerate(args):
+   if v=='--label':
+    k,val=args[i+1].split('=',1); labels[k]=val
+  t={'address':ident,'agent':argv[0],'argv':argv,'cwd':opt('--cwd'),'name':opt('--name'),
+    'parent':os.environ.get('HC_TERMINAL_ID'),'state':'live','turn':0,'labels':labels,
+    'cols':200,'rows':120,'reported':status is not None,'status':status,'title':'fixture-title','status_ms':None}
+  terms.append(t)
+  if (s/'delay-adoption').exists(): write(a/'pending.json',t)
+  elif not (s/'no-adoption').exists():
+   for space in ui['spaces']:
+    for tab in space['tabs']:
+     if space['id']==labels.get('herdr.space') and tab['id']==labels.get('herdr.tab'):
+      tab['terminals'].append({'terminal':ident,'pane':'p'+ident,'status':status['state'] if status else None,'app':argv[0],'name':t['name'],'sub_agents':[]})
+   write(a/'ls.json',ui)
+  out({k:t[k] for k in ['address','agent','cwd','name','parent','state','turn']})
+ elif cmd=='label':
+  t=locate(args[1])
+  for pair in args[2:]:
+   k,v=pair.split('=',1); t.setdefault('labels',{})[k]=v
+  out(t)
+ elif cmd=='send': out(read(s/'send.json',{'started':True,'status':'idle','turn':1}))
+ elif cmd=='wait':
+  if (s/'wait.json').exists(): out(read(s/'wait.json'))
+  else:
+   t=locate(args[1])
+   if (s/'wait-promote.json').exists():
+    t['status']=read(s/'wait-promote.json'); t['reported']=True
+   state=(t.get('status') or {}).get('state')
+   if state is None: __import__('time').sleep(float(opt('--timeout','0')))
+   out({'ended':state is not None,'reason':'status' if state else 'timeout','status':state,'turn':t.get('turn',0)})
+ elif cmd=='read': out({'complete':True,'how':'screen','text':(s/'pane.txt').read_text()})
+ elif cmd=='keys': out({'status':None,'turn':0})
+ elif cmd in ['kill','rm']:
+  t=locate(args[1]); ident=t['address']; t['state']='finished'; t['status']=None
+  if cmd=='rm': terms.remove(t)
+  for space in ui['spaces']:
+   for tab in space['tabs']: tab['terminals']=[v for v in tab['terminals'] if v['terminal']!=ident]
+  write(a/'ls.json',ui); out({'removed':ident} if cmd=='rm' else t)
+ else: raise ValueError('unhandled '+str(args))
+ write(s/'terminals.json',terms)
+except Exception as e:
+ print(str(e),file=sys.stderr); sys.exit(1)
+MOCK
+cat >"$MOCK_BIN/herdr-app" <<'MOCK'
+#!/usr/bin/env python3
+import json,os,sys
+from pathlib import Path
+s=Path(os.environ['APP_SCENARIO']); core=Path(os.environ['HC_SCENARIO']); args=sys.argv[1:]
+with open(os.environ['MOCK_LOG'],'a') as f: f.write('herdr-app '+' '.join(args)+'\n')
+def opt(k): return args[args.index(k)+1]
+def write(p,d): p.write_text(json.dumps(d))
+try:
+ ui=json.loads((s/'ls.json').read_text())
+ if args==['ls']:
+  if (s/'pending.json').exists():
+   t=json.loads((s/'pending.json').read_text()); (s/'pending.json').unlink()
+   for sp in ui['spaces']:
+    for tab in sp['tabs']:
+     if sp['id']==t['labels']['herdr.space'] and tab['id']==t['labels']['herdr.tab']:
+      tab['terminals'].append({'terminal':t['address'],'pane':'p'+t['address'],'status':None,'app':t['agent'],'name':t['name'],'sub_agents':[]})
+   write(s/'ls.json',ui)
+   print(json.dumps({'spaces':[],'recent':[]})); sys.exit(0)
+  print(json.dumps(ui)); sys.exit(0)
+ cmd=args[1]; result={'ok':True}
+ if (s/(cmd+'.exit')).exists(): sys.exit(int((s/(cmd+'.exit')).read_text()))
+ if (s/(cmd+'.response.json')).exists(): print((s/(cmd+'.response.json')).read_text()); sys.exit(0)
+ if cmd in ['tab.rename','space.rename']:
+  for space in ui['spaces']:
+   if cmd=='space.rename' and space['id']==opt('--id'): space['name']=opt('--name')
+   for tab in space['tabs']:
+    if cmd=='tab.rename' and tab['id']==opt('--id'): tab['name']=opt('--name')
+ elif cmd=='tab.new':
+  space=next(v for v in ui['spaces'] if v['id']==opt('--space'))
+  ident='tbnew'+str(len(space['tabs'])); root='root'+ident
+  space['tabs'].append({'id':ident,'name':opt('--name'),'active':True,'settled':False,
+   'terminals':[{'terminal':root,'pane':'p'+root,'status':None,'app':None,'name':None,'sub_agents':[]}]})
+  terms=json.loads((core/'terminals.json').read_text()); terms.append({'address':root,'argv':['/bin/zsh','-l'],
+   'name':None,'parent':None,'cols':120,'rows':40,'state':'live','reported':False,'status':None})
+  write(core/'terminals.json',terms); result={'space':space['id'],'tab':ident,'terminal':root}
+ elif cmd=='pane.split':
+  write(s/'pane-split-argv.json',json.loads(opt('--argv')))
+  tab=next(t for sp in ui['spaces'] for t in sp['tabs'] if any(p['pane']==opt('--pane') for p in t['terminals']))
+  tab['terminals'].append({'terminal':'tboard','pane':'pboard','status':None,'app':None,'name':None,'sub_agents':[]})
+  terms=json.loads((core/'terminals.json').read_text()); terms.append({'address':'tboard','name':None,'parent':None,'cols':120,'rows':40,'status':None,'reported':False})
+  write(core/'terminals.json',terms); result={'pane':'pboard','terminal':'tboard'}
+ elif cmd=='terminal.park':
+  for space in ui['spaces']:
+   for tab in space['tabs']: tab['terminals']=[t for t in tab['terminals'] if t['terminal']!=opt('--terminal')]
+  result={'pending':True,'terminal':opt('--terminal')}
+ else: raise ValueError('unhandled '+str(args))
+ write(s/'ls.json',ui); print(json.dumps(result))
+except Exception as e:
+ print(str(e),file=sys.stderr); sys.exit(1)
+MOCK
+chmod +x "$MOCK_BIN/hc" "$MOCK_BIN/herdr-app"
+assert_child_resolves hc "$MOCK_BIN/hc"
+assert_child_resolves herdr-app "$MOCK_BIN/herdr-app"
+app_fixture() {
+  unset HERDR_ENV HERDR_FLAVOR HERDR_BACKEND_RUN_DIR
+  export HC_TERMINAL_ID=t1
+  rm -f "$HC_SCENARIO"/* "$APP_SCENARIO"/*
+  cat >"$HC_SCENARIO/terminals.json" <<'JSON'
+[{"address":"t1","agent":"fixture","argv":["fixture"],"name":null,"parent":null,"state":"live","cols":114,"rows":31,"reported":true,"status":{"app":"fixture","state":"idle"},"status_ms":null,"title":"Own terminal","cwd":"/tmp/own-worktree","labels":{},"turn":0}]
+JSON
+  cat >"$APP_SCENARIO/ls.json" <<'JSON'
+{"spaces":[{"id":"sp1","name":"old space","folder":"/tmp","active":true,"tabs":[{"id":"tb1","name":"old tab","active":true,"settled":false,"terminals":[{"terminal":"t1","pane":"pa1","status":"idle","app":"fixture","name":null,"sub_agents":[]}]}]}],"recent":[]}
+JSON
+  printf 'line 1\nline 2\nlast real line\n\n   \n' >"$HC_SCENARIO/pane.txt"
+  : >"$MOCK_LOG"
 }

@@ -30,4 +30,11 @@ assert_eq three-bounded 1 "$(grep -c -- '--lines 11' "$MOCK_LOG")"
 "$A" impl 500 >/dev/null 2>&1; assert_eq huge-rejected 2 "$?"
 "$A" nobody >/dev/null 2>&1; assert_eq unknown-agent 1 "$?"
 
+app_fixture
+jq '.[0].name="impl"|.[0].status.state="working"' "$HC_SCENARIO/terminals.json" >"$SCRATCH/core"
+mv "$SCRATCH/core" "$HC_SCENARIO/terminals.json"
+out=$("$A" impl 2)
+assert_eq app-status 'impl: working kind=fixture pane=pa1' "$(printf '%s\n' "$out" | head -n1)"
+assert_contains app-tail '  | last real line' "$out"
+assert_contains app-read-zero 'hc read impl --lines 0 --json' "$(cat "$MOCK_LOG")"
 finish

@@ -30,4 +30,13 @@ done
 PANE_MIN_COLS=0 "$P" >/dev/null 2>&1; assert_eq bad-env 2 "$?"
 rm "$HERDR_SCENARIO/layout.json"
 "$P" >/dev/null 2>&1; assert_eq herdr-fails 1 "$?"
+app_fixture
+assert_eq app-drawn 'budget=1 cols=1 rows=1 width=114 height=31' "$("$P")"
+assert_eq app-pane-map 'budget=1 cols=1 rows=1 width=114 height=31' "$("$P" --pane pa1)"
+jq '.[0].cols=200|.[0].rows=120' "$HC_SCENARIO/terminals.json" >"$SCRATCH/core"
+mv "$SCRATCH/core" "$HC_SCENARIO/terminals.json"
+assert_eq app-core-default 'budget=1 cols=1 rows=1 width=unknown height=unknown' "$("$P")"
+jq '.[0].cols=120|.[0].rows=40' "$HC_SCENARIO/terminals.json" >"$SCRATCH/core"
+mv "$SCRATCH/core" "$HC_SCENARIO/terminals.json"
+assert_eq app-root-default 'budget=1 cols=1 rows=1 width=unknown height=unknown' "$("$P")"
 finish

@@ -23,12 +23,14 @@ What this protocol adds on top, for a delegated run:
   checklists, and never receives the reviewer's brief — the implementer
   brief says so (phase-design.md §Briefs).
 - **Verdict ownership is recorded in the ledger** per node: who reviewed,
-  which model family, what they were fenced to; deviations from the
+  which vendor and model, what they were fenced to; deviations from the
   repo's verification matrix are ledger entries so "who verified this?"
   is always answerable.
-- **The model-family lever is a routing decision you make here:** on
-  risk-bearing surfaces, the reviewer pane runs a different family than
-  the implementer pane, pinned per environment.md.
+- **The vendor lever is a routing decision you make here:** on
+  risk-bearing surfaces, the reviewer pane preferably runs a different
+  vendor than the implementer pane, pinned per environment.md; a
+  same-vendor or same-model fallback keeps a fresh context and is
+  recorded as such.
 - **Report facts are checked by code, not by a classifier or a read**
   (SKILL.md §Transcript boundary); a configured classifier's triage
   cross-check (classifier.md) obeys the same escalate-only asymmetry.

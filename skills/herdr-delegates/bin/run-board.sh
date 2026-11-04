@@ -53,6 +53,11 @@ measure_size() {
   for n in "$width" "$height"; do case $n in ''|*[!0-9]*) usage ;; esac; done
   [ "$width" -gt 0 ] || usage
 }
+here=$(cd "$(dirname "$0")" && pwd)
+backend=$here/herdr-backend.sh
+export HERDR_BACKEND_RUN_DIR=$run
+# A mismatch is fatal even though temporary inventory failures render unavailable.
+"$backend" flavor "$run" >/dev/null || exit 1
 frame() {
   local agents available ledger mtime tabs workspaces
   if [ ! -f "$run/status.json" ]; then
@@ -61,16 +66,16 @@ frame() {
     return
   fi
   available=true
-  agents=$(herdr agent list 2>/dev/null) || available=false
-  if ! printf '%s' "$agents" | jq -e '.result.agents | type == "array"' >/dev/null 2>&1; then
+  agents=$("$backend" agents 2>/dev/null) || available=false
+  if ! printf '%s' "$agents" | jq -e 'type == "array"' >/dev/null 2>&1; then
     available=false
   fi
   # Keep a valid empty response even when herdr is absent or malformed.
-  if [ "$available" = false ]; then agents='{"result":{"agents":[]}}'; fi
-  tabs=$(herdr tab list 2>/dev/null) || tabs='{}'
-  workspaces=$(herdr workspace list 2>/dev/null) || workspaces='{}'
-  printf '%s' "$tabs" | jq -e '.result.tabs|type == "array"' >/dev/null 2>&1 || tabs='{"result":{"tabs":[]}}'
-  printf '%s' "$workspaces" | jq -e '.result.workspaces|type == "array"' >/dev/null 2>&1 || workspaces='{"result":{"workspaces":[]}}'
+  if [ "$available" = false ]; then agents='[]'; fi
+  tabs=$("$backend" tabs 2>/dev/null) || tabs='{}'
+  workspaces=$("$backend" spaces 2>/dev/null) || workspaces='{}'
+  printf '%s' "$tabs" | jq -e 'type == "array"' >/dev/null 2>&1 || tabs='[]'
+  printf '%s' "$workspaces" | jq -e 'type == "array"' >/dev/null 2>&1 || workspaces='[]'
   ledger=/dev/null; mtime=0
   if [ -f "$run/ledger.md" ]; then
     ledger=$run/ledger.md
@@ -122,26 +127,26 @@ frame() {
     def milestone: "\(.state|glyph) \(.id) \(.title) [\(.state)]";
     . as $s |
     ($s.agents // []) as $agents |
-    ([$live.result.agents[] | select((.name // "") != "")]) as $live |
-    ([$live[] | . as $a | select(.name == ($s.prefix + "-overseer") or any($agents[]; .name == $a.name))]) as $scoped |
+    ([$live[] | if ($s.herdr.overseer_id // "") != "" and .id == $s.herdr.overseer_id then .name = ($s.prefix + "-overseer") else . end | select((.name // "") != "")]) as $live |
+    ([$live[] | . as $a | select((if ($s.herdr.overseer_id // "") != "" then .id == $s.herdr.overseer_id else .name == ($s.prefix + "-overseer") end) or any($agents[]; .name == $a.name and (($s.herdr.overseer_id // "") == "" or .name != ($s.prefix + "-overseer"))))]) as $scoped |
     ([$s.waiting_on_human[]? | "! \(.id): \(.action) (\(age(.since)))"] +
-     [$scoped[] | select(.agent_status == "blocked") | . as $a |
+     [$scoped[] | select(.status == "blocked") | . as $a |
       ([$agents[] | select(.name == $a.name)][0].since // $s.updated) as $since |
       "! \(.name): herdr:blocked (\(age($since)))"] +
-     [$scoped[] | select(($s.herdr.workspace // "") != "" and .workspace_id != $s.herdr.workspace) |
-      "! \(.name) is in workspace \(.workspace_id // "unknown"), run is in \($s.herdr.workspace)"]) as $wait |
+     [$scoped[] | select(($s.herdr.workspace // "") != "" and .space != $s.herdr.workspace) |
+      "! \(.name) is in workspace \(.space // "unknown"), run is in \($s.herdr.workspace)"]) as $wait |
     ([$agents[] | select(.state == "open") | . as $a |
-      ([$live[] | select(.name == $a.name)][0]) as $l |
-      "\(.name) herdr:\(if $available then ($l.agent_status // "gone") else "unavailable" end) \(age(.since)) tab:\($l.tab_id // .tab // "-") \($l.terminal_title_stripped // "")"]) as $agentlines |
+      ([$live[] | select(if ($s.herdr.overseer_id // "") != "" and $a.name == ($s.prefix + "-overseer") then .id == $s.herdr.overseer_id else .name == $a.name end)][0]) as $l |
+      "\(.name) herdr:\(if $available then ($l.status // "gone") else "unavailable" end) \(age(.since)) tab:\($l.tab // .tab // "-") \($l.title // "")"]) as $agentlines |
     {header:(["RUN \($s.run_id) | \($s.goal)", "\($now|todateiso8601) | ledger written \(if $mtime == 0 then "never" else age($mtime|todateiso8601) + " ago" end)"] +
       (if ($s.herdr.workspace // "") != "" then
-        ["workspace: \([$workspaces.result.workspaces[] | select(.workspace_id == $s.herdr.workspace)][0].label // "unknown") (\($s.herdr.workspace)) | cockpit: \([$tabs.result.tabs[] | select(.tab_id == $s.herdr.cockpit_tab)][0].label // "unknown") (\($s.herdr.cockpit_tab // "unknown"))"]
+        ["workspace: \([$workspaces[] | select(.id == $s.herdr.workspace)][0].label // "unknown") (\($s.herdr.workspace)) | cockpit: \([$tabs[] | select(.id == $s.herdr.cockpit_tab)][0].label // "unknown") (\($s.herdr.cockpit_tab // "unknown"))"]
        else [] end)),
      waiting:(if ($wait|length) > 0 then ["WAITING ON YOU"] + $wait else [] end),
      milestones:(["MILESTONES"] + [$s.milestones[]? | milestone]),
      nodes:(["NODES"] + [$s.nodes[]? | "\(.state|glyph) \(.id) \(.title) [\(.state)] \(age(.since))\(if .pr != null then " PR #\(.pr)" else "" end) CI:\(.ci // "none")"]),
      agents:(["AGENTS"] + (if $available then $agentlines else ["herdr unavailable"] + $agentlines end)),
-     stale:(if any($scoped[]; .agent_status == "working") and ($mtime == 0 or $now - $mtime >= $stale * 60)
+     stale:(if any($scoped[]; .status == "working") and ($mtime == 0 or $now - $mtime >= $stale * 60)
        then ["STALE: ledger has not been written for \(if $mtime == 0 then "an unknown time" else age($mtime|todateiso8601) end) while a run agent is working"] else [] end),
      ledger:($ledger|split("\n")|map(select(startswith("- 20")))|.[-8:])} |
     def lines: .header + .waiting + .milestones + .nodes + .agents + .stale +

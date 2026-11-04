@@ -10,7 +10,8 @@ description: >-
   for another agent's second opinion. Not for questions, explanations,
   lookups, an investigation the user asked you to do yourself, or a
   light-lane change: §Routing settles those without a run. The delegate
-  transport needs a Herdr session (HERDR_ENV=1). Honor an explicit request
+  transport needs a Herdr session (the TUI's HERDR_ENV=1 or the desktop
+  app's HC_TERMINAL_ID). Honor an explicit request
   to work directly or to delegate. Never activate in a session executing a
   brief from an orchestrator: a worker is a leaf (§Routing guard).
   Companions by phase: design-gate, delegation-briefs, herdr-delegates,

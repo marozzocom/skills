@@ -55,9 +55,15 @@ echo "## Teardown post-state (evidence, not narrative)"
 echo
 echo '### herdr pane list'
 echo '```'
-# Compact to one line per pane when the JSON shape allows; raw otherwise.
-herdr pane list 2>&1 | jq -r '.result.panes[] | "\(.pane_id)\t\(.agent)\t\(.agent_status)\t\(.cwd)"' 2>/dev/null \
-  || herdr pane list 2>&1 || echo "herdr unavailable"
+# The optional transport helper owns all Herdr CLI calls.
+here=$(cd "$(dirname "$0")" && pwd)
+backend=$here/../../herdr-delegates/bin/herdr-backend.sh
+if [ -x "$backend" ]; then
+  if [ -n "$ledger" ] && [ -f "$(dirname "$ledger")/status.json" ]; then
+    export HERDR_BACKEND_RUN_DIR=$(dirname "$ledger")
+  fi
+  "$backend" panes 2>/dev/null | jq -r '.[] | "\(.id)\t\(.agent)\t\(.status)\t\(.cwd)"' 2>/dev/null || echo "herdr unavailable"
+else echo "herdr unavailable"; fi
 echo '```'
 echo
 echo '### git worktree list'
