@@ -22,4 +22,11 @@ echo '{"herdr":{"workspace":"w1"}}' >"$run/status.json"
 "$T" "$run" N3 "$SCRATCH" >/dev/null 2>&1; assert_eq missing-prefix 1 "$?"
 "$T" "$run" >/dev/null 2>&1; assert_eq missing-args 2 "$?"
 "$T" "$run" '' "$SCRATCH" >/dev/null 2>&1; assert_eq empty-group 2 "$?"
+app_fixture
+run=$SCRATCH/app-run; mkdir "$run"
+echo '{"prefix":"fixture","herdr":{"flavor":"app","workspace":"sp1"}}' >"$run/status.json"
+assert_eq app-tab-result 'tab=tbnew1 pane=proottbnew1' "$("$T" "$run" N1 "$SCRATCH/a cwd with spaces")"
+assert_contains app-explicit-space 'tab.new --space sp1 --folder' "$(cat "$MOCK_LOG")"
+"$T" "$run" N1 "$SCRATCH" >/dev/null 2>&1; assert_eq app-label-collision 1 "$?"
+HERDR_ENV=1 "$T" "$run" N2 "$SCRATCH" >/dev/null 2>&1; assert_eq app-flavor-mismatch 1 "$?"
 finish

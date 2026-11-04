@@ -6,7 +6,8 @@ agent entrypoint is [SKILL.md](SKILL.md).
 ## What it is
 
 The [Herdr](https://herdr.dev/) transport for delegated agents: the one
-skill in the set that requires `HERDR_ENV=1`. It carries everything that
+skill in the set that needs a Herdr session — the terminal TUI
+(`HERDR_ENV=1`) or the desktop app (`HC_TERMINAL_ID`). It carries everything that
 is true because the delegate is a CLI in a sibling pane — naming, pinned
 starts, brief delivery by path, waiting and blocked dialogs, rotation,
 parallel panes and tabs, teardown order — and nothing about *what* to
@@ -26,10 +27,11 @@ was learned from real failures, which is why this skill keeps it verbatim.
 | File | Holds |
 |---|---|
 | [SKILL.md](SKILL.md) | names, starting with pins, brief delivery and callbacks, lifecycle, transcript-boundary mechanics, parallel panes, teardown |
+| `bin/herdr-backend.sh` | the only script that calls Herdr's CLIs; one verb set for both flavors |
 | `bin/run-prefix.sh` | collision-free agent-name prefix against live agents |
-| `bin/rotate-implementer.sh` | quit → cd → restart an agent on a new worktree with its pin |
+| `bin/rotate-implementer.sh` | quit → cd → restart an agent on a new worktree with its pin (app: a new terminal, same name) |
 | `bin/agent-status.sh` | one-line liveness probe with a bounded pane read |
-| `tests/` | offline tests against a mock `herdr`; `validate-skill.sh` |
+| `tests/` | offline tests against mock `herdr`, `hc`, and `herdr-app`; `validate-skill.sh` |
 
 ## Install
 
@@ -39,7 +41,7 @@ ln -s "$(pwd)/skills/skills/herdr-delegates" ~/.claude/skills/
 /bin/bash tests/run.sh
 ```
 
-Requires Herdr, the companion `herdr` skill for CLI mechanics, `jq`, and
+Requires Herdr (TUI, or the desktop app's `hc` and `herdr-app`), the companion `herdr` skill for CLI mechanics, `jq`, and
 the system `bash` (3.2 on macOS). The orchestration skill's
 `environment.md` must exist (see its SETUP.md).
 

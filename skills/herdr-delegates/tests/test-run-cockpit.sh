@@ -19,7 +19,7 @@ fixture 'run with spaces'
 # Copy the helpers to a space-containing installation path as well.
 tools=$SCRATCH/tools\ with\ spaces
 mkdir -p "$tools/herdr-delegates/bin" "$tools/implementation-orchestration/bin"
-cp "$C" "$BIN_DIR/run-board.sh" "$tools/herdr-delegates/bin/"
+cp "$C" "$BIN_DIR/run-board.sh" "$BIN_DIR/herdr-backend.sh" "$tools/herdr-delegates/bin/"
 cp "$S" "$tools/implementation-orchestration/bin/"
 C=$tools/herdr-delegates/bin/run-cockpit.sh
 out=$("$C" "$run"); assert_eq setup-exit 0 "$?"
@@ -29,7 +29,7 @@ assert_contains workspace-action 'workspace named fixture (was old workspace)' "
 assert_contains board-action 'board opened in w1:pboard' "$out"
 assert_contains no-focus 'pane split w1:p1 --direction down --ratio 0.65' "$(cat "$MOCK_LOG")"
 assert_contains no-focus-flag --no-focus "$(cat "$MOCK_LOG")"
-assert_eq meta '{"board_pane":"w1:pboard","workspace":"w1","cockpit_tab":"w1:t1","overseer_pane":"w1:p1"}' "$(jq -c .herdr "$run/status.json")"
+assert_eq meta '{"board_pane":"w1:pboard","workspace":"w1","cockpit_tab":"w1:t1","overseer_pane":"w1:p1","flavor":"tui"}' "$(jq -c .herdr "$run/status.json")"
 assert_eq overseer-registration 'fixture-overseer|overseer|direct|w1:p1|w1:t1|open' "$(jq -r '.agents[0]|[.name,.role,.transport,.pane,.tab,.state]|join("|")' "$run/status.json")"
 command=$(cat "$HERDR_SCENARIO/run-command.txt")
 # Parse the second shell exactly as pane run does, without running the board.
@@ -75,4 +75,19 @@ for args in '--board-ratio 0' '--board-ratio 1' '--board-ratio bad' '--unknown';
   # shellcheck disable=SC2086
   "$C" "$run" $args >/dev/null 2>&1; assert_eq "usage-$args" 2 "$?"
 done
+app_fixture
+C=$BIN_DIR/run-cockpit.sh
+run=$SCRATCH/app-run; mkdir "$run"
+"$S" "$run" init app-run fixture 'App cockpit' >/dev/null
+out=$("$C" "$run"); assert_eq app-setup 0 "$?"
+assert_contains app-board-opened 'board opened in pboard' "$out"
+assert_eq app-meta 'app|t1|pa1|tb1|sp1|pboard' "$(jq -r '.herdr|[.flavor,.overseer_id,.overseer_pane,.cockpit_tab,.workspace,.board_pane]|join("|")' "$run/status.json")"
+assert_contains app-label 'hc label t1 run.name=fixture-overseer run.prefix=fixture run.role=overseer' "$(cat "$MOCK_LOG")"
+cp "$run/status.json" "$SCRATCH/app-first-status"
+: >"$MOCK_LOG"
+out=$("$C" "$run"); assert_eq app-rerun 0 "$?"
+assert_eq app-unchanged $'board reused in pboard\ncockpit unchanged' "$out"
+cmp -s "$run/status.json" "$SCRATCH/app-first-status"; assert_eq app-no-status-write 0 "$?"
+assert_eq app-no-rerun-mutations 0 "$(grep -Ec 'do |hc label|hc run ' "$MOCK_LOG")"
+assert_not_contains app-no-tui 'herdr agent' "$(cat "$MOCK_LOG")"
 finish
