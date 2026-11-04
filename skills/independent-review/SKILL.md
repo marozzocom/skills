@@ -33,7 +33,11 @@ local, created from the templates beside them).
 ## Who reviews — pick the reviewer, then the transport
 
 - **The author never reviews.** Not the implementer, not a fork of your
-  own context if you implemented. Fresh eyes are the point.
+  own context if you implemented. Fresh eyes are the point: a reviewer
+  starts from an empty context, with the author's reasoning withheld.
+- **The role picks the model, not the rank.** Each role gets the model its
+  job needs; an overseer may direct a stronger implementer or reviewer,
+  and nothing about the hierarchy requires a different model.
 - **Deterministic checks need no reviewer:** the verdict is the exit code.
 - **Routine diffs:** a fast reviewer of any family, briefed by path with a
   read fence (below). A native subagent is the cheapest transport; a
@@ -41,17 +45,19 @@ local, created from the templates beside them).
 - **Risk-bearing surfaces** (the spine §Routing risk-surface list:
   auth, permissions, data integrity, concurrency, money, and the
   rest): your own line-by-line read, **and** where a
-  confidently wrong "clean" is the expensive failure, a reviewer that is
-  preferably a **different vendor** from the diff's author, failing that
-  a **different model family** of the same vendor, never the same model —
-  same-family review shares the author's blind spots, and same-vendor
-  review shares its training. Independence is measured against the
-  author of the diff, not the orchestrator. A "no findings" from a
-  same-family fast reviewer on these surfaces is not clearance.
+  confidently wrong "clean" is the expensive failure, a reviewer from a
+  **different vendor** than the diff's author whenever one is available —
+  different training decorrelates blind spots, so its read is the more
+  useful one. When none is, a different model family or the same model
+  with a fresh context is acceptable, and the record says which.
+  Independence is measured against the author of the diff, not the
+  orchestrator. A same-vendor "no findings" on these surfaces is weaker
+  evidence than a cross-vendor one: your own line-by-line read carries
+  more of the weight.
 - **Light-lane changes** (spine §Routing) take no skill run: the repo's
   gates, your own read of the diff, and a mutation check on any new test.
   Everything past that lane gets a reviewer that is not its author.
-- Record per node in the ledger or notes: who reviewed, which family,
+- Record per node in the ledger or notes: who reviewed, which vendor and model,
   what they were fenced to. "Who verified this?" must always be
   answerable.
 
@@ -151,7 +157,7 @@ Re-run affected checklists after each fix round.
 
 Security and authorization checklists — and "no findings" on any diff
 touching auth or permissions — get your own read or the stronger,
-different-family reviewer the repo's entry names.
+different-vendor reviewer the repo's entry names.
 
 ## Plan drift — write it back
 
