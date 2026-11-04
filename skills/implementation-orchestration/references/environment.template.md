@@ -58,11 +58,11 @@ and infra details here and out of SKILL.md.
 
 ## Fast reviewer — [CLI name]
 
-- **Independence:** preferably a different vendor from the implementer,
-  failing that a different model family of the same vendor, never the
-  same model. List the fallback ladder for when this reviewer's quota
-  is exhausted, in that order, so a run never silently falls back to
-  the implementer's own vendor.
+- **Independence:** preferably a different vendor from the implementer;
+  when none is available, a different model family or the same model,
+  always with a fresh context. List the fallback ladder for when this
+  reviewer's quota is exhausted, in that order, so falling back to the
+  implementer's own vendor is a recorded choice, never a silent one.
 - **Model:** `[model id]`; always pin at start:
 
   ```bash

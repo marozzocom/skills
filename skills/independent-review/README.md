@@ -15,7 +15,7 @@ subagent, or delegated CLI agent.
 
 One rule governs the rest: the author of a diff never reviews it, and the
 reviewer never shares the author's context. On risk-bearing surfaces the
-reviewer also comes from a different model family than the implementer.
+reviewer preferably comes from a different vendor than the implementer.
 
 ## Where things live
 
@@ -57,8 +57,10 @@ Validate:
   green; a reviewer that has seen the author's reasoning inherits its
   assumptions. Independence is kept by withholding the self-assessment,
   not the requirement.
-- **Different family on risk-bearing code.** Same-family reviewers share
-  training-correlated blind spots. The claim is argued and anecdotally
+- **Different vendor preferred on risk-bearing code.** Reviewers sharing
+  the author's training share correlated blind spots; a same-model
+  reviewer with an empty context still catches what the author's own
+  context hides, so it is the fallback, not a violation. The claim is argued and anecdotally
   supported, not measured in a controlled study; the per-node outcome
   rows in the orchestration skill's run report exist to measure it.
 - **Triage may escalate, never demote.** A label cannot protect a file you

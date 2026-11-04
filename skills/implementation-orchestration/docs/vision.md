@@ -68,7 +68,8 @@ the protocol reaches for another transport instead of accepting the gap.
 
 3. **Independence where it pays, shared context where it pays.** Review
    is independent: the reviewer never shares the implementer's context,
-   and on risk-bearing surfaces it comes from a different model family.
+   and on risk-bearing surfaces it preferably comes from a different
+   vendor. Roles, not rank, pick the model.
    Implementation of sequential, dependent work keeps shared context: the
    agent that reasoned about the frame builds it, directly or through a
    fork. Delegating the build to a fresh context is a deliberate choice
@@ -154,7 +155,7 @@ the protocol reaches for another transport instead of accepting the gap.
   of from signals.
 - The human losing sight of a long run, or a run outliving the session
   that could explain it.
-- A same-family reviewer confirming a same-family implementer's mistake.
+- A reviewer that saw the implementer's reasoning confirming its mistake.
 - A delegate acting on the overseer's transcript as if it were
   instruction.
 - Review being skipped because the model typed the code itself.
