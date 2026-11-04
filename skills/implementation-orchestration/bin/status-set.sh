@@ -9,6 +9,10 @@
 # Keys split at the first '='; quote an entire argument containing spaces.
 # STATUS_NOW=UTC-ISO overrides the clock for deterministic callers/tests.
 # STATUS_LOCK_WAIT=seconds overrides the 5 s lock wait (nonnegative decimal).
+# init refuses a RUN_DIR under a temp tree (/tmp, /private/tmp, /var/folders):
+# macOS clears those, and the ledger must outlive the session. Use
+# ${XDG_STATE_HOME:-$HOME/.local/state}/implementation-orchestration/runs/<run-id>.
+# STATUS_ALLOW_TMP=1 lifts the refusal (tests only).
 # Exit: 0 one confirmation line, 1 I/O/lock failure, 2 usage or invalid field.
 set -euo pipefail
 trap 'exit 1' ERR
@@ -57,6 +61,15 @@ case $command in
   *) usage ;;
 esac
 [ -d "$run" ] || fail "missing run directory: $run"
+if [ "$command" = init ] && [ "${STATUS_ALLOW_TMP:-}" != 1 ]; then
+  physical=$(CDPATH= cd -- "$run" && pwd -P)
+  case $physical/ in
+    /tmp/*|/private/tmp/*|/var/folders/*|/private/var/folders/*)
+      echo "ERROR: run directory is under a temp tree that macOS clears: $physical" >&2
+      echo "use \${XDG_STATE_HOME:-\$HOME/.local/state}/implementation-orchestration/runs/<run-id>" >&2
+      exit 2 ;;
+  esac
+fi
 lock=$run/.status.lock
 locked=0; tmp=''; ledger_tmp=''; ledger_seed=''
 cleanup() {

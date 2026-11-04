@@ -4,6 +4,8 @@
 # associative arrays, no ${var,,}).
 set -u
 unset BASH_ENV ENV
+# Scratch run dirs live under TMPDIR; status-set.sh init refuses that outside tests.
+export STATUS_ALLOW_TMP=1
 
 TESTS_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck disable=SC2034  # used by the sourcing tests

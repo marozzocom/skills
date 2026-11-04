@@ -166,6 +166,11 @@ adjudicated by you, recorded there.
 
 Durable state lives in files, not your context window.
 
+- One **run folder** per run, `RUN_DIR`:
+  `${XDG_STATE_HOME:-$HOME/.local/state}/implementation-orchestration/runs/<run-id>`.
+  Never a session scratchpad or temp tree — the OS clears those, and the
+  run must outlive the session; `status-set.sh init` refuses them.
+
 - One **task ledger** per run: timestamped entries — decisions with
   their signal, gate verdicts, authorizations, amendments, open
   questions — via `bin/ledger-append.sh`. Summary plus ledger must
