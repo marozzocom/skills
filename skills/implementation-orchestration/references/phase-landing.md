@@ -177,7 +177,11 @@ abandoned:
    unpushed work, an unnamed change. Never push, commit, or discard
    anything to make a worktree removable — in `local` mode commit only
    what the human asked for, and leave untracked files as they are. Never
-   `git worktree remove --force`, `git branch -D`, or `git clean`.
+   `git worktree remove --force`, `git branch -D`, or `git clean`, with
+   one exception: once the PR is `MERGED`, `--force` may remove a
+   worktree whose only dirty paths are a lockfile or files the repo's
+   install or gates regenerate in every fresh worktree, so they hold no
+   work; list each such removal and its paths in the report.
    §Complete deliverables never applies to someone's uncommitted work.
 4. **Verify with a read, not the mutation**, pasted into the report:
    `hb panes` shows only panes you did not create, `git worktree
