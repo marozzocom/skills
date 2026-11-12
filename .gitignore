@@ -2,6 +2,7 @@
 skills/*/references/environment.md
 skills/*/references/review-checklists.md
 skills/*/references/agent-trust-profiles.md
+skills/*/references/native-ui-passes.md
 
 # Machine-local helper scripts an installer may overlay into a skill
 # (no trailing slash: the overlay may be a symlink, which a dir-only

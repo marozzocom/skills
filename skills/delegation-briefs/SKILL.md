@@ -64,10 +64,10 @@ report comes back as a file too; you read its head, never a transcript.
   assumed — say which you want.
 - **Callback channel and shape.** How to reach you (the transport annex
   says what the channel is); blockers and decisions only, never progress
-  narration; every open question batched into one message of at most ~15
-  lines and ~200 words — the decision needed, the recommendation, the
-  `path:line` behind it, what waiting costs — anything longer in a file
-  the message names.
+  narration; every open question batched into one message readable at a
+  glance — the decision needed, the recommendation, the `path:line`
+  behind it, what waiting costs — anything longer in a named file the
+  message points to.
 - **Decision-heavy work:** "if the contract or shape is ambiguous, propose
   it to me BEFORE implementing." A two-minute exchange beats a rewrite.
 - **Verification floor:** the repo's commit-free gate runner plus only
@@ -181,10 +181,10 @@ parts while you wait.
 
 If you need a decision, clarification, or hit a blocker: [callback
 channel, from the transport annex]. Blockers and decisions only, not
-progress narration. One message carrying every open question, under ~15
-lines and ~200 words: the decision needed, your recommendation, the
-path:line behind it, what waiting costs. Anything longer goes in a file
-under [scratch dir] and the message names the path.
+progress narration. One message carrying every open question, readable
+at a glance: the decision needed, your recommendation, the path:line
+behind it, what waiting costs. Anything longer goes in a named file under
+[scratch dir] and the message names the path.
 
 Read freely within your worktree, its installed dependencies, the repo's
 rules and skills, and the files named below; the status matrix in [ledger

@@ -42,7 +42,7 @@ Accepted media formats: png, jpg, gif, svg, webp; mp4, mov, webm. Compression an
 
 - **Image:** `![alt](url)` with meaningful alt text.
 - **Video:** the bare URL **alone on its own line**. Wrapping it in `![...]()` or `[...]()` breaks the inline player.
-- Post via `gh pr comment <n> --body-file`, `gh pr edit <n> --body-file`, `gh issue comment`, or include in `gh pr create --body-file`. Prefer `--body-file` over inline `--body` to avoid shell-quoting damage to URLs.
+- Write the embed markdown into a body file and hand it on; prefer `--body-file` over inline `--body` to avoid shell-quoting damage to URLs. A comment: `gh pr comment <n> --body-file` or `gh issue comment <n> --body-file`. A PR body: this skill does not create the PR — the caller's flow does (inside an orchestrated run, the spine's `bin/land-pr.sh` takes the body file; otherwise `gh pr create --body-file`, or `gh pr edit <n> --body-file` for an existing PR).
 
 ## Verify — mandatory, not optional
 
