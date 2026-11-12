@@ -1,21 +1,15 @@
 ---
 name: implementation-orchestration
 description: >-
-  The spine of an implementation run: routing, roles, the contract, the
-  ledger, and the per-node transport — direct, native subagent, or delegated
-  CLI agent in a Herdr pane — while this session keeps design authority,
-  review, verification, and all git, PR, and merge operations. Use
-  PROACTIVELY when starting implementation work beyond the light lane (one
-  or two small files, no open fork, no risk surface), or when the user asks
-  for another agent's second opinion. Not for questions, explanations,
-  lookups, an investigation the user asked you to do yourself, or a
-  light-lane change: §Routing settles those without a run. The delegate
-  transport needs a Herdr session (the TUI's HERDR_ENV=1 or the desktop
-  app's HC_TERMINAL_ID). Honor an explicit request
-  to work directly or to delegate. Never activate in a session executing a
-  brief from an orchestrator: a worker is a leaf (§Routing guard).
-  Companions by phase: design-gate, delegation-briefs, herdr-delegates,
-  independent-review.
+  Run implementation work past the light lane (more than two small files, an
+  open fork, or a risk surface) as an orchestrated run: this session keeps
+  design authority, review, verification, and all git, PR, and merge
+  operations; each node runs direct, on a subagent, or on a delegated agent
+  in a Herdr pane. Also the entry point when the user asks for another
+  agent's second opinion. Loads design-gate, delegation-briefs,
+  herdr-delegates, and independent-review by phase. Not for questions,
+  lookups, or light-lane changes; never in a session executing an
+  orchestrator's brief.
 ---
 
 # Implementation orchestration — the spine

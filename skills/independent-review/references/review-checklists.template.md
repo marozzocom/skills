@@ -3,7 +3,7 @@
 Copy this file to `review-checklists.md` (gitignored) and add an entry the
 first time you delegate in a new repo. Machine-local map from repo → the
 review checklists the orchestrator runs after an implementer's done-report
-(independent-review §Review checklists). The skill body stays repo-agnostic;
+(independent-review §Checklists). The skill body stays repo-agnostic;
 everything repo-specific about reviewing lives here.
 
 Each entry answers four questions: where the checklists live, how changed

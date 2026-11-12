@@ -13,8 +13,9 @@ and teardown order. Its helpers are at
 
 What this protocol adds for a run:
 
-- **Fast reviewer / investigator / mechanical worker.** One pane, model
-  pinned at start (ids drift; the listing command is in environment.md),
+- **Fast reviewer / investigator / mechanical worker.** One pane, its
+  model chosen per node from environment.md and pinned at start (ids
+  drift; the listing command is in environment.md),
   for second-opinion reviews, mechanical refactors, sweeps, and
   investigation (recon, repro hunts, "which of these N files does X") —
   where speed and fresh eyes beat deep design context. Verified

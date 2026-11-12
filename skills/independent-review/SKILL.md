@@ -1,19 +1,11 @@
 ---
 name: independent-review
 description: >-
-  Independent verification and tiered review of an implementation before it
-  is committed, whoever wrote it — you, a subagent, or a delegated CLI agent
-  — and on any done-report. Owns the acceptance re-run of deterministic
-  gates, the review inventory and triage, the risk-range deep read, mutation
-  checks on new tests, centralized checklists, fix rounds, review threads,
-  and the external-bot escalation rule. Use PROACTIVELY before committing
-  your own direct implementation beyond the light lane
-  (implementation-orchestration §Routing: one or two small files, no open
-  fork, no risk surface), when a delegate or subagent that changed code
-  reports done, and when the user asks for another agent's second opinion.
-  The reviewer is never the author of the diff and never shares the author's
-  context. Never activate in a session executing an assigned brief from an
-  orchestrator: the orchestrator reviews.
+  The review phase of implementation-orchestration: before committing a diff
+  past the light lane, or on any done-report, re-run the gates, inventory
+  and triage the diff, read the risk ranges, mutation-check new tests, and
+  run fix rounds. The reviewer is never the author and starts from a fresh
+  context.
 ---
 
 # Independent review

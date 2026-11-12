@@ -1,20 +1,10 @@
 ---
 name: design-gate
 description: >-
-  Frame an implementation before anyone implements it: recon, the frame
-  (cited decisions, forks, scope fence), a dependency scout, an independent
-  critique of the frame, the task shape (gates, milestones, stop criteria),
-  the contract (goals, what proves each node done, planned human gates,
-  landing mode), the per-node transport choice (direct / native subagent /
-  delegate) from observed signals, and the per-node reasoning-effort
-  decision. Use PROACTIVELY when starting implementation work beyond a small
-  change — a feature, a fix of more than two files or with an open fork or
-  on a risk surface, a plan to execute, a refactor — before writing code or
-  a brief, whether you will implement yourself or hand it off; and when
-  framing a plan or ADR an orchestrated run is about to execute. Not for
-  questions, lookups, or a light-lane change (implementation-orchestration
-  §Routing). Never activate in a session executing an assigned brief from an
-  orchestrator.
+  The design phase of implementation-orchestration, loaded by the spine
+  before any code or brief: recon, cited frame, independent critique,
+  contract, per-node transport and effort. Use alone only to frame a plan or
+  ADR.
 ---
 
 # Design gate

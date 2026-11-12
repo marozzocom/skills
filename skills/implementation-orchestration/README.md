@@ -187,7 +187,7 @@ Two further readings worth keeping:
   review passes and a mutation test all missed — found only by diffing
   against the other implementation.
 
-- **Per-domain judges.** phase-review.md §Verification ownership says the
+- **Per-domain judges.** independent-review §Verification ownership says the
   verdict on a judgment check stays with "you, or one named judge per
   domain". The
   per-domain-judge option is permitted but unbuilt — e.g. a
@@ -220,7 +220,7 @@ Two further readings worth keeping:
   is reasoned, not measured: record in the run report which escalations
   paid (a fix round avoided) and which defaults failed (a second fix round
   on a default-pinned node), and prune the list from that.
-- **Advisors — built 2026-10, unmeasured.** SKILL.md §Advisors adds an
+- **Advisors — built 2026-10, unmeasured.** references/advisors.md adds an
   optional oracle (a model stronger at reading intent, consulted at
   decision points) and a classifier (a typed-judgment service that may
   escalate, never relax). The classifier runs through a fail-closed
