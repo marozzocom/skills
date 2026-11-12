@@ -1,6 +1,6 @@
 ---
 name: gh-media
-description: Attach screenshots, screen recordings, videos, GIFs, and other files inline to GitHub PRs, issues, and comments from the CLI — capture, fit to size limits, upload to GitHub's user-attachments CDN, embed with rendering-correct markdown, and verify the result actually renders. Use when asked to add an image or video to a PR or issue, post visual evidence or before/after screenshots, record a demo for review, or whenever a UI-facing PR would be clearer with a picture. Works for private repositories.
+description: Attach screenshots, recordings, or files inline to a GitHub PR, issue, or comment from the CLI, private repos included — fit to size limits, upload with `gh image`, embed, and verify it renders. Use when asked for media on a PR or issue, or when a PR changes something user-visible.
 ---
 
 # PR media

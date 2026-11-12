@@ -14,6 +14,12 @@ machine, org, or stack means rewriting this file (plus
 nature), never the skill body. Keep company data, repo names, model ids,
 and infra details here and out of SKILL.md.
 
+The sections below are organized by role. An installation that lets the
+orchestrator choose models per node may instead keep a model catalog —
+one entry per model with its start command, strengths, trust profile,
+allowance, and price — plus short selection guidance; record the same
+facts either way.
+
 ## Implementer — [CLI name]
 
 - **Model:** `[model id]`. **Effort ladder** (design-gate §7 decides; phase-design.md
@@ -38,7 +44,7 @@ and infra details here and out of SKILL.md.
   under the core (if not, it is app-unsupported), and whether its tool
   shell can reach the core (push callbacks) or not (pull).
 
-- **Login check** (SKILL.md precondition): `[login status command]` and
+- **Login check** (herdr-delegates precondition): `[login status command]` and
   the billing path it should report (subscription or API key).
 - **Worktree rotation helper:** `HERDR_BACKEND_RUN_DIR=<RUN_DIR>
   herdr-delegates/bin/rotate-implementer.sh <name> <pane>
@@ -132,10 +138,9 @@ checked; leave a cell "not checked" rather than estimate it:
 Routing rule: work that needs neither the orchestrator's accumulated
 context nor its authority (git, gate verdicts, adjudication) never runs on
 the orchestrator's model. State whether the orchestrator's harness
-subagents are used at all: the default here is no — every delegate is a
-pane, so the fan-out stays visible and nothing inherits the session model
-unseen. If you do allow them, note how their model is pinned — some
-harnesses' subagents inherit the session model unless pinned explicitly.
+subagents are used and how their model is pinned — some harnesses'
+subagents inherit the session model unless pinned explicitly, so a strong
+orchestrator would silently run every subagent on its own model.
 
 ## Routing guard — how this installation keeps workers leaves
 

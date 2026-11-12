@@ -13,7 +13,7 @@ here, then record what was actually observed.
 
 Trust here is never clearance. Even the best-calibrated delegate's report is
 input; acceptance is on evidence (verbatim gate output re-run by the
-orchestrator, triaged diff read, checklist pass) per independent-review §Review.
+orchestrator, triaged diff read, checklist pass) per independent-review §Tiered review.
 
 ## Codex CLI — gpt-5.6-sol, reasoning high (implementer)
 
@@ -41,7 +41,7 @@ orchestrator, triaged diff read, checklist pass) per independent-review §Review
   read or the stronger reviewer named in the repo's
   `review-checklists.md` entry, regardless of Grok's verdict.
 - **Triage asymmetry:** its hunk classification may escalate to
-  risk-bearing, never demote below your own judgment (independent-review §Review).
+  risk-bearing, never demote below your own judgment (independent-review §Tiered review).
 - **Over-investigates:** scope briefs tightly ("only actionable findings
   with file:line, or: no findings"); when it drifts, `send-keys esc` then
   ask for the final report.

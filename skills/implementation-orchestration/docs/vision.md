@@ -102,7 +102,7 @@ the protocol reaches for another transport instead of accepting the gap.
 8. **Verifiable before it starts.** A node is briefed only when the
    contract already names what will prove it done: the invariants and
    the exact checks whose green output settles them, with their owners
-   (phase-review.md §Verification ownership). If that cannot be written,
+   (independent-review §Verification ownership). If that cannot be written,
    the work is not ready, and the next step is a scout or a design pass,
    not an implementer. The one exception is declared, never implied: an
    exploratory node aims at a "v0" and says so in the contract, with what
