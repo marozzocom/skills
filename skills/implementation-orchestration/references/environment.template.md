@@ -54,6 +54,12 @@ facts either way.
   after `--` — a rotation without it drops to the config default; the same
   helper on the same worktree is how an effort escalation happens. Record
   the exact invocation here.
+- **Cockpit handover:** `HERDR_BACKEND_RUN_DIR=<RUN_DIR>
+  herdr-delegates/bin/rotate-cockpit.sh <RUN_DIR> start [--carry <name>]…
+  -- [the orchestrator's own model and approval args]` — the successor
+  is an orchestrator, so never the leaf flags of a worker pane. Record
+  the exact args here, and the harness's tool timeout if it is under the
+  script's 100 s wait.
 - **Quit command:** [which of `/quit` / `/exit` this CLI exits on, verified
   by probe on date — the rotation helper tries both.]
 - **Transcript access:** [where this CLI keeps session logs, so the

@@ -12,7 +12,11 @@
 # prefixes: [string] app run.prefix labels; tui [] without CLI calls.
 # geometry [ID]: "cols rows", app never-drawn 200x120/120x40 => unknown.
 # rename-self NAME: TUI rename; app run.name/run.role/run.prefix labels.
+# rename TARGET NAME: TUI only; names another pane's agent (TARGET is a pane
+# id or a name). A held name fails; the CLI's error goes to stderr.
 # rename-tab ID LABEL / rename-space ID LABEL: silent.
+# tab-focused ID: true|false, whether ID is its workspace's active tab; and
+# focus-tab ID: silent. Both TUI only.
 # tab-new SPACE LABEL CWD: tab=<id> pane=<id> (await app adoption).
 # open-board RUN_DIR RATIO: pane id; app argv down split ignores ratio.
 # start NAME KIND CWD (--pane P|--tab T [--space S]) [--timeout SECONDS]
@@ -197,6 +201,15 @@ case $verb in
     [ $# -eq 1 ] || usage
     if [ "$flavor" = tui ]; then herdr agent rename "${HERDR_PANE_ID:?}" "$1" >/dev/null
     else hc label "$HC_TERMINAL_ID" "run.name=$1" "run.prefix=${1%-overseer}" run.role=overseer >/dev/null; fi ;;
+  rename)
+    [ $# -eq 2 ] && [ -n "$1" ] && [ -n "$2" ] || usage
+    [ "$flavor" = tui ] || { echo "unsupported verb in $flavor: $verb" >&2; exit 3; }
+    out=$(herdr agent rename "$1" "$2") || { [ -z "$out" ] || echo "$out" >&2; exit 1; } ;;
+  tab-focused|focus-tab)
+    [ $# -eq 1 ] && [ -n "$1" ] || usage
+    [ "$flavor" = tui ] || { echo "unsupported verb in $flavor: $verb" >&2; exit 3; }
+    if [ "$verb" = focus-tab ]; then herdr tab focus "$1" >/dev/null
+    else herdr tab list | jq -r --arg t "$1" '[.result.tabs[]|select(.tab_id==$t)][0].focused == true'; fi ;;
   rename-tab|rename-space)
     [ $# -eq 2 ] || usage
     if [ "$flavor" = app ]; then

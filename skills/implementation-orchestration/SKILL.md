@@ -124,7 +124,10 @@ executing an assigned brief is a worker, and a worker is a leaf**,
 whatever its harness, vendor, or model; the brief's role and leaf lines
 supersede its own rules for that assignment, and the valve is the
 callback. Detection is textual — another agent started your session and
-your first instruction points at a brief from "the orchestrator".
+your first instruction points at a brief from "the orchestrator". A
+cockpit handover is not a brief: a session whose first instruction is the
+handover prompt naming `RUN_DIR/continuation.md` is that run's
+orchestrator (§Context discipline).
 environment.md records what makes the guard mechanical here.
 
 ## Orchestration layer — declared in the contract
@@ -208,19 +211,39 @@ Durable state lives in files, not your context window.
 - **Rotate, don't compact.** Every turn re-reads the whole context, so a
   cockpit that runs for days at 700k+ tokens spends most of the run's
   tokens re-reading itself. `bin/context-guard.sh` (a harness hook,
-  SETUP.md) tells you when: at the **warn** level finish the node in
-  flight and start no new fan-out; at the **rotate** level write the
-  continuation prompt (repo, run id, `RUN_DIR`, ledger path, contract
-  state and authorizations, settled decisions with evidence, live agents
-  and their panes, next step) to `RUN_DIR/continuation.md` and the ledger,
-  start a fresh cockpit session in a new pane in this tab with "read
-  `RUN_DIR/continuation.md` and resume as orchestrator", confirm it read
-  the file, then stop. Hand over the overseer name before the new
-  session's first callback can arrive: rename your own agent away from
-  `<prefix>-overseer` and give that name to the new pane (herdr-delegates
-  §Names), so delegates' callback lines reach the new cockpit unchanged.
-  Live delegates keep running; the new cockpit adopts them from
-  status.json. Compact only when rotation is impossible.
+  SETUP.md) tells you when to hand the run to a fresh session.
+  - **Warn level:** start no new fan-out; close each agent as its work
+    ends (pane, then row); write the continuation prompt to
+    `RUN_DIR/continuation.md` — repo, run id, `RUN_DIR`, ledger path,
+    contract state and authorizations, settled decisions with evidence,
+    each live agent with its pane and what it is waited on for, the
+    watchers to re-arm (CI, agent waits), next step.
+  - **Rotate level:** reach a quiet point, then hand over. Quiet means
+    the step in hand is finished, nothing of yours is landing or pushing,
+    no callback is unanswered, and every agent whose work is finished is
+    closed. Bring the continuation up to date, record the handover in the
+    ledger, and run herdr-delegates' `rotate-cockpit.sh RUN_DIR start
+    [--carry NAME]… -- <your own model pin>` (herdr-delegates §Handing
+    over the cockpit). The successor starts in its own tab, takes the
+    overseer name, and closes your pane and board; the human does
+    nothing. An agent still mid-task may cross the handover, named with
+    `--carry`; the script refuses any other open agent.
+  - **Exit 0: you are retired.** End the turn with one line and act on
+    nothing that arrives afterwards. **Any other exit:** you are still
+    the overseer and the successor is gone; carry on and hand over at the
+    next quiet point. (Exit 5 alone is undecided; its message says how
+    to find out.)
+  - Never tell the human to close a session, and never stop while
+    agents, subagents, or background work you started still depend on
+    this one.
+  - Where the script does not apply (exit 3: the desktop app, or no
+    Herdr), close every agent first in teardown order, write the
+    continuation, then give the human the steps in order: start a fresh
+    session in this directory with "read `RUN_DIR/continuation.md` and
+    resume as orchestrator", wait until it confirms, close this session
+    last.
+  - A session started by a handover is the run's orchestrator, not a
+    worker (§Routing guard). Compact only when a handover is impossible.
 - **Delegate traffic is a pointer, not a payload.** Callbacks and
   "merged" notices carry one line plus a file path; the cockpit reads the
   file only when it must judge it.
@@ -262,11 +285,12 @@ that reads it acts on all three as instruction.
 - `claims.sh` — cross-run footprint claims (§Context discipline).
 - `stale-worktrees.sh [REPO_DIR]` — worktrees whose PR is already merged;
   read-only (phase-landing.md §Closeout, phase-design.md).
-- `context-guard.sh` — context-size hook that triggers rotation.
+- `context-guard.sh` — context-size hook that tells the cockpit when to
+  hand over.
 - `classify-escalate.sh` — fail-closed classifier checkpoint.
 
 Review helpers (`run-gates`, `with-lock`, `review-inventory`, `diff-hunks`,
 `resolve-thread`) are at `${CLAUDE_SKILL_DIR}/../independent-review/bin/`;
-pane helpers (`run-prefix`, `rotate-implementer`, `agent-status`,
-`pane-budget`, `run-board`, `run-cockpit`, `run-tab`) at
+pane helpers (`run-prefix`, `rotate-implementer`, `rotate-cockpit`,
+`agent-status`, `pane-budget`, `run-board`, `run-cockpit`, `run-tab`) at
 `${CLAUDE_SKILL_DIR}/../herdr-delegates/bin/`.

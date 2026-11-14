@@ -254,6 +254,43 @@ oldest ledger lines first. The board is not an agent and has no status row; its 
 in status.json. `run-board.sh RUN_DIR --once --width N` prints one frame
 for a check from your own shell.
 
+## Handing over the cockpit — `rotate-cockpit.sh`
+
+The orchestration skill says when (its §Context discipline). The
+mechanics are one script, TUI only, with no step for the human:
+
+- **You, the overseer:** `${CLAUDE_SKILL_DIR}/bin/rotate-cockpit.sh
+  RUN_DIR start [--carry NAME]… -- <your own model pin>`, in the
+  foreground, from your own shell (pin args in environment.md). It
+  refuses unless `RUN_DIR/continuation.md` is fresh and every other open
+  agent row is named with `--carry` and running — so close finished
+  agents first, pane then row. It opens the tab `$PREFIX·cockpit-next`,
+  starts `$PREFIX-overseer-next` there in your pane's directory, prompts
+  it, and waits up to 100 s (`--wait`).
+- **The successor** runs `… adopt` from that prompt. The old agent
+  becomes `$PREFIX-overseer-retired` and the successor `$PREFIX-overseer`
+  within milliseconds, so every callback line keeps working. Then the
+  old board and the old cockpit pane are closed, and `run-cockpit.sh`
+  gives the successor the cockpit tab label, a new board, the overseer
+  row, and the run metadata.
+- **Exit 0 means retired:** end the turn and act on nothing that arrives
+  afterwards; the pane closes within a minute. **Any other exit means
+  the offer was withdrawn** and the successor closed: you are still the
+  overseer. The offer expires with the wait, so a late successor cannot
+  take the run. Exit 5 is the one undecided answer — the successor was in
+  the middle of taking the name when `start` had to stop: do not act as
+  overseer until `… status` reads `closed` (retired) or you have run
+  `… abort`. If the call was cut off, `… status` prints the state and
+  `… abort` withdraws an offer nobody adopted.
+- **After adopting:** the script lists each carried agent with its live
+  status. One that reads `idle` or `done` may have called back to the old
+  session: read its report or questions file. Watchers do not cross:
+  start a background `hb wait` per working agent, and the CI watchers
+  the continuation lists. An interrupted `adopt` is run again.
+- **Desktop app:** not automated (exit 3). Agents there are children of
+  the cockpit's terminal, a successor included, so close every agent,
+  have the human start the new session, and close the old one last.
+
 ## Teardown — panes first, worktrees second
 
 Close agent panes FIRST, worktrees SECOND: an agent whose cwd was
@@ -277,6 +314,8 @@ fact (run-report). In the app, close the cockpit last: agents end with it.
   workspace; refuses duplicates server-wide.
 - `rotate-implementer.sh NAME PANE WORKTREE KIND -- ARGS` — move an agent
   onto a new worktree with its pin.
+- `rotate-cockpit.sh RUN_DIR start|adopt|abort|status` — hand the
+  overseer role to a fresh session; the successor closes the old one.
 - `agent-status.sh NAME [TAIL-LINES]` — one-line liveness probe with a
   bounded pane read.
 - `pane-budget.sh [--pane ID] [--reserve-rows N]` — how many readable

@@ -4,8 +4,9 @@
 # its transcript and, on crossing a threshold, injects one reminder as
 # additionalContext (SKILL.md §Context discipline):
 #   WARN   (default 50%): finish the node in flight, start no new fan-out.
-#   ROTATE (default 60%): write the continuation prompt and hand over to a
-#          fresh session now; repeated every further 5%.
+#   ROTATE (default 60%): hand over to a fresh session now (a cockpit
+#          through herdr-delegates bin/rotate-cockpit.sh); repeated every
+#          further 5%.
 # Env: CONTEXT_GUARD_WINDOW (tokens, default 1000000),
 #      CONTEXT_GUARD_WARN / CONTEXT_GUARD_ROTATE (percent).
 # Each level fires once per session (state under XDG_STATE_HOME). Silent
@@ -39,9 +40,9 @@ fi
 echo "$level" >"$state"
 k=$(( used / 1000 ))
 if [ "$pct" -ge "$rotate" ]; then
-  msg="CONTEXT GUARD: this session holds ~${k}k tokens (${pct}% of the window); every turn re-reads all of it. Rotate now. Orchestration cockpit: finish only the step in hand, write the continuation prompt to the ledger (implementation-orchestration SKILL.md §Context discipline), start a fresh cockpit session on it in a new pane in this tab, and stop. Any other session: write a short handoff file (goal, state, next step, paths) and tell the human to continue in a fresh session from it."
+  msg="CONTEXT GUARD: this session holds ~${k}k tokens (${pct}% of the window); every turn re-reads all of it. Rotate now. Orchestration cockpit: reach a quiet point, bring RUN_DIR/continuation.md up to date, and run herdr-delegates bin/rotate-cockpit.sh RUN_DIR start (implementation-orchestration SKILL.md §Context discipline); the successor closes this session and the human does nothing. Any other session: first finish or stop the subagents and background tasks you started, then write a short handoff file (goal, state, next step, paths) and give the human the steps in order: start a fresh session from that file, then close this one. Never tell the human to close a session that agents or background work still depend on."
 else
-  msg="CONTEXT GUARD: this session holds ~${k}k tokens (${pct}% of the window). Finish the node in flight; start no new fan-out or new workstream here. Prepare the continuation prompt so rotation at ${rotate}% is one step."
+  msg="CONTEXT GUARD: this session holds ~${k}k tokens (${pct}% of the window). Finish the node in flight; start no new fan-out or new workstream here; close each agent as its work ends. Write the continuation prompt now so the handover at ${rotate}% is one step."
 fi
 jq -nc --arg e "$event" --arg m "$msg" '{hookSpecificOutput: {hookEventName: $e, additionalContext: $m}}'
 exit 0

@@ -49,7 +49,7 @@ belong only there. The review helpers (`run-gates`, `review-inventory`,
 migration step 2 of the [decomposition proposal](docs/decomposition-proposal.md);
 task fit, task shape, the contract, and effort moved to `design-gate`
 with step 3; brief authoring to `delegation-briefs` and the pane
-mechanics with `run-prefix`, `rotate-implementer`, `agent-status` to
+mechanics with `run-prefix`, `rotate-implementer`, `rotate-cockpit`, `agent-status` to
 `herdr-delegates` with step 4.
 
 ## Anti-goals
