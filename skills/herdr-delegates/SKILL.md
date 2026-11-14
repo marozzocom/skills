@@ -117,6 +117,13 @@ per CLI in environment.md. Record the pin, pane, and tab on the agent's status r
 later rotation repeats it. A freshly split pane may reject the start with
 `agent_pane_busy`; retry after ~3 s.
 
+In the TUI, `hb start … --tab T` does not split: it takes a pane of that
+tab that holds no agent, and fails when there is none (a tab whose only
+pane already runs a reviewer). Open the next agent's tab with
+`run-tab.sh` and start with `--pane`, or split first. After any start,
+the first prompt is sometimes dropped: check `agent-status.sh` about 15 s
+later and re-send while it still reads `idle`.
+
 Approval settings are CLI-specific (environment.md). Invariants:
 pre-allowlist recurring read-only tools; a blanket run-everything mode
 only for strictly read-only tasks; write-capable sessions stay on a mode

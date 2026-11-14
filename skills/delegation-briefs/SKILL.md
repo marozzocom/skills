@@ -67,7 +67,10 @@ report comes back as a file too; you read its head, never a transcript.
   narration; every open question batched into one message readable at a
   glance — the decision needed, the recommendation, the `path:line`
   behind it, what waiting costs — anything longer in a named file the
-  message points to.
+  message points to. Spell out the command or step the delegate uses to
+  reach you, and say it applies to every message: questions, the final
+  line, and the answer to any later fix round. A delegate told only to
+  "reply" answers in its own output, where you never see it.
 - **Decision-heavy work:** "if the contract or shape is ambiguous, propose
   it to me BEFORE implementing." A two-minute exchange beats a rewrite.
 - **Verification floor:** the repo's commit-free gate runner plus only
@@ -132,6 +135,12 @@ the settled decisions *and the evidence that settled them* forward, and
 states that settled decisions may be refuted with evidence but not merely
 re-raised. When a gate flags something, first ask whether the flagged
 thing should exist at all.
+
+End every fix-round message with the callback command itself, not "reply
+with the results": the delegate's first brief named the channel for the
+report, and a later message that says "reply" is read as "answer here".
+A fix round whose answer never arrives looks exactly like one still
+running.
 
 ## Reviewer and scout briefs
 
