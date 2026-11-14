@@ -18,9 +18,11 @@ built — whoever builds it.
 Size the gate to the open questions. A light-lane change (spine §Routing:
 one or two small files, no open fork, no risk surface) never reaches
 this gate; its one-line frame goes in the commit message or PR body. A
-direct change past that lane with no open fork needs one frame line in
-the ledger or notes and no fan-out; a feature with three forks needs the
-full pass. The lane is decided after recon, never because the request
+clear fix (spine §Routing: no open fork, one app or package, no risk
+surface beyond a public interface) needs one frame line in the ledger
+and skips §3 and §5's acceptance — the request is its contract, and
+independent review of the result still runs. A feature with three forks
+needs the full pass. The lane is decided after recon, never because the request
 sounds small: "quick fix", "hotfix", and "one file" describe the
 request, not the work.
 
@@ -122,6 +124,9 @@ explicit acceptance of:
 - **Orchestration layer**, where the installation offers a choice (the
   orchestration skill names the options): it decides whether §6's
   native-subagent transport exists for this run at all.
+- **Footprint** — the directories and files the work expects to change,
+  claimed across runs (spine §Context discipline, `claims.sh`). An
+  overlap with a live run is settled here: stack, sequence, or re-scope.
 - **Landing mode** and the authority it rests on (the landing skill or
   the repo's own rules say which modes exist and who may grant them).
 

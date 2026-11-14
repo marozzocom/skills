@@ -133,20 +133,35 @@ document and confirm each accepted drift was written back
 (independent-review §Plan drift). If the repo ships a spec-review skill, its
 verdict on the final diff should be `VERIFIED` against the amended plan.
 
-## Complete deliverables — close the loops, don't report them
+## Complete deliverables — triage every loose end, report none
 
-Banned: reporting done "except one or two things to check". Before any
-report, sweep the ledger's open questions and would-be follow-ups and
-close them yourself: run the check, read the doc, make the small
-adjacent fix within scope. **If closing an item costs less than
-explaining it well, close it.**
+Banned: reporting done "except one or two things to check", and any
+list of follow-ups, open questions, or things not done. A listed item
+reads to the human as urgent work they must research; it is how runs
+stop closing. Before any report, sweep the ledger's open questions and
+would-be follow-ups and give each exactly one outcome, decided by you
+and recorded as one ledger line:
 
-A follow-up survives only when genuinely not yours to close — blocked
-externally, a user-only decision (product semantics, spend, infra,
-authorization), or an agreed scope fence — and then decision-ready: what
-it is, its origin (file:line, PR, gate), why not closable autonomously,
-and the one next action with its owner. Prefer one landed (or one-click,
-or flag-gated) deliverable over an archipelago of almost-done pieces.
+- **Do now** — it is inside the contract's goal, or a gate or invariant
+  needs it. Run the check, read the doc, make the fix; it lands with the
+  run.
+- **Park** — worth building, but outside the frozen goal. File it with
+  `bin/park-idea.sh` on the product's ideas board (environment.md
+  §Ideas boards): a title a stranger understands, a body with origin
+  (file:line, PR, gate) and why it matters. Never mention it again.
+- **Drop** — it will resurface on its own when it matters (a gate, a
+  user report, the next change in that code), or it is not worth a card.
+
+Scope is what gets judged, never quality: what is done now is done to
+the full standard. A run that discovers more work than its goal is
+healthy; a run that absorbs it is not.
+
+The only thing that reaches the human is a **blocker on the run's own
+goal** that is genuinely theirs — product semantics the contract does
+not settle, spend, infra, authorization — framed decision-ready (what,
+origin, options, your recommendation) and asked during the run, not
+saved for the report. Prefer one landed (or one-click, or flag-gated)
+deliverable over an archipelago of almost-done pieces.
 
 ## Closeout — report first, teardown inside it
 
@@ -158,14 +173,16 @@ abandoned:
    `references/run-report.md`. Only measured values; delegate-side token
    spend is not observable — never invent it. If the project continues,
    end with the continuation prompt (SKILL.md §Context discipline).
-2. **Tear down in order:** close agent panes FIRST
+2. **Release the footprint claim:** `bin/claims.sh release <run-id>`
+   once every PR is merged or abandoned (a staged PR keeps its claim).
+3. **Tear down in order:** close agent panes FIRST
    (herdr-delegates `hb close <pane id>`), worktrees SECOND — an agent
    whose cwd was deleted spins on errors. Walk `hb panes`, not only
    status.json's agents: every pane the run created — agents and any
    plain or root shell in a run tab — ends closed, and each agent row
    says `state=closed`. The board pane closes last, after the report is
    written.
-3. **Preserve deliverables.** Remove a worktree only when nothing in it
+4. **Preserve deliverables.** Remove a worktree only when nothing in it
    would be lost: `git -C <wt> status --porcelain` prints nothing, and
    either `git -C <wt> log --oneline HEAD --not --remotes` prints nothing
    (every commit is on a remote) or `gh pr view <number> --json state`
@@ -183,8 +200,8 @@ abandoned:
    install or gates regenerate in every fresh worktree, so they hold no
    work; list each such removal and its paths in the report.
    §Complete deliverables never applies to someone's uncommitted work.
-4. **Verify with a read, not the mutation**, pasted into the report:
+5. **Verify with a read, not the mutation**, pasted into the report:
    `hb panes` shows only panes you did not create, `git worktree
-   list` only trees you did not make plus the ones step 3 kept. Never
+   list` only trees you did not make plus the ones step 4 kept. Never
    suppress stderr in a teardown chain or emit your own success marker;
    gate any "cleaned up" claim on exit status plus the post-state read.

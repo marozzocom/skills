@@ -63,6 +63,32 @@ bin/classify-escalate.sh --check references/classifier/*.json
 
 Policy and use: [references/classifier.md](references/classifier.md).
 
+## Optional: context guard, ideas boards, footprint claims
+
+**Context guard.** Register `bin/context-guard.sh` as a hook on every tool
+result and prompt submit in the orchestrator's harness. For Claude Code,
+in `~/.claude/settings.json`:
+
+```json
+"hooks": {
+  "PostToolUse": [{ "hooks": [{ "type": "command", "command": "~/.claude/skills/implementation-orchestration/bin/context-guard.sh" }] }],
+  "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "~/.claude/skills/implementation-orchestration/bin/context-guard.sh" }] }]
+}
+```
+
+`CONTEXT_GUARD_WINDOW` (default 1000000), `CONTEXT_GUARD_WARN` (50) and
+`CONTEXT_GUARD_ROTATE` (60) tune it. It reads only the transcript tail and
+never blocks.
+
+**Ideas boards.** `bin/park-idea.sh` reads
+`${XDG_CONFIG_HOME:-~/.config}/implementation-orchestration/ideas-boards.json`,
+one entry per product: the create endpoint `url`, the `boardId`, a
+`tokenCmd` that prints a bearer token from your secret store, and default
+`tags`. Record the same boards in environment.md §Ideas boards.
+
+**Footprint claims.** `bin/claims.sh` needs no setup; its state file is
+`${XDG_STATE_HOME:-~/.local/state}/implementation-orchestration/claims.json`.
+
 ## Validate
 
 Run both under the system bash; neither touches a remote or calls a

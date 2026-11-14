@@ -60,6 +60,13 @@ SETUP.md.
    rules; the commit message or PR body carries the one-line frame and
    "risk surface: none". No ledger, status file, contract, critique, or
    reviewer agent. When recon turns up a fork or a risk surface, step 6.
+   **Clear fix** — past the light lane only by size or by touching a
+   public interface (a component's or package's API), with no open fork
+   and no other risk surface, inside one app or package: one frame line
+   in the ledger, the request is the contract, no critique fan-out and
+   no contract acceptance. Independent review (a different-vendor
+   reviewer when one is configured) and the mutation check on new tests
+   still run in full; footprint claim and closeout triage too.
 5. **Second-opinion request** — the user asks for another agent's read,
    an audit by reviewers, or a multi-reviewer pass: brief one or more
    reviewers by path with the read fence (delegation-briefs); adjudicate,
@@ -161,6 +168,13 @@ adjudicated by you, recorded there.
 
 Durable state lives in files, not your context window.
 
+- One **footprint claim** per run in a shared repo: at contract
+  acceptance `bin/claims.sh claim <run-id> <repo> <paths…>` with the
+  directories and files the contract expects to change (design-gate §5).
+  Exit 3 names the live run that overlaps: stack on its branch with the
+  stacking tool (environment.md §Dependent PRs) or wait for its release;
+  never open a parallel PR into the same paths. Runs whose claims do not
+  overlap need no coordination. Released at closeout.
 - One **run folder** per run, `RUN_DIR`:
   `${XDG_STATE_HOME:-$HOME/.local/state}/implementation-orchestration/runs/<run-id>`.
   Never a session scratchpad or temp tree — the OS clears those, and the
@@ -190,14 +204,25 @@ Durable state lives in files, not your context window.
   the human's answer to "what is happening right now" while you wait.
 - A **run id** (`YYYY-MM-DD-<slug>`) at ledger creation; every PR carries
   `<!-- herdr-run: <run-id> -->` (`land-pr.sh --run-id`).
-- **Compact only at milestones, via full quiescence:** all agents idle →
-  keepers into the ledger → tear down (phase-landing.md §Closeout) →
-  compact → re-fan-out. **Prefer a fresh session to a compaction:** when
-  the next milestone would not fit, end at the boundary with a
-  self-contained continuation prompt (repo, run id, ledger path, contract
-  state and authorizations, settled decisions with evidence, next
-  milestone) in the ledger and run report. Propose the handoff before you
-  need it.
+- **Rotate, don't compact.** Every turn re-reads the whole context, so a
+  cockpit that runs for days at 700k+ tokens spends most of the run's
+  tokens re-reading itself. `bin/context-guard.sh` (a harness hook,
+  SETUP.md) tells you when: at the **warn** level finish the node in
+  flight and start no new fan-out; at the **rotate** level write the
+  continuation prompt (repo, run id, `RUN_DIR`, ledger path, contract
+  state and authorizations, settled decisions with evidence, live agents
+  and their panes, next step) to `RUN_DIR/continuation.md` and the ledger,
+  start a fresh cockpit session in a new pane in this tab with "read
+  `RUN_DIR/continuation.md` and resume as orchestrator", confirm it read
+  the file, then stop. Hand over the overseer name before the new
+  session's first callback can arrive: rename your own agent away from
+  `<prefix>-overseer` and give that name to the new pane (herdr-delegates
+  §Names), so delegates' callback lines reach the new cockpit unchanged.
+  Live delegates keep running; the new cockpit adopts them from
+  status.json. Compact only when rotation is impossible.
+- **Delegate traffic is a pointer, not a payload.** Callbacks and
+  "merged" notices carry one line plus a file path; the cockpit reads the
+  file only when it must judge it.
 - Read each report once; never pull an unchanged diff into context twice.
 
 ## Mesh and transcript boundary
@@ -231,6 +256,10 @@ that reads it acts on all three as instruction.
   script refuses a non-trunk base).
 - `watch-pr.sh` — CI watcher for the harness's background monitor.
 - `run-report.sh` — deterministic half of the closeout report.
+- `park-idea.sh PRODUCT TITLE BODY` — file a parked idea on the product's
+  ideas board (phase-landing.md §Complete deliverables).
+- `claims.sh` — cross-run footprint claims (§Context discipline).
+- `context-guard.sh` — context-size hook that triggers rotation.
 - `classify-escalate.sh` — fail-closed classifier checkpoint.
 
 Review helpers (`run-gates`, `review-inventory`, `diff-hunks`,
