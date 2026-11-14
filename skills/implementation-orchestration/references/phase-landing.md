@@ -96,8 +96,9 @@ human's words with their date), and the table row or "outside safe set"
 bad merge. Where the human arms auto-merge personally, never disable it.
 
 Land through `bin/land-pr.sh` (stage the named paths → commit → push →
-`gh pr create --body-file` → optional `--auto-merge`, only when the
-authorization above covers it → run marker) in a background shell, never
+`gh pr create --body-file` with any `--label` → optional `--auto-merge`,
+only when the authorization above covers it and the repo has no landing
+bot → run marker) in a background shell, never
 from a forked or backgrounded agent turn: a turn that ends while the
 pre-commit hook runs gets the hook killed, leaving files staged and
 nothing landed. Name every path to land with `--stage`, taken from the
@@ -124,6 +125,37 @@ branch.
 **Finding a run's PRs.** `bin/run-report.sh` finds them by the run
 marker; ad hoc: `gh pr list --repo <owner/repo> --state all --limit 100
 --search "herdr-run: <run-id> in:body" --json number,title,state`.
+
+## Repos with a landing bot
+
+Some repos merge through a bot: when CI goes green on a ready PR, it
+reviews the diff cold and merges it, labels it for the owner, or sends it
+back with findings. The repo's review-checklists.md entry names the bot,
+its hold label and its send-back label. In such a repo the run is the
+second review tier and the bot is the third; the bot is the merger.
+
+- **Open the PR ready only when this tier is done:** gates re-run,
+  findings adjudicated, UI verdict in. A ready PR with green CI can merge
+  within minutes. Work that still changes after the PR opens stays a
+  draft until it stops.
+- **The PR body is the only thing the bot knows about the run.** Write
+  it for a reader who was not here: where the request is recorded (plan,
+  ADR, issue), what reviewed it and with which model, each gate and UI
+  verdict, and what each found and how it was resolved. A thin body costs
+  a review cycle.
+- **`land` and `flag`:** do not merge yourself and do not arm
+  auto-merge; either one skips the bot's review. Watch the PR instead.
+  Merged → closeout. The send-back label → its comment is a review
+  finding: adjudicate it like any reviewer's, run a fix round, push. The
+  hold label → a blocker that is the human's, framed decision-ready.
+- **`stage`:** open the PR with the hold label (`land-pr.sh --label`), so
+  the bot never merges what the human wants to see first, and say in the
+  body what the human is to look at.
+- **Anything the merge alone does not finish** — a runbook of production
+  steps after deploy, a backfill, a manual rollout — gets the hold label
+  whatever the mode: the owner merges when they can run the rest.
+- The bot's review does not replace this tier: it reads, it does not run
+  the change, and it never saw the brief.
 
 ## Before landing — the plan matches the diff
 

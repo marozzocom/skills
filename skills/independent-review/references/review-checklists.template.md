@@ -42,6 +42,10 @@ verification matrix — check → runner → verdict owner → evidence type
   contract or the human's current explicit authorization. `stage` never
   merges, and required other-human review caps every PR at `stage`. [Enumerate the repo's safe set here, or point at the repo rules
   file that carries the table.]
+- **Landing bot** (phase-landing.md §Repos with a landing bot): [absent =
+  none. Otherwise: the bot, what turns it on, its hold label and its
+  send-back label, and the paths it never lands. Under a bot the merge
+  policy table above does not apply to the run: the bot merges.]
 - **Verification matrix:**
   - tests / type-check / lint (`[gate command]`) → implementer runs in its
     loop, orchestrator re-runs at the gate (the acceptance) → verdict: the
