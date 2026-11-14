@@ -17,6 +17,11 @@ without the teardown evidence, and the run is not closed without the report.
 - **Timeline** — from ledger timestamps: agent spawns/rotations/teardowns,
   gates with verdicts, fix rounds, kills. One line per event; this is where
   "what actually happened" survives context loss.
+- **Gate time** — rendered by the script from `gates.tsv` beside the
+  ledger (`run-gates.sh` with `RUN_GATES_RECORD`): runs, failures and
+  seconds per gate, and lock waits. It covers your re-runs only; a
+  delegate's own loop is not in it. Without the file the section says
+  "not measured".
 - **Stats** — fix rounds per implementer, review escalations (external bot,
   stronger reviewer), gates passed/failed, wall time. **Only measured
   values**: turns, rounds, diff sizes, wall time. Delegate-side token spend
@@ -44,7 +49,8 @@ without the teardown evidence, and the run is not closed without the report.
   time spent on recon, CI collection, or mechanical I/O that a delegate
   could have done is a finding, not a neutral fact.
 - **Teardown evidence** — pasted post-state reads (herdr-delegates `hb panes`,
-  `git worktree list`), per phase-landing.md §Closeout. Absence of this
+  `git worktree list`, `bin/stale-worktrees.sh` with its exit code), per
+  phase-landing.md §Closeout. Absence of this
   section = the run is not closed.
 - **Highlights and next-run changes** — what worked, what cost a
   round-trip, contract amendments worth keeping. Anything durable graduates

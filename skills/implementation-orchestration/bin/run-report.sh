@@ -9,13 +9,20 @@
 # Deterministic inputs:
 #   - PRs carrying the run marker `<!-- herdr-run: <run-id> -->` (state,
 #     additions/deletions, merged time) via gh
-#   - teardown post-state reads: `herdr pane list`, `git worktree list`
+#   - teardown post-state reads: `herdr pane list`, `git worktree list`,
+#     and `stale-worktrees.sh` for the current repository
+#   - gate time from gates.tsv beside the ledger (run-gates.sh
+#     RUN_GATES_RECORD): runs, failures and seconds per gate, lock waits
 #   - the ledger file, echoed by path for the timeline source
 set -euo pipefail
 
 run_id=${1:?usage: run-report.sh <run-id> <owner/repo> [ledger-file]}
 repo=${2:?usage: run-report.sh <run-id> <owner/repo> [ledger-file]}
 ledger=${3:-}
+
+here=$(cd "$(dirname "$0")" && pwd)
+# Read first, printed with the teardown evidence below.
+stale_rc=0; stale=$("$here/stale-worktrees.sh" 2>&1) || stale_rc=$?
 
 echo "# Run report: $run_id"
 echo
@@ -71,6 +78,38 @@ echo '```'
 git worktree list 2>&1 || true
 echo '```'
 echo
+echo '### stale-worktrees.sh'
+echo '```'
+[ -z "$stale" ] || printf '%s\n' "$stale"
+case $stale_rc in
+  0) echo "exit 0: no worktree of a merged PR remains" ;;
+  3) echo "exit 3: STALE worktrees remain — remove them (phase-landing.md §Closeout step 4) and render again" ;;
+  *) echo "exit $stale_rc: not checked — read git worktree list against the ledger's PR list by hand" ;;
+esac
+echo '```'
+echo
+echo "## Gate time"
+echo
+gates=''; [ -n "$ledger" ] && gates=$(dirname "$ledger")/gates.tsv
+if [ -n "$gates" ] && [ -s "$gates" ]; then
+  echo "Measured by the overseer's run-gates.sh runs (gates.tsv); delegates' own loops are not in it."
+  echo
+  echo "| gate | runs | failed | seconds |"
+  echo "|---|---|---|---|"
+  awk -F'\t' '
+    NF != 6 || $6 !~ /^[0-9]+$/ { bad++; next }
+    $3 == "gate" { if (!($4 in runs)) order[++n] = $4; runs[$4]++; if ($5 != 0) failed[$4]++; secs[$4] += $6; total += $6 }
+    $3 == "lock" { waits++; wait += $6; if ($5 != 0) timeouts++ }
+    END {
+      for (i = 1; i <= n; i++) printf "| %s | %d | %d | %d |\n", order[i], runs[order[i]], failed[order[i]], secs[order[i]]
+      printf "| **all gates** | | | **%d** |\n\n", total
+      printf "Lock waits: %d, %d s in total, %d not acquired.\n", waits, wait, timeouts
+      if (bad) printf "(%d malformed line(s) skipped)\n", bad
+    }' "$gates"
+else
+  echo "not measured (no gates.tsv beside the ledger — run-gates.sh was not given RUN_GATES_RECORD)"
+fi
+echo
 cat <<'EOF'
 ## Timeline
 <!-- Orchestrator: render from the timestamped ledger — agent spawns,
@@ -78,7 +117,7 @@ cat <<'EOF'
 
 ## Stats
 <!-- Orchestrator: fix rounds per implementer, review escalations, wall
-     time. Report only what was measured — delegate-side token spend is not
+     time; gate time is the section above. Report only what was measured — delegate-side token spend is not
      observable; never invent it. -->
 
 ## Per-node outcomes

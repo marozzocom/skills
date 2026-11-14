@@ -81,7 +81,11 @@ live at once, so agent names and tab labels are namespaced and the run stays in
 one workspace.
 
 - `PREFIX=$(${CLAUDE_SKILL_DIR}/bin/run-prefix.sh <slug>)` picks a prefix
-  no live agent name, tab label, or workspace label uses. Record it in the
+  no live agent name, tab label, or workspace label uses. The prefix is
+  typed into every agent and tab name, so it may be short; the workspace
+  is what the human reads in the list, so it carries the run id's slug.
+  Give the run id a slug that says what the work is in plain words
+  (`tide-find-in-files`), never initials. Record the prefix in the
   ledger header and `status-set.sh RUN_DIR init RUN_ID "$PREFIX" "GOAL"`.
 - **The run's workspace is the overseer's** (its workspace in the TUI, its
   space in the app). Open
@@ -89,7 +93,8 @@ one workspace.
   `${CLAUDE_SKILL_DIR}/bin/run-cockpit.sh RUN_DIR`. It names you
   `$PREFIX-overseer`, registers you as the run's first agent row (so the
   board can see you blocked), names your tab `$PREFIX·cockpit`; renames the
-  workspace to `$PREFIX` only when it holds nothing but this run; opens
+  workspace to the run id's slug (the run id without its date, uncut:
+  `gate-timing-lock`) only when it holds nothing but this run; opens
   the board pane; and records the workspace, cockpit tab, and pane ids in
   status.json. Re-running it changes nothing.
 - Agents are `$PREFIX-<role>` (`-impl`, `-impl-2`, `-review`, `-oracle`,

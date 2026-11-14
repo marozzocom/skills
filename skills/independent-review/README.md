@@ -24,7 +24,8 @@ reviewer preferably comes from a different vendor than the implementer.
 | [SKILL.md](SKILL.md) | who reviews, verification ownership, inventory → triage → deep read, reviewer briefs, checklists, drift, fix rounds, threads, previews, external bot |
 | `references/review-checklists.md` | local, gitignored: per-repo checklists, escalation domains, review conventions, landing grants and safe sets, verification matrix. Create from [the template](references/review-checklists.template.md). |
 | `references/agent-trust-profiles.md` | local, gitignored: verified per-agent behavior. Create from [the template](references/agent-trust-profiles.template.md). |
-| `bin/run-gates.sh` | acceptance re-run: one verdict line per gate, failure tails, logs on disk |
+| `bin/run-gates.sh` | acceptance re-run: one verdict line per gate with its seconds, failure tails, logs on disk; optional lock and timing record |
+| `bin/with-lock.sh` | run a command under a machine-wide named lock, so heavy runs queue across sessions and agents |
 | `bin/review-inventory.sh` | every path changed since the base: committed, staged, unstaged, untracked |
 | `bin/diff-hunks.sh` | only the hunks a triage range names; exits 3 when nothing matches |
 | `bin/resolve-thread.sh` | reply to a review comment and resolve its thread in one call |

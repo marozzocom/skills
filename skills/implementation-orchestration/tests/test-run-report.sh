@@ -98,4 +98,39 @@ out=$(
 )
 assert_eq tui-success-one-read 0 "$?"
 assert_contains tui-success-original-row $'w1:p7\tfixture\tdone\t/tmp/worktree' "$out"
+# Gate time: rendered from gates.tsv beside the ledger, never estimated.
+export PATH="$MOCK_BIN:$PATH"
+printf '[]' >"$GH_SCENARIO/pr-list.json"
+mkdir "$SCRATCH/run"; : >"$SCRATCH/run/ledger.md"
+out=$("$R" "$id" o/r "$SCRATCH/run/ledger.md" 2>&1)
+assert_contains gate-time-absent 'not measured (no gates.tsv beside the ledger' "$out"
+out=$("$R" "$id" o/r 2>&1)
+assert_contains gate-time-no-ledger 'not measured (no gates.tsv beside the ledger' "$out"
+printf '%s\t/wt\t%s\t%s\t%s\t%s\n' \
+  t lock heavy 0 40  t gate fmt 0 2  t gate test 1 100 \
+  t lock heavy 75 600  t gate test 0 95  t gate fmt 0 3 >"$SCRATCH/run/gates.tsv"
+printf 'garbage line\n' >>"$SCRATCH/run/gates.tsv"
+out=$("$R" "$id" o/r "$SCRATCH/run/ledger.md" 2>&1)
+assert_contains gate-row-fmt '| fmt | 2 | 0 | 5 |' "$out"
+assert_contains gate-row-test '| test | 2 | 1 | 195 |' "$out"
+assert_contains gate-total '| **all gates** | | | **200** |' "$out"
+assert_contains gate-locks 'Lock waits: 2, 640 s in total, 1 not acquired.' "$out"
+assert_contains gate-malformed '(1 malformed line(s) skipped)' "$out"
+assert_eq gate-order 'fmt test' "$(printf '%s\n' "$out" | grep -o -E '^\| (fmt|test) ' | tr -d '| ' | tr '\n' ' ' | sed 's/ $//')"
+# Teardown evidence carries the stale-worktree read and what its exit means.
+repo=$(cd "$SCRATCH" && pwd -P)/repo
+git init -q -b main "$repo"
+git -C "$repo" -c user.name=t -c user.email=t@t commit -q --allow-empty -m base
+git -C "$repo" worktree add -q -b feat/done "$repo-done" main
+oid=$(git -C "$repo" rev-parse HEAD)
+printf '[{"number":9,"headRefName":"feat/done","headRefOid":"%s","isCrossRepository":false,"title":"t","state":"MERGED","additions":0,"deletions":0,"mergedAt":null,"body":""}]' "$oid" >"$GH_SCENARIO/pr-list.json"
+out=$(cd "$repo" && "$R" "$id" o/r 2>&1); rc=$?
+assert_eq stale-report-exit 0 "$rc"
+assert_contains stale-report-line "STALE $repo-done #9 feat/done" "$out"
+assert_contains stale-report-verdict 'exit 3: STALE worktrees remain' "$out"
+git -C "$repo" worktree remove "$repo-done"
+out=$(cd "$repo" && "$R" "$id" o/r 2>&1)
+assert_contains stale-report-clean 'exit 0: no worktree of a merged PR remains' "$out"
+out=$(cd "$SCRATCH/run" && "$R" "$id" o/r 2>&1)
+assert_contains stale-report-unchecked 'exit 1: not checked' "$out"
 finish

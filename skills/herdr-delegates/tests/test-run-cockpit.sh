@@ -56,6 +56,15 @@ assert_contains own-only-renames 'workspace named fixture' "$out"
 assert_eq no-board-empty '' "$(jq -r .herdr.board_pane "$run/status.json")"
 assert_eq no-board-calls 0 "$(grep -Ec 'pane layout|pane split|pane run' "$MOCK_LOG")"
 assert_eq no-board-overseer open "$(jq -r '.agents[0].state' "$run/status.json")"
+# The workspace is named after the run, not the short agent prefix.
+fixture readable
+jq '.run_id = "2026-11-01-readable-workspace-names" | .prefix = "rwn"' "$run/status.json" >"$SCRATCH/status"
+mv "$SCRATCH/status" "$run/status.json"
+out=$("$C" "$run" --no-board)
+assert_contains readable-workspace 'workspace named readable-workspace-names (was old workspace)' "$out"
+assert_contains readable-rename-call 'readable-workspace-names' "$(grep 'workspace rename' "$MOCK_LOG")"
+assert_contains readable-agent-prefix 'agent named rwn-overseer' "$out"
+assert_contains readable-tab-prefix 'tab named rwn·cockpit' "$out"
 fixture shared
 jq '.result.tabs += [{tab_id:"w1:t2",workspace_id:"w1",label:"another-run·N1"}]' "$HERDR_SCENARIO/tabs.json" >"$SCRATCH/tabs"
 mv "$SCRATCH/tabs" "$HERDR_SCENARIO/tabs.json"
