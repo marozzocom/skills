@@ -24,7 +24,13 @@ In the TUI it is a push line; wrap it as:
 ```text
 You are running inside Herdr and so am I. Message me with:
 [the callback line] — I am the orchestrator agent named [prefix]-overseer.
+Use this command for every message to me, including the answer to a later
+fix round; a reply typed into your own pane does not reach me.
 ```
+
+An inline fix round ends with the same command spelled out (run
+2026-11-10-kv-indexes: two fix rounds answered in the pane, and the run
+sat idle until the human asked).
 
 In the desktop app it is the pull wording — write the report or questions
 file the brief names, then end your turn — because some CLIs' tool shells

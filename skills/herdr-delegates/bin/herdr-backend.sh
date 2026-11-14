@@ -246,7 +246,10 @@ case $verb in
     { [ -n "$pane" ] && [ -z "$tab" ] && [ -z "$space" ]; } || { [ -n "$tab" ] && [ -z "$pane" ]; } || usage
     if [ "$flavor" = app ]; then start_app "$name" "$kind" "$cwd" "$pane" "$tab" "$space" "$timeout" "$@"
     else
-      if [ -z "$pane" ]; then pane=$(herdr pane list | jq -er --arg t "$tab" '[.result.panes[]|select(.tab_id==$t and .agent==null)][0].pane_id|strings'); fi
+      if [ -z "$pane" ]; then
+        pane=$(herdr pane list | jq -r --arg t "$tab" '[.result.panes[]|select(.tab_id==$t and .agent==null)][0].pane_id // empty')
+        [ -n "$pane" ] || { echo "start: tab $tab has no pane without an agent; create a tab with run-tab.sh and pass --pane" >&2; exit 1; }
+      fi
       start_tui "$name" "$kind" "$pane" "$((timeout*1000))" "$@" | jq -er '.result.agent.pane_id // .result.pane_id // error("start returned no id")'
     fi ;;
   prompt)
