@@ -30,6 +30,7 @@ was learned from real failures, which is why this skill keeps it verbatim.
 | `bin/herdr-backend.sh` | the only script that calls Herdr's CLIs; one verb set for both flavors |
 | `bin/run-prefix.sh` | collision-free agent-name prefix against live agents |
 | `bin/rotate-implementer.sh` | quit → cd → restart an agent on a new worktree with its pin (app: a new terminal, same name) |
+| `bin/rotate-cockpit.sh` | hand the overseer role to a fresh session: successor in its own tab, takes the name, closes the old cockpit (TUI) |
 | `bin/agent-status.sh` | one-line liveness probe with a bounded pane read |
 | `tests/` | offline tests against mock `herdr`, `hc`, and `herdr-app`; `validate-skill.sh` |
 

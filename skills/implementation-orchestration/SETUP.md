@@ -78,7 +78,8 @@ in `~/.claude/settings.json`:
 
 `CONTEXT_GUARD_WINDOW` (default 1000000), `CONTEXT_GUARD_WARN` (50) and
 `CONTEXT_GUARD_ROTATE` (60) tune it. It reads only the transcript tail and
-never blocks.
+never blocks. At the rotate level a cockpit hands over with
+herdr-delegates' `rotate-cockpit.sh` (SKILL.md §Context discipline).
 
 **Ideas boards.** `bin/park-idea.sh` reads
 `${XDG_CONFIG_HOME:-~/.config}/implementation-orchestration/ideas-boards.json`,
