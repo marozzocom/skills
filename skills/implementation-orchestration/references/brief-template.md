@@ -28,9 +28,9 @@ Use this command for every message to me, including the answer to a later
 fix round; a reply typed into your own pane does not reach me.
 ```
 
-An inline fix round ends with the same command spelled out (run
-2026-11-10-kv-indexes: two fix rounds answered in the pane, and the run
-sat idle until the human asked).
+An inline fix round ends with the same command spelled out: a fix round
+answered in the delegate's own pane leaves the run idle until someone
+notices.
 
 In the desktop app it is the pull wording — write the report or questions
 file the brief names, then end your turn — because some CLIs' tool shells
