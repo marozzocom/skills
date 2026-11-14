@@ -39,8 +39,8 @@ payload=$(jq -n --arg t "$title" --arg b "$body" --arg board "$board" --arg k "$
 if [ "$dry" = 1 ]; then jq . <<<"$payload"; exit 0; fi
 token=$(bash -c "$token_cmd") || fail "tokenCmd failed for '$product'"
 [ -n "$token" ] || fail "tokenCmd printed nothing for '$product'"
-resp=$(curl -sS -X POST "$url" -H "Authorization: Bearer $token" \
-  -H "Content-Type: application/json" -d "$payload" -w '\n%{http_code}') || fail "request failed"
+resp=$(printf 'Authorization: Bearer %s\n' "$token" | curl -sS -X POST "$url" -H @- \
+  -H "Content-Type: application/json" --data-binary "$payload" -w '\n%{http_code}') || fail "request failed"
 code=${resp##*$'\n'}; json=${resp%$'\n'*}
 [ "$code" -ge 200 ] && [ "$code" -lt 300 ] || fail "HTTP $code: $(jq -c '{error, code}' <<<"$json" 2>/dev/null || echo "$json" | head -c 300)"
 id=$(jq -er '.data.id' <<<"$json") || fail "response has no data.id"
