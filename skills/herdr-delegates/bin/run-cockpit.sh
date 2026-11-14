@@ -3,6 +3,9 @@
 # Run in the overseer's shell with HERDR_PANE_ID/TAB_ID/WORKSPACE_ID. Names
 # its agent/tab, names an exclusively owned workspace, opens a board below,
 # and registers the overseer and Herdr metadata through status-set.sh.
+# The workspace is named for the human: the run id without its leading
+# YYYY-MM-DD- (the prefix when that leaves nothing). Agents and tabs keep
+# the short prefix.
 # A live recorded board is reused. No-op reruns leave status timestamps alone.
 # Exit: 0 one line per action (or unchanged), 1 setup failure, 2 usage.
 set -euo pipefail
@@ -36,6 +39,8 @@ setter=$here/../../implementation-orchestration/bin/status-set.sh
 run=$(cd "$run" && pwd) || fail "run directory unavailable"
 status=$run/status.json
 prefix=$(jq -er '.prefix | strings | select(length > 0)' "$status") || fail "status.json prefix missing"
+space_label=$(jq -r '.run_id // "" | sub("^[0-9]{4}-[0-9]{2}-[0-9]{2}-"; "")' "$status")
+[ -n "$space_label" ] || space_label=$prefix
 recorded_workspace=$(jq -r '.herdr.workspace // ""' "$status")
 [ -z "$recorded_workspace" ] || [ "$recorded_workspace" = "$caller_space" ] ||
   fail "run is in workspace $recorded_workspace, caller is in $caller_space"
@@ -62,9 +67,9 @@ own=$(jq -r --arg t "$caller_tab" --arg ws "$caller_space" --arg ns "${prefix}·
   all(.[]; .id == $t or ((.label // "")|startswith($ns)))' <<<"$tabs")
 workspace_label=$(jq -r --arg w "$caller_space" '[.[]|select(.id == $w)][0].label // ""' <<<"$workspaces")
 if [ "$own" = true ]; then
-  if [ "$workspace_label" != "$prefix" ]; then
-    "$backend" rename-space "$caller_space" "$prefix" >/dev/null || fail "workspace rename failed"
-    echo "workspace named $prefix (was $workspace_label)"; changed=1
+  if [ "$workspace_label" != "$space_label" ]; then
+    "$backend" rename-space "$caller_space" "$space_label" >/dev/null || fail "workspace rename failed"
+    echo "workspace named $space_label (was $workspace_label)"; changed=1
   fi
 else echo "workspace unchanged: shared with other runs"; fi
 board=$(jq -r '.herdr.board_pane // ""' "$status")

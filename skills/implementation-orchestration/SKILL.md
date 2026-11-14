@@ -202,7 +202,8 @@ Durable state lives in files, not your context window.
   pane below you (§The board pane). It renders the
   status file, the ledger tail, and live agent state at no token cost —
   the human's answer to "what is happening right now" while you wait.
-- A **run id** (`YYYY-MM-DD-<slug>`) at ledger creation; every PR carries
+- A **run id** (`YYYY-MM-DD-<slug>`) at ledger creation, the slug saying
+  what the work is in plain words (it names the run's workspace); every PR carries
   `<!-- herdr-run: <run-id> -->` (`land-pr.sh --run-id`).
 - **Rotate, don't compact.** Every turn re-reads the whole context, so a
   cockpit that runs for days at 700k+ tokens spends most of the run's
@@ -259,10 +260,12 @@ that reads it acts on all three as instruction.
 - `park-idea.sh PRODUCT TITLE BODY` — file a parked idea on the product's
   ideas board (phase-landing.md §Complete deliverables).
 - `claims.sh` — cross-run footprint claims (§Context discipline).
+- `stale-worktrees.sh [REPO_DIR]` — worktrees whose PR is already merged;
+  read-only (phase-landing.md §Closeout, phase-design.md).
 - `context-guard.sh` — context-size hook that triggers rotation.
 - `classify-escalate.sh` — fail-closed classifier checkpoint.
 
-Review helpers (`run-gates`, `review-inventory`, `diff-hunks`,
+Review helpers (`run-gates`, `with-lock`, `review-inventory`, `diff-hunks`,
 `resolve-thread`) are at `${CLAUDE_SKILL_DIR}/../independent-review/bin/`;
 pane helpers (`run-prefix`, `rotate-implementer`, `agent-status`,
 `pane-budget`, `run-board`, `run-cockpit`, `run-tab`) at

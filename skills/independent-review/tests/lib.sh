@@ -4,6 +4,8 @@
 # associative arrays, no ${var,,}).
 set -u
 unset BASH_ENV ENV
+# A test run must not queue behind, or write into, the caller's own gate run.
+unset RUN_GATES_LOCK RUN_GATES_LOCKED RUN_GATES_PENDING RUN_GATES_RECORD ORCHESTRATION_LOCKS_HELD WITH_LOCK_WAIT
 
 TESTS_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 # shellcheck disable=SC2034  # used by the sourcing tests

@@ -49,6 +49,15 @@ What this protocol adds for a delegated run:
   §Layout. Graphs extend depth, not width.
 - **Orchestration layer.** The contract names it (SKILL.md
   §Orchestration layer); under `herdr` no node is `native`.
+- **Leftovers from runs that never closed.** Before creating the run's
+  first worktree, run `bin/stale-worktrees.sh` in the repo. It only
+  informs here and never blocks the run: a `STALE` tree (clean, its PR
+  merged at that commit, no process inside) may be removed under
+  phase-landing.md §Closeout step 4; record what you removed or left in
+  the ledger. `KEEP … in-use` is another session's live tree: leave it.
+  The check sees only a process whose working directory is in the tree,
+  so before removing a `STALE` one confirm no live run on the board or in
+  the claims list owns it.
 
 ## Briefs — load the delegation-briefs skill
 

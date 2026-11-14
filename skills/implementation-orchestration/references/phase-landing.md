@@ -202,6 +202,11 @@ abandoned:
    §Complete deliverables never applies to someone's uncommitted work.
 5. **Verify with a read, not the mutation**, pasted into the report:
    `hb panes` shows only panes you did not create, `git worktree
-   list` only trees you did not make plus the ones step 4 kept. Never
+   list` only trees you did not make plus the ones step 4 kept, and
+   `bin/stale-worktrees.sh` (run in the repo; `run-report.sh` pastes it)
+   exits 0. Exit 3 names a clean worktree of a merged PR that nobody is
+   using: remove it under step 4 and read again. `KEEP` lines go in the
+   report with their reason; exit 1 means not checked, so say that and
+   read the list against the ledger's PRs by hand. Never
    suppress stderr in a teardown chain or emit your own success marker;
    gate any "cleaned up" claim on exit status plus the post-state read.

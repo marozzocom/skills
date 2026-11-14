@@ -21,6 +21,9 @@ verification matrix — check → runner → verdict owner → evidence type
   note that the implementer brief overrides it — review is centralized with
   the orchestrator.]
 - **Commit-free gate runner** for brief verification floors: `[command]`.
+- **Heavy gates:** `[which gates take the machine-wide lock, and its name:
+  RUN_GATES_LOCK=heavy for a full build-and-test run, heavy,desktop when a
+  gate drives the real display or input; "none" for a light repo]`.
 - **Review conventions** (phase-landing.md §Authorization): [what the
   repo's process actually expects — branch protection, required reviewers,
   CODEOWNERS,

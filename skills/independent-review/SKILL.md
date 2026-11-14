@@ -59,10 +59,21 @@ local, created from the templates beside them).
   runner is interchangeable, so run them twice. The implementer runs them
   in its own loop; you re-run at the gate via
   `${CLAUDE_SKILL_DIR}/bin/run-gates.sh <worktree> "NAME:COMMAND" ...`,
-  and that re-run is the acceptance. Green is necessary, not sufficient:
+  and that re-run is the acceptance. Each verdict line carries the
+  gate's seconds; set `RUN_GATES_RECORD=<run folder>/gates.tsv` on your
+  re-runs so the run report shows where gate time went. Green is necessary, not sufficient:
   never let "tests pass" clear work that hardcoded an expected value,
   weakened an assertion, or bypassed a requirement — spot-check the diff
   for exactly that.
+- **Heavy runs queue.** A full gate run, and anything that needs the
+  real display or input, takes a machine-wide lock so sessions and
+  agents do not run them at once: `RUN_GATES_LOCK=heavy` on
+  `run-gates.sh` (`heavy,desktop` when a gate drives the desktop, always
+  in that order), or `bin/with-lock.sh <name> -- <command>` for anything
+  else. Waiting is reported apart from gate time. Record which of a
+  repo's gates are heavy in its `references/review-checklists.md` entry,
+  and name the same lock in a brief's verification floor so implementers
+  queue too.
 - **A test written in the same run gets no verdict from its own exit
   code.** For any test that pins something (a default, an invariant, a
   regression guard): mutate the implementation and confirm the test
