@@ -195,6 +195,13 @@ install check, its docs link, and the commands for create / update after
 a lower layer merges / merge — plus anything it cannot do yet (e.g.
 auto-merge on a stacked PR).
 
+## Ideas boards — [tracker, or delete this section]
+
+Where `bin/park-idea.sh` files parked ideas (phase-landing.md §Complete
+deliverables), one line per product: product key, board name and id, the
+column cards land in, and who prunes the board. The machine config is
+`ideas-boards.json` (SETUP.md).
+
 ## Org and repos
 
 Primary org: `[org]`.

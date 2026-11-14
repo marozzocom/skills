@@ -62,11 +62,16 @@ without the teardown evidence, and the run is not closed without the report.
   preview URL and evidence links); merged behind flag `<name>` with the
   exact enable/disable commands; or kept local (branch and path). List
   every worktree closeout kept and why (phase-landing.md §Closeout).
-  Follow-ups appear only under phase-landing.md §Complete deliverables'
-  conditions, decision-ready — origin, why not closable autonomously, next
-  action, owner.
+- **Triage** — counts only: done now / parked (with card ids) / dropped,
+  per phase-landing.md §Complete deliverables. Never a follow-up list.
 - **Continuation prompt** — only when the project continues past this run:
   the self-contained fresh-session prompt from the ledger (SKILL.md §Context
   discipline). Omit the section for finished projects.
 
 Keep it one screen where possible; the ledger holds the detail.
+
+**The closing chat message is not the report.** It says what landed (PR
+links), "parked N ideas on the board" when N > 0, and the report path.
+No highlights, next steps, or questions: "Highlights and next-run
+changes" live in the report file and graduate into the skill files
+there, not into the human's queue.
