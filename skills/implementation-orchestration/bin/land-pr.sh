@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Land a worktree as a pull request in one uninterrupted process:
 #   stage the named paths → commit → push → gh pr create --body-file
-#   → optional squash auto-merge → run-marker injection.
+#   → labels → optional squash auto-merge → run-marker injection.
 # On a branch that already has an open PR, the same sequence updates it:
 # commit → push; the PR body gains the run marker only if it lacks one.
 #
@@ -16,6 +16,7 @@
 #   land-pr.sh <worktree> --title "<type(scope): subject>" --body-file <file>
 #              --stage <path> [--stage <path>]...
 #              [--base <branch>] [--auto-merge] [--run-id <id>]
+#              [--label <name>]...
 #              [--attribution "<final line>"] [--trailer "<Key: value>"]...
 #              [--allow-unlanded] [--allow-non-trunk-base] [--no-verify]
 #
@@ -41,6 +42,9 @@
 # `run-report.sh` can find the PR; `--attribution` names a line the body
 # must end with (a harness's required final attribution) — the marker is
 # inserted before it, and it is appended if absent.
+# `--label` applies a label when the PR is created (so a landing bot that
+# acts on a green, ready PR never sees it unlabelled) and adds it to an
+# existing PR on update. The label must already exist in the repository.
 # Exit: 0 landed, 1 failed (last line says which stage).
 
 set -euo pipefail
@@ -51,7 +55,7 @@ fail() { printf 'FAILED %s\n' "$*"; exit 1; }
 WORKTREE=$1; shift
 TITLE='' BODY_FILE='' BASE='' AUTO_MERGE=0 RUN_ID='' NO_VERIFY=0
 ATTRIBUTION='' ALLOW_UNLANDED=0 ALLOW_NON_TRUNK=0
-TRAILERS=() STAGE_PATHS=()
+TRAILERS=() STAGE_PATHS=() LABELS=()
 
 need_value() { [[ $# -ge 2 && -n $2 ]] || fail "args: $1 requires a value"; }
 
@@ -68,6 +72,7 @@ while [[ $# -gt 0 ]]; do
     --allow-non-trunk-base) ALLOW_NON_TRUNK=1; shift ;;
     --no-verify) NO_VERIFY=1; shift ;;
     --trailer) need_value "$@"; TRAILERS+=("$2"); shift 2 ;;
+    --label) need_value "$@"; LABELS+=("$2"); shift 2 ;;
     *) fail "args: unknown option $1" ;;
   esac
 done
@@ -191,7 +196,16 @@ if ! git push -q ${push[@]+"${push[@]}"} -u origin "$BRANCH"; then
   git push -q ${push[@]+"${push[@]}"} -u origin "$BRANCH" || fail "push: git push after rebasing onto origin/$BRANCH"
 fi
 
+label_args=()
+for l in ${LABELS[@]+"${LABELS[@]}"}; do label_args+=(--label "$l"); done
+
 if [[ -n $existing ]]; then
+  if [[ ${#label_args[@]} -gt 0 ]]; then
+    add_args=()
+    for l in "${LABELS[@]}"; do add_args+=(--add-label "$l"); done
+    "$GH" pr edit "$existing" "${add_args[@]}" >/dev/null 2>&1 \
+      || fail "pr: gh pr edit could not add labels to $existing"
+  fi
   if [[ -n $RUN_ID ]] && ! jq -e --arg m "<!-- herdr-run: $RUN_ID -->" '(.body // "") | contains($m)' <<<"$url_json" >/dev/null; then
     "$GH" pr edit "$existing" --body-file "$FINAL_BODY_FILE" >/dev/null 2>&1 \
       || fail "pr: gh pr edit could not add the run marker to $existing"
@@ -200,7 +214,7 @@ if [[ -n $existing ]]; then
   exit 0
 fi
 
-url=$("$GH" pr create --base "$BASE" --head "$BRANCH" --title "$TITLE" --body-file "$FINAL_BODY_FILE" 2>&1 | tail -n1) \
+url=$("$GH" pr create --base "$BASE" --head "$BRANCH" --title "$TITLE" --body-file "$FINAL_BODY_FILE" ${label_args[@]+"${label_args[@]}"} 2>&1 | tail -n1) \
   || fail "pr: gh pr create: $url"
 [[ $url == https://* ]] || fail "pr: gh pr create returned: $url"
 

@@ -205,4 +205,17 @@ out=$("$L" "$R" --title 'feat: v' --body-file "$body" --stage v.txt 2>&1); rc=$?
 assert_eq stacked-update-exit 0 "$rc"
 assert_eq stacked-update-line "PR https://x/pr/9 updated" "$(printf '%s\n' "$out" | tail -n1)"
 
+# --- 15. --label lands on the created PR, and is added to an existing one ---
+R="$SCRATCH/r15"; make_repo "$R"; no_pr; : >"$MOCK_LOG"
+echo l >"$R/l.txt"
+out=$("$L" "$R" --title 'feat: l' --body-file "$body" --stage l.txt --label needs-owner --label stage 2>&1); rc=$?
+assert_eq label-create-exit 0 "$rc"
+assert_contains label-on-create "--label needs-owner --label stage" "$(grep 'gh pr create' "$MOCK_LOG")"
+with_pr 'body'; : >"$MOCK_LOG"
+echo l2 >"$R/l.txt"
+out=$("$L" "$R" --title 'feat: l2' --body-file "$body" --stage l.txt --label needs-owner 2>&1); rc=$?
+assert_eq label-update-exit 0 "$rc"
+assert_contains label-on-update "pr edit https://x/pr/9 --add-label needs-owner" "$(cat "$MOCK_LOG")"
+assert_eq label-update-no-create 0 "$(grep -c 'gh pr create' "$MOCK_LOG")"
+
 finish
