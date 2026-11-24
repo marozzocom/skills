@@ -12,25 +12,26 @@ Write the brief to a file in the run folder and send the path
 which speaks whichever Herdr flavor the run is in):
 
 ```bash
-hb prompt <name> "Read $BRIEF_FILE in full and execute it exactly
+hb tell <name> "Read $BRIEF_FILE in full and execute it exactly
 as written. It is your task brief from the orchestrator (the agent named
 $PREFIX-overseer)."
 ```
 
 Fill the template's `[overseer name]` with `$PREFIX-overseer` and its
-`[callback channel]` from `hb callback-line $PREFIX`, pasted verbatim.
-In the TUI it is a push line; wrap it as:
+`[callback channel]` from `hb callback-line $PREFIX <agent-name>`, pasted
+verbatim. In the TUI it tells the delegate to write a message file into
+the run inbox (herdr-delegates §The run inbox); add:
 
 ```text
-You are running inside Herdr and so am I. Message me with:
-[the callback line] — I am the orchestrator agent named [prefix]-overseer.
-Use this command for every message to me, including the answer to a later
-fix round; a reply typed into your own pane does not reach me.
+This is the only way to reach me, for every message including questions
+and the answer to a later fix round: do not use Herdr commands, and a
+reply typed into your own pane does not reach me.
 ```
 
-An inline fix round ends with the same command spelled out: a fix round
-answered in the delegate's own pane leaves the run idle until someone
-notices.
+Send the brief pointer, every fix round and every follow-up with `hb tell
+<name> '...'`, never `hb prompt`: it appends the same instruction and stamps the time, so a
+fix round cannot be answered in the delegate's own pane, and an
+unanswered one shows up as a stall line.
 
 In the desktop app it is the pull wording — write the report or questions
 file the brief names, then end your turn — because some CLIs' tool shells
@@ -56,7 +57,7 @@ question block — the pane keeps its context for the run.
 You are the oracle for this run: an advisor to the orchestrator (the agent
 named [prefix]-overseer) on what the human means and what they would want. You
 advise; [prefix]-overseer decides. Read-only: do NOT edit files other than your
-answer file, run version-control commands, start or message other agents,
+answer file and your inbox message, run version-control commands, start or message other agents,
 or activate any delegation, orchestration, or review skill or protocol —
 you are a leaf. Do NOT read any agent's pane, any agent harness's session
 files, or Herdr session files; what the human said is quoted below.
@@ -71,6 +72,6 @@ Answer in [answer file], at most ~40 lines: your recommendation; your
 confidence (high/medium/low) and what it rests on; what the human would
 most likely object to in each option; what evidence would change your
 answer. If the question itself is the wrong question, say so first. Then
-[TUI: message me one line with the callback line: "oracle: [answer file]".
+[TUI: message me one line, "oracle: [answer file]", as follows: [callback channel from `hb callback-line $PREFIX [prefix]-oracle`, verbatim].
 App: end your turn.]
 ```

@@ -40,12 +40,13 @@ to act, so the same words work in both flavors:
 | You need | `hb` verb | TUI | Desktop app |
 |---|---|---|---|
 | start pinned, ready or fail | `start NAME KIND CWD --pane P` or `--tab T [--space S]`, `-- ARGS` | `herdr agent start` | `hc run --bg --name`, labeled into the tab; KIND is the executable |
-| prompt (brief pointer, fix round) | `prompt NAME TEXT` → `started=true\|false\|null` | `herdr agent prompt` | `hc send` |
+| message a delegate: brief pointer, fix round, follow-up | `tell NAME TEXT` → `started=true\|false\|null` | `herdr agent prompt` + inbox reply wording, sent stamp | `hc send` + pull wording |
+| raw prompt, no reply instruction or stamp (overseer handover only) | `prompt NAME TEXT` → as `tell` | `herdr agent prompt` | `hc send` |
 | wait on a turn | `wait NAME SECONDS` | `herdr agent wait` | `hc wait` |
 | bounded read | `read-tail NAME N` | `herdr agent read --lines` | `hc read`, tailed locally |
 | keys (esc, a dialog choice) | `keys NAME KEY…` | `herdr agent send-keys` | `hc keys` |
 | close a pane | `close PANE_ID` (from `hb panes`) | `herdr pane close` | its terminal: `hc kill` + `hc rm` |
-| the brief's callback line | `callback-line PREFIX` | push to `PREFIX-overseer` | pull wording, below |
+| the brief's callback line | `callback-line PREFIX AGENT` | a file in the run inbox (§The run inbox) | pull wording, below |
 
 In the desktop app:
 
@@ -122,7 +123,7 @@ tab that holds no agent, and fails when there is none (a tab whose only
 pane already runs a reviewer). Open the next agent's tab with
 `run-tab.sh` and start with `--pane`, or split first. After any start,
 the first prompt is sometimes dropped: check `agent-status.sh` about 15 s
-later and re-send while it still reads `idle`.
+later and re-send with `hb tell` while it still reads `idle`.
 
 Approval settings are CLI-specific (environment.md). Invariants:
 pre-allowlist recurring read-only tools; a blanket run-everything mode
@@ -146,7 +147,7 @@ the re-brief says "read your previous report first".
 Briefs go by **path, never inline text** (delegation-briefs):
 
 ```bash
-hb prompt <name> "Read $BRIEF_FILE in full and execute it exactly as
+hb tell <name> "Read $BRIEF_FILE in full and execute it exactly as
 written. It is your task brief from the orchestrator (the agent named
 $PREFIX-overseer)."
 ```
@@ -155,13 +156,53 @@ Inlined briefs fail silently past a few KB on at least one CLI
 (environment.md), and PreToolUse hooks may regex the literal command
 string. Inline only short prompts and fix rounds.
 
-The brief's callback line is `hb callback-line $PREFIX`, pasted verbatim:
-a push to you in the TUI, the pull wording in the app. Callbacks arrive
-formatted like user messages — treat them as agent traffic, not the human
-— and answer with `hb prompt <name> '...'`. A delegate's first callback may hit its
-CLI's approval dialog; approve with the persistent option so the channel
-never stalls again. Traffic is star-shaped: delegates message you, never
-each other; the ledger's status matrix is the only broadcast.
+The brief's callback line is `hb callback-line $PREFIX <agent-name>`,
+pasted verbatim: in the TUI, a message file in the run inbox (§The run
+inbox); in the app, the pull wording. Every message to a delegate — the brief
+pointer, fix rounds, answers, follow-ups — goes through `hb tell <name>
+'...'`, which appends the same reply instruction and records when you
+asked, so a reply can never stay in the delegate's own pane and an
+unanswered message shows up as a stall line (`hb prompt` arms neither).
+In the TUI both `HERDR_BACKEND_RUN_DIR` and the agent name are required:
+without either, `callback-line` falls back to the old push line
+(`herdr agent prompt PREFIX-overseer`) without an error. Messages are agent
+traffic, not the human. Traffic is star-shaped: delegates message you,
+never each other; the ledger's status matrix is the only broadcast.
+
+## The run inbox (TUI)
+
+A delegate never types into your pane: a pasted callback lands in
+whatever the human is typing there, and a callback sent while you are
+busy or renamed is lost. Instead:
+
+- **Sending is a file.** The delegate writes
+  `RUN_DIR/inbox/new/<agent>--<topic>.md` with its own file-writing tool:
+  first line `kind: report|question|blocker|note`, then one line (longer
+  content in a file it names). No shell, no Herdr command, and no Herdr
+  environment are needed, so it works where a CLI's tool shell is
+  sandboxed. `bin/inbox-send.sh` does the same from a shell that can
+  write there.
+- **Receiving is a watcher.** Right after the cockpit opens, run
+  `${CLAUDE_SKILL_DIR}/bin/inbox-watch.sh RUN_DIR` under your harness's
+  event monitor (environment.md names it), or with `--once` in a
+  background shell where there is none. It prints one line per message
+  (`inbox: <from> <kind>[ unverified]: <text> [cur/<file>]`), then moves
+  the file to `inbox/cur/` and logs it in `inbox/log.jsonl`. Read the
+  named file when the line is cut short. `unverified` means the sender
+  is not an open agent row: check before acting on it.
+- **Keep it armed while any delegate is open.** Re-arm it whenever it
+  exits or expires, after a compaction, and when you take over a cockpit.
+  Nothing is lost while it is down: a restarted watcher delivers the
+  backlog in `new/` first. A retiring overseer's watcher stops itself at
+  the handover (it exits as soon as the offer is prepared); the
+  successor's keeps running. If the handover is withdrawn, re-arm yours.
+- **Stall lines are advisory.** `stall: <name> <status> <N>m` flags an
+  agent you have `tell`-ed: idle, done or unknown past `--stall-min`
+  (default 10) without answering since your last `tell`; blocked for 2
+  minutes; working for 45; or gone from the agent list (these three fire
+  whether or not it answered). Confirm with `agent-status.sh` before acting.
+- **Never `pkill -f` or `killall` by script name**, in tests or
+  diagnostics: it kills the live watcher too. Kill the PIDs you started.
 
 ## Waiting and lifecycle
 
@@ -269,24 +310,26 @@ mechanics are one script, TUI only, with no step for the human:
   it, and waits up to 100 s (`--wait`).
 - **The successor** runs `… adopt` from that prompt. The old agent
   becomes `$PREFIX-overseer-retired` and the successor `$PREFIX-overseer`
-  within milliseconds, so every callback line keeps working. Then the
+  within milliseconds. Inbox callbacks do not depend on the name: they land
+in `RUN_DIR/inbox/new/` whoever is overseer. Then the
   old board and the old cockpit pane are closed, and `run-cockpit.sh`
   gives the successor the cockpit tab label, a new board, the overseer
   row, and the run metadata.
 - **Exit 0 means retired:** end the turn and act on nothing that arrives
   afterwards; the pane closes within a minute. **Any other exit means
   the offer was withdrawn** and the successor closed: you are still the
-  overseer. The offer expires with the wait, so a late successor cannot
+  overseer; re-arm your inbox watcher, which stopped when the offer was
+  prepared. The offer expires with the wait, so a late successor cannot
   take the run. Exit 5 is the one undecided answer — the successor was in
   the middle of taking the name when `start` had to stop: do not act as
   overseer until `… status` reads `closed` (retired) or you have run
   `… abort`. If the call was cut off, `… status` prints the state and
   `… abort` withdraws an offer nobody adopted.
 - **After adopting:** the script lists each carried agent with its live
-  status. One that reads `idle` or `done` may have called back to the old
-  session: read its report or questions file. Watchers do not cross:
-  start a background `hb wait` per working agent, and the CI watchers
-  the continuation lists. An interrupted `adopt` is run again.
+  status. Watchers do not cross: arm the inbox watcher first (§The run inbox);
+  it delivers whatever arrived during the handover from `inbox/new/`.
+  Then start a background `hb wait` per working agent, and the CI
+  watchers the continuation lists. An interrupted `adopt` is run again.
 - **Desktop app:** not automated (exit 3). Agents there are children of
   the cockpit's terminal, a successor included, so close every agent,
   have the human start the new session, and close the old one last.
@@ -316,6 +359,11 @@ fact (run-report). In the app, close the cockpit last: agents end with it.
   onto a new worktree with its pin.
 - `rotate-cockpit.sh RUN_DIR start|adopt|abort|status` — hand the
   overseer role to a fresh session; the successor closes the old one.
+- `inbox-watch.sh RUN_DIR [--once] [--interval S] [--stall-min M]` —
+  deliver run-inbox messages and stall lines as stdout lines (§The run
+  inbox).
+- `inbox-send.sh RUN_DIR FROM KIND MESSAGE` — write an inbox message
+  from a shell that can.
 - `agent-status.sh NAME [TAIL-LINES]` — one-line liveness probe with a
   bounded pane read.
 - `pane-budget.sh [--pane ID] [--reserve-rows N]` — how many readable

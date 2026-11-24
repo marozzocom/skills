@@ -28,7 +28,13 @@
 # not_started) on stdout and exit 1.
 # read-tail NAME N: <=N lines (app screen read locally tailed); keys NAME KEY…;
 # close PANE_ID: silent (TUI pane close; app kill+rm of its terminal, also by name/address).
-# callback-line PREFIX: TUI push line / app PULL brief wording.
+# callback-line PREFIX [AGENT]: TUI with AGENT and a run dir
+# (HERDR_BACKEND_RUN_DIR): the file-drop instruction for RUN_DIR/inbox/new/
+# (read by inbox-watch.sh); TUI otherwise: push line; app: PULL brief wording.
+# tell NAME TEXT: prompt NAME with TEXT, a blank line and NAME's callback
+# instruction (TUI needs a run dir); stdout as prompt. With a run dir it
+# writes the UTC time to RUN_DIR/inbox/sent/NAME. NAME: [a-z][a-z0-9_-]{0,31},
+# never an overseer.
 # rotate NAME PANE CWD KIND -- ARGS: TUI original start JSON and unchanged
 # quit/get/cwd/run/start sequence; app resolves NAME, ignores PANE, prints
 # the new address; same name/tab/space, physical resolved CWD and supplied pin.
@@ -132,6 +138,14 @@ start_app() {
     fi
   fi
   printf '%s\n' "$id"
+}
+callback_text() { # PREFIX [AGENT]
+  local dir
+  if [ "$flavor" = tui ] && [ -n "${2:-}" ] && [ -n "$run" ]; then
+    dir=$(cd "$run" && pwd)/inbox/new/
+    printf 'To message the overseer, write a new file in %s named %s--<short-topic>.md. Its first line is kind: report, kind: question, kind: blocker or kind: note; the rest is your message (one line; put anything longer in a file and give its path). Use your file-writing tool; no shell command needed. Use a new file name for every message.\n' "$dir" "$2"
+  elif [ "$flavor" = tui ]; then printf 'herdr agent prompt %s-overseer "<message>"\n' "$1"
+  else echo 'Write the report/questions file named in the brief, then end your turn. The overseer is watching your turn state.'; fi
 }
 case $verb in
   flavor) echo "$flavor" ;;
@@ -265,9 +279,20 @@ case $verb in
       fi
       start_tui "$name" "$kind" "$pane" "$((timeout*1000))" "$@" | jq -er '.result.agent.pane_id // .result.pane_id // error("start returned no id")'
     fi ;;
-  prompt)
-    [ $# -eq 2 ] || usage
-    if [ "$flavor" = tui ]; then result=$(herdr agent prompt "$1" "$2"); else result=$(hc send "$1" "$2"); fi
+  prompt|tell)
+    [ $# -eq 2 ] || usage; text=$2
+    if [ "$verb" = tell ]; then
+      [[ $1 =~ ^[a-z][a-z0-9_-]{0,31}$ ]] || usage
+      case $1 in *-overseer) echo "tell: delegates message the overseer through its inbox" >&2; exit 2 ;; esac
+      [ "$flavor" = app ] || [ -n "$run" ] || { echo "tell: set HERDR_BACKEND_RUN_DIR; the callback names the run's inbox" >&2; exit 2; }
+      text="$text"$'\n\n'$(callback_text '' "$1")
+    fi
+    if [ "$flavor" = tui ]; then result=$(herdr agent prompt "$1" "$text"); else result=$(hc send "$1" "$text"); fi
+    if [ "$verb" = tell ] && [ -n "$run" ]; then
+      mkdir -p "$run/inbox/sent" "$run/inbox/new"
+      date -u +%Y-%m-%dT%H:%M:%SZ >"$run/inbox/sent/.$1.$$"
+      mv "$run/inbox/sent/.$1.$$" "$run/inbox/sent/$1"
+    fi
     jq -r '(if has("result") then .result else . end)|"started=\(if .started==true then "true" elif .started==false then "false" else "null" end)"' <<<"$result" ;;
   wait)
     [ $# -eq 2 ] || usage; case $2 in ''|*[!0-9]*) usage ;; esac
@@ -382,8 +407,8 @@ case $verb in
       fi
     fi ;;
   callback-line)
-    [ $# -eq 1 ] || usage
-    if [ "$flavor" = tui ]; then printf 'herdr agent prompt %s-overseer "<message>"\n' "$1"
-    else echo 'Write the report/questions file named in the brief, then end your turn. The overseer is watching your turn state.'; fi ;;
+    [ $# -eq 1 ] || [ $# -eq 2 ] || usage
+    [ $# -eq 1 ] || [[ $2 =~ ^[a-z][a-z0-9_-]{0,31}$ ]] || usage
+    callback_text "$@" ;;
   *) echo "unsupported verb in $flavor: $verb" >&2; exit 3 ;;
 esac
