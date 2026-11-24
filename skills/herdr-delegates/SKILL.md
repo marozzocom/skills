@@ -125,6 +125,41 @@ pane already runs a reviewer). Open the next agent's tab with
 the first prompt is sometimes dropped: check `agent-status.sh` about 15 s
 later and re-send with `hb tell` while it still reads `idle`.
 
+**Startup dialogs (TUI `hb start` and `hb rotate`).** `start` refuses a
+pane that already holds an agent (exit 1) and never renames one it did
+not just start. When the agent stops at a dialog before it is ready, the
+backend reads a 40-line visible tail and classifies it:
+
+- `folder_trust` — confirmed only when every check holds: the allowlist
+  `${XDG_CONFIG_HOME:-~/.config}/implementation-orchestration/trust-roots`
+  is a regular file (not a symlink), owned by you, and not group- or
+  world-writable (an unreadable mode, or a relative `XDG_CONFIG_HOME`,
+  refuses); the pane's real working directory (`foreground_cwd`, resolved
+  physically) equals or sits inside one of its absolute paths at a path
+  boundary; every path the dialog shows (each path line, and the line
+  after each workspace header) resolves to that same directory;
+  and exactly one choice is highlighted, either the affirmative one
+  (enter) or `No, exit` directly above it (down, enter). Anything else
+  sends no key. The file is yours to write, one path per line, `#`
+  comments; no variable bypasses it.
+- `model_banner` — an informational notice with an Esc hint and no
+  trust, approval or permission wording: dismissed with esc.
+- `update_prompt`, `unknown_dialog` — no key is sent.
+
+A loading screen after a key is waited out. An agent that reads ready
+with the trust prompt still on screen is not ready, and a ready agent
+that does not hold NAME is a failure (exit 1). At most two dialogs are
+cleared per start. A start still blocked exits
+**4**: empty stdout, one `start: dialog=<class> agent=… pane=… cwd=…
+action=… — <reason>` line plus up to six tail lines on stderr, and with
+a run dir a `kind: blocker` file in `RUN_DIR/inbox/new/`. The agent stays
+in its pane, named: read the dialog (`hb read-tail`), decide, `hb keys`
+it, then prompt — never start again in that pane. A passive update
+notice on a ready agent only warns. `rotate` passes exit 4 through and
+retries a start only after a plain failure; `rotate-cockpit.sh` waits for
+a dialog-held successor until its `--wait` budget ends, then withdraws
+(at once when the agent leaves its pane).
+
 Approval settings are CLI-specific (environment.md). Invariants:
 pre-allowlist recurring read-only tools; a blanket run-everything mode
 only for strictly read-only tasks; write-capable sessions stay on a mode
@@ -324,7 +359,11 @@ in `RUN_DIR/inbox/new/` whoever is overseer. Then the
   the middle of taking the name when `start` had to stop: do not act as
   overseer until `… status` reads `closed` (retired) or you have run
   `… abort`. If the call was cut off, `… status` prints the state and
-  `… abort` withdraws an offer nobody adopted.
+  `… abort` withdraws an offer nobody adopted. A successor held by a
+  startup dialog (`hb start` exit 4, §Starting an agent) is not started
+  again: `start` prints the diagnostic and waits; clear the dialog in the
+  `$PREFIX·cockpit-next` tab within the wait, or it withdraws with exit 1,
+  naming the startup dialog.
 - **After adopting:** the script lists each carried agent with its live
   status. Watchers do not cross: arm the inbox watcher first (§The run inbox);
   it delivers whatever arrived during the handover from `inbox/new/`.

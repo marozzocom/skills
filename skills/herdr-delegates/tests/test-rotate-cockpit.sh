@@ -20,8 +20,29 @@ S=${HERDR_SCENARIO:?}
 printf 'herdr %s\n' "$*" >>"${MOCK_LOG:?}"
 edit() { local f=$1; shift; jq "$@" "$S/$f" >"$S/$f.tmp" && mv "$S/$f.tmp" "$S/$f"; }
 case "$1 $2" in
-  "agent list") cat "$S/agents.json" ;;
+  "agent list")
+    # dialog-clears-after: on the Nth agent list after a dialog start, its blocked agent
+    # reads idle and the dialog leaves the screen (with dialog-exit: the agent is gone;
+    # with keep-pane: the screen stays).
+    if [ -f "$S/dialog-clears-after" ]; then
+      n=$(($(cat "$S/dialog-clears-after") - 1)); echo "$n" >"$S/dialog-clears-after"
+      if [ "$n" -le 0 ]; then
+        rm "$S/dialog-clears-after"
+        if [ -f "$S/dialog-exit" ]; then edit agents.json '.result.agents |= map(select(.agent_status != "blocked"))'
+        else edit agents.json '.result.agents |= map(if .agent_status == "blocked" then .agent_status = "idle" else . end)'; fi
+        [ -f "$S/keep-pane" ] || rm -f "$S/pane.txt"
+      fi
+    fi
+    cat "$S/agents.json" ;;
   "pane list") cat "$S/panes.json" ;;
+  "agent read")
+    # pane.txt is the visible screen; pane-clears-after: the Nth read finds it cleared.
+    if [ -f "$S/pane-clears-after" ]; then
+      n=$(($(cat "$S/pane-clears-after") - 1)); echo "$n" >"$S/pane-clears-after"
+      [ "$n" -gt 0 ] || rm -f "$S/pane-clears-after" "$S/pane.txt"
+    fi
+    [ -f "$S/pane.txt" ] || exit 1
+    cat "$S/pane.txt" ;;
   "tab list") cat "$S/tabs.json" ;;
   "workspace list") cat "$S/workspaces.json" ;;
   "pane layout")
@@ -48,8 +69,13 @@ case "$1 $2" in
       case $1 in --kind) kind=$2; shift 2 ;; --pane) pane=$2; shift 2 ;; --) break ;; *) shift ;; esac
     done
     tab=$(jq -r --arg p "$pane" '[.result.panes[]|select(.pane_id==$p)][0].tab_id' "$S/panes.json")
-    edit agents.json --arg n "$name" --arg k "$kind" --arg p "$pane" --arg t "$tab" \
-      '.result.agents += [{name:$n,pane_id:$p,tab_id:$t,workspace_id:"w1",agent:$k,agent_status:"idle"}]'
+    st=idle; [ ! -f "$S/start-dialog" ] || st=blocked
+    edit agents.json --arg n "$name" --arg k "$kind" --arg p "$pane" --arg t "$tab" --arg st "$st" \
+      '.result.agents += [{name:$n,pane_id:$p,tab_id:$t,workspace_id:"w1",agent:$k,agent_status:$st}]'
+    # start-dialog: Herdr 0.9.5's blocked start (exit 1, empty stdout, JSON on stderr).
+    if [ -f "$S/start-dialog" ]; then
+      printf '{"error":{"code":"agent_not_ready","message":"agent %s is blocked during startup and is not ready for prompts"},"id":"cli:agent:start"}\n' "$name" >&2; exit 1
+    fi
     jq -cn --arg p "$pane" '{result:{agent:{pane_id:$p,agent_status:"idle"}}}' ;;
   "agent prompt")
     printf '%s' "$4" >"$S/prompt.txt"
@@ -106,7 +132,8 @@ fixture() {
   run=$SCRATCH/$1; mkdir "$run"
   rm -f "$HERDR_SCENARIO"/on-prompt.sh "$HERDR_SCENARIO"/on-tab-create.sh "$HERDR_SCENARIO"/rename-fail \
     "$HERDR_SCENARIO"/term-on-rename "$HERDR_SCENARIO"/start-fail "$HERDR_SCENARIO"/close-fail \
-    "$HERDR_SCENARIO"/break-state-write
+    "$HERDR_SCENARIO"/break-state-write "$HERDR_SCENARIO"/start-dialog "$HERDR_SCENARIO"/dialog-clears-after \
+    "$HERDR_SCENARIO"/dialog-exit "$HERDR_SCENARIO"/keep-pane "$HERDR_SCENARIO"/pane-clears-after "$HERDR_SCENARIO"/pane.txt
   echo 10 >"$HERDR_SCENARIO/counter"
   echo '{"result":{"agents":[{"name":"","pane_id":"w1:p1","tab_id":"w1:t1","workspace_id":"w1","agent":"claude","agent_status":"working"},
     {"name":"fixture-n1-impl","pane_id":"w1:p5","tab_id":"w1:t2","workspace_id":"w1","agent":"codex","agent_status":"working"}]}}' >"$HERDR_SCENARIO/agents.json"
@@ -245,6 +272,49 @@ out=$(as_old "$R" "$run" start --wait 0 2>&1); assert_eq nostart-exit 1 "$?"
 assert_contains nostart-msg 'did not start in pane w1:p10' "$out"
 assert_eq nostart-pane-closed false "$(pane_exists w1:p10)"
 assert_eq nostart-state aborted "$(state)"
+# A startup dialog (backend exit 4): never started again; the handover waits for it to clear.
+fixture dialog-clears
+"$S" "$run" agent fixture-n1-impl state=closed >/dev/null
+trust_screen() { printf 'Accessing workspace:\n\n%s\n\nDo you trust the contents of this project?\n> Yes, I trust this folder\n  No, exit\n' "$SCRATCH" >"$HERDR_SCENARIO/pane.txt"; }
+touch "$HERDR_SCENARIO/start-dialog"; echo 6 >"$HERDR_SCENARIO/dialog-clears-after"; trust_screen
+adopt_on_prompt
+out=$(as_old "$R" "$run" start --wait 30 -- --model pinned 2>&1); assert_eq dialog-clears-exit 0 "$?"
+assert_contains dialog-clears-diagnostic 'start: dialog=folder_trust agent=fixture-overseer-next pane=w1:p10' "$out"
+assert_contains dialog-clears-waits 'hb start exit 4' "$out"
+assert_eq dialog-clears-one-start 1 "$(grep -c 'agent start' "$MOCK_LOG")"
+assert_eq dialog-clears-no-keys 0 "$(grep -c 'send-keys' "$MOCK_LOG")"
+assert_eq dialog-clears-adopted 0 "$(cat "$SCRATCH/adopt.rc")"
+assert_eq dialog-clears-holds-name fixture-overseer "$(agent_name w1:p10)"
+assert_eq dialog-clears-state closed "$(state)"
+fixture dialog-stays
+"$S" "$run" agent fixture-n1-impl state=closed >/dev/null
+touch "$HERDR_SCENARIO/start-dialog"
+out=$(as_old "$R" "$run" start --wait 0 2>&1); assert_eq dialog-stays-exit 1 "$?"
+assert_contains dialog-stays-msg 'handover withdrawn: startup dialog on successor pane w1:p10' "$out"
+assert_eq dialog-stays-one-start 1 "$(grep -c 'agent start' "$MOCK_LOG")"
+assert_eq dialog-stays-pane-closed false "$(pane_exists w1:p10)"
+assert_eq dialog-stays-state aborted "$(state)"
+assert_eq dialog-stays-old-keeps-name fixture-overseer "$(agent_name w1:p1)"
+# The human leaves the dialog (No, exit): the offer is withdrawn at once, not at the deadline.
+fixture dialog-exited
+"$S" "$run" agent fixture-n1-impl state=closed >/dev/null
+touch "$HERDR_SCENARIO/start-dialog" "$HERDR_SCENARIO/dialog-exit"; echo 6 >"$HERDR_SCENARIO/dialog-clears-after"; trust_screen
+began=$SECONDS
+out=$(as_old "$R" "$run" start --wait 60 2>&1); assert_eq dialog-exited-exit 1 "$?"
+assert_contains dialog-exited-msg 'startup dialog exited in pane w1:p10' "$out"
+assert_eq dialog-exited-prompt true "$([ $((SECONDS - began)) -lt 30 ] && echo true)"
+assert_eq dialog-exited-pane-closed false "$(pane_exists w1:p10)"
+assert_eq dialog-exited-one-start 1 "$(grep -c 'agent start' "$MOCK_LOG")"
+# Reads idle with the trust prompt still on screen: the wait goes on until the screen clears.
+fixture idle-trust
+"$S" "$run" agent fixture-n1-impl state=closed >/dev/null
+touch "$HERDR_SCENARIO/start-dialog" "$HERDR_SCENARIO/keep-pane"; echo 6 >"$HERDR_SCENARIO/dialog-clears-after"; trust_screen
+echo 4 >"$HERDR_SCENARIO/pane-clears-after"
+adopt_on_prompt
+out=$(as_old "$R" "$run" start --wait 30 2>&1); assert_eq idle-trust-exit 0 "$?"
+reads_before_clear=$(grep -c 'agent read' "$MOCK_LOG")
+assert_eq idle-trust-waited-on-screen true "$([ "$reads_before_clear" -ge 3 ] && echo true)"
+assert_eq idle-trust-adopted 0 "$(cat "$SCRATCH/adopt.rc")"
 
 # --- adopt: only the successor, only a live offer ---------------------------
 fixture offers
