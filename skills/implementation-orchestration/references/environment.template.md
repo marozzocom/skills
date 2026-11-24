@@ -43,6 +43,10 @@ facts either way.
   per CLI: any flag the app's core requires, whether it reports status
   under the core (if not, it is app-unsupported), and whether its tool
   shell can reach the core (push callbacks) or not (pull).
+- **Inbox delivery (TUI):** the harness's event-monitor tool that runs
+  `herdr-delegates/bin/inbox-watch.sh` (its name, maximum lifetime, and
+  re-arm rule), or "none: `--once` in a background shell". Per CLI,
+  whether its file-writing tool can write under `RUN_DIR/inbox/new/`.
 
 - **Login check** (herdr-delegates precondition): `[login status command]` and
   the billing path it should report (subscription or API key).

@@ -34,35 +34,36 @@ plan:
   orchestrator had not read.
 - **Closeout is skipped**: 35 of 73 runs have no run report.
 
-## Phase 1: durable message delivery
+## Phase 1: durable message delivery (built 2026-11-24)
 
-The inbox is the record of truth; pasting into a pane is only a
-notification.
+As built (run `2026-11-24-durable-agent-inbox`; herdr-delegates §The run
+inbox). The inbox is the record of truth and nothing is pasted into the
+overseer's pane.
 
-- Delegates send through a wrapper instead of `herdr agent prompt`. The
-  wrapper appends each message to `RUN_DIR/inbox/` with a header it stamps
-  itself: from, to, run, node, kind (report, question, blocker), thread,
-  time. Senders cannot omit or forge attribution, and a message is never
-  lost because a pane was busy, renamed or gone.
-- Addressing is by run and role, resolved to a pane at send time, so a lost
-  or changed agent name no longer drops messages.
-- The wrapper works without `HERDR_ENV` (it writes a file; notification is
-  best-effort), which removes the tool-shell failure.
-- Notification pastes only when the overseer is idle and its input line
-  reads empty on two reads about a second apart. Otherwise the message
-  waits; a `UserPromptSubmit` hook attaches pending messages, separately
-  tagged, when the human submits.
-- The overseer's waits watch the inbox, not pane output, so a callback
-  cannot arrive unseen while it is busy.
-- Every message to a delegate, including fix rounds, ends with the
-  wrapper's send command (the backend appends it), so replies cannot stay
-  in the delegate's pane.
-- An idle watchdog flags a delegate that has been idle or errored with no
-  inbox message for N minutes.
-- Checks: zero callbacks found by status probe over the next ~5 runs; zero
-  mid-sentence collisions; the inbox log shows pasted versus queued counts.
-- Tentative: reading the input box from screen text depends on each CLI's
-  rendering. When unsure, queue; never paste.
+- Delegates write a message file into `RUN_DIR/inbox/new/` with their own
+  file-writing tool. No shell or Herdr command is involved, so a sandboxed
+  tool shell cannot block it (Antigravity's shell sandbox denies writes
+  under `RUN_DIR` and the `herdr` CLI; its file-writing tool does not).
+- `inbox-watch.sh` runs under the overseer harness's event monitor (or
+  `--once` in a background shell) and turns each message into one
+  notification line, outside the pane's input. It is the only mover and
+  log writer, delivers the backlog after a restart, checks the sender
+  against the open agent rows, and stops itself in a retiring overseer
+  during a cockpit handover.
+- `hb tell` sends every fix round and follow-up with the reply
+  instruction appended and stamps the time; `callback-line` takes the
+  agent name.
+- The watcher flags stalls (advisory): an agent that was told something
+  and has not answered sits idle past 10 minutes, is blocked for 2, works
+  for 45, or is gone.
+- Changed from the earlier draft: no paste-when-safe heuristic and no
+  `UserPromptSubmit` hook. Monitor delivery made both unnecessary.
+- Checks: zero callbacks found by status probe and zero mid-sentence
+  collisions over the next ~5 runs; `inbox/log.jsonl` shows delivery
+  counts and stall lines.
+- Still open: whether a monitor notification arriving while the human is
+  mid-prompt behaves well in every harness (observed only in Claude Code);
+  messages between runs' overseers still use `herdr agent prompt`.
 
 ## Phase 2: fix recurring friction
 

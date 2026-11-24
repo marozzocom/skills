@@ -136,8 +136,8 @@ states that settled decisions may be refuted with evidence but not merely
 re-raised. When a gate flags something, first ask whether the flagged
 thing should exist at all.
 
-End every fix-round message with the callback command itself, not "reply
-with the results": the delegate's first brief named the channel for the
+End every fix-round message with the callback instruction itself (the
+transport may append it for you), not "reply with the results": the delegate's first brief named the channel for the
 report, and a later message that says "reply" is read as "answer here".
 A fix round whose answer never arrives looks exactly like one still
 running.
@@ -262,8 +262,9 @@ later: in some harnesses a named subagent spawns as a teammate.
 goes by path through the pane's prompt command — inlined briefs fail
 silently past a few KB on some CLIs, and tool hooks may regex the literal
 command string, so never write commit or push phrasing beyond the standard
-no-git line. The callback channel is the pane's message-the-orchestrator
-command, with your agent name. First callbacks may hit the CLI's approval
-dialog; approve with the persistent option. Pane mechanics, model and
+no-git line. The callback channel is whatever the transport
+skill names (for Herdr, a message file in the run inbox, written with the
+delegate's own file-writing tool, so no shell or approval dialog stands
+in the way). Pane mechanics, model and
 effort pins at start, lifecycle, and rotation are the transport skill's
 (`herdr-delegates` for Herdr).
