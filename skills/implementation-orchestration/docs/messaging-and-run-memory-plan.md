@@ -1,98 +1,128 @@
 # Plan: inter-agent messaging and run memory
 
-Status: draft plan, 2026-11-24. Not loaded at runtime. Phase 0 results may
-reorder or replace anything below; revise this document when they land.
+Status: draft plan, 2026-11-24, revised the same day after the Phase 0
+evidence pass. Not loaded at runtime.
 
-## Problems
+## Evidence (Phase 0, done)
 
-1. **Messages collide with human typing.** Delegates report with
-   `herdr agent prompt <run>-overseer "<message>"`
-   (`herdr-delegates/bin/herdr-backend.sh`, `callback-line`). Herdr pastes
-   the message into the overseer's input box and presses Enter. It checks
-   the agent's lifecycle state, not whether a human is mid-prompt, so a
-   half-written human prompt is submitted with the message appended.
-2. **Run data is written but never used.** Every run leaves a ledger,
-   status file, review rounds, gate timings and (sometimes) a run report
-   with "what to do differently". Nothing reads across runs, so the same
-   friction recurs and is worked around again each time.
-3. **Closeout is skippable.** At the time of writing, roughly half of the
-   run folders have no run report.
+A read-only pass over 73 run folders (2026-11-04 to 2026-11-24) produced a
+deduplicated friction list with citations. The findings that shape this
+plan:
 
-## Phases
+- **Lost callbacks are the top messaging problem, not collisions.** In 14
+  runs a delegate's report never reached the overseer, or arrived only when
+  the human asked for status. Three causes: the delegate's tool shell lacked
+  `HERDR_ENV`; the overseer was busy and no wait was armed; the delegate
+  replied in its own pane because a fix-round message said "reply" without
+  the callback command.
+- **Callbacks are indistinguishable from human input.** They arrive as
+  pasted text, so the overseer re-attributes by hand (6+ runs). Twice a note
+  from a retired session, or relayed human words, was taken as a live
+  instruction.
+- **Collisions with human typing are real** (native test runs, audio
+  captures, an overseer turn, keystrokes landing in a login field when the
+  screen locked), but they are less frequent than lost callbacks.
+- **Stalled delegates go unnoticed** (6 runs): sleep, API errors, usage
+  limits or full context, found only when the human asks.
+- **Pane-name addressing breaks**: names lost after `/clear`, retired panes
+  still targeted (`agent_not_found`).
+- **Overlong agent messages are not a problem.** Briefs already travel by
+  path. The long-text failures were inline briefs and human-facing
+  contract text.
+- **Delegate questions**: about 113 recorded (lower bound), roughly a
+  quarter caused by gaps in the brief, often a claim about code the
+  orchestrator had not read.
+- **Closeout is skipped**: 35 of 73 runs have no run report.
 
-### Phase 0: evidence (read-only)
+## Phase 1: durable message delivery
 
-Mine every run folder into a deduplicated friction list: occurrences, runs,
-cost, whether already fixed, proposed fix, and a dedicated section on
-messaging problems.
+The inbox is the record of truth; pasting into a pane is only a
+notification.
 
-- Why first: the rest of this plan rests on a few sampled lessons. The full
-  data may reorder it.
-- Check: every item cites runs; the operator agrees the top items match
-  experience.
+- Delegates send through a wrapper instead of `herdr agent prompt`. The
+  wrapper appends each message to `RUN_DIR/inbox/` with a header it stamps
+  itself: from, to, run, node, kind (report, question, blocker), thread,
+  time. Senders cannot omit or forge attribution, and a message is never
+  lost because a pane was busy, renamed or gone.
+- Addressing is by run and role, resolved to a pane at send time, so a lost
+  or changed agent name no longer drops messages.
+- The wrapper works without `HERDR_ENV` (it writes a file; notification is
+  best-effort), which removes the tool-shell failure.
+- Notification pastes only when the overseer is idle and its input line
+  reads empty on two reads about a second apart. Otherwise the message
+  waits; a `UserPromptSubmit` hook attaches pending messages, separately
+  tagged, when the human submits.
+- The overseer's waits watch the inbox, not pane output, so a callback
+  cannot arrive unseen while it is busy.
+- Every message to a delegate, including fix rounds, ends with the
+  wrapper's send command (the backend appends it), so replies cannot stay
+  in the delegate's pane.
+- An idle watchdog flags a delegate that has been idle or errored with no
+  inbox message for N minutes.
+- Checks: zero callbacks found by status probe over the next ~5 runs; zero
+  mid-sentence collisions; the inbox log shows pasted versus queued counts.
+- Tentative: reading the input box from screen text depends on each CLI's
+  rendering. When unsure, queue; never paste.
 
-### Phase 1: message delivery
+## Phase 2: fix recurring friction
 
-- Delegates call a wrapper instead of `herdr agent prompt`. The wrapper
-  writes each message to `RUN_DIR/inbox/` with a header it stamps itself:
-  from, to, run, node, kind (task, report, question), thread, time. Senders
-  cannot omit or forge attribution.
-- It pastes only when the overseer is idle and its input line reads empty
-  on two reads about a second apart. Otherwise the message stays queued.
-- A Claude Code `UserPromptSubmit` hook on the overseer attaches queued
-  messages, each separately tagged, when the human submits. The human's
-  sentence stays intact.
-- Deterministic checks: required fields per kind; a length cap that bounces
-  long messages with "write a file and send its path". At most one bounce
-  per message.
-- Check: no mid-sentence collisions over the next ~5 runs; the inbox log
-  shows pasted versus queued counts.
-- Tentative: reading the input box from screen text depends on how each
-  agent CLI renders it. When unsure, queue; never paste.
+One small PR per item, highest recurrence first:
 
-### Phase 2: fix recurring friction
+- Agent start dialogs (hooks review, update, folder trust) time out
+  `agent start` and leave the pane unnamed (15 runs). Depends on whether
+  Codex is still in the stack.
+- Native verification blocked by a locked or sleeping screen, or by live
+  typing (18 runs): ask for the desktop at contract time; check lock and
+  idle input before native gates.
+- Heavy-lock queue: 376 minutes waited across 24 gated runs; one hung
+  holder blocked for 4h25m. Add a staleness signal.
+- Load-sensitive tests flake gates (10 runs): record load per gate row and
+  rerun the failing test alone before calling it load.
+- The global Stop hook runs the full suite in shared worktrees and races
+  implementers (5 runs).
+- Landing slips: missing run marker, PR body not updated on push, the
+  6,000-character body cut, rebase replays (9 runs).
 
-One small PR per top Phase 0 item. Most are light-lane; any that touch
-agent instructions wait for review.
+Most are light-lane; any that touch agent instructions or hooks wait for
+review. Check: each item stops appearing in later run reports.
 
-- Check: the item stops appearing in later run reports.
-
-### Phase 3: run memory
+## Phase 3: run memory
 
 - Teardown refuses to finish until the run report exists.
 - An index script derives `runs.jsonl` from run folders and inbox events:
   duration, nodes, transport and model per node, review rounds, gate
-  failures and time, PR outcomes, time waiting on the human, handovers.
-  Run folders stay the source of truth; the index is rebuildable.
+  failures and time, PR outcomes, time waiting on the human, handovers,
+  delegate questions and their causes. Run folders stay the source of
+  truth; the index is rebuildable.
 - At run start, the design gate pulls lessons from earlier runs in the same
   repository into its frame.
 - Check: every new run has a report; frames cite earlier lessons when they
   exist.
 
-### Phase 4: feedback loop
+## Phase 4: feedback loop
 
 Every ~10 runs, a retro pass reads new reports, finds recurring patterns,
-and proposes skill or template changes as PRs. It also reports model and
-transport statistics to inform the model catalog.
+and proposes skill or template changes as PRs, with model and transport
+statistics for the model catalog.
 
 - Check: proposals merge and their target friction stops recurring.
 - Caveat: with tens of runs, statistics prompt a closer look; they do not
   decide.
 
-## Deferred
+## Deferred or dropped
 
-- **Cheap-model check on task briefs** (scope, done criterion, report
-  target present). Only if Phase 1's deterministic checks do not reduce
-  delegates' clarifying questions, as measured by the inbox. Advisory only;
-  never rewrite or shorten messages, since the sender usually included
-  details on purpose.
-- **Upstream Herdr request** for input-aware or queued delivery, which
-  would remove the screen-reading heuristic. Needs the operator's OK.
-- **Dashboards**, until the index exists and the recurring questions are
-  known.
+- **Model rewriting or shortening messages: dropped.** The evidence shows
+  no overlong-message problem.
+- **Cheap-model check on briefs: deferred.** Brief-gap questions are mostly
+  claims about unread code, which a cheap model cannot check. Revisit if
+  the inbox data shows a pattern it could catch.
+- **Upstream Herdr request** for input-aware delivery. Needs the operator's
+  OK.
+- **Dashboards**, until the index exists.
 
 ## Order
 
-Phase 0, then Phase 1, with Phase 2 alongside. Phase 3 after Phase 1 so the
-index includes inbox events. Phase 4 last. Phases 1 and 3 change delegate
-instructions and add hooks, so they run orchestrated and wait for review.
+Phase 1 first: it fixes the largest measured problem and produces the
+inbox data Phase 3 needs. Phase 2 items alongside, one PR each. Then Phase
+3, then Phase 4. Phases 1 and 3 change delegate instructions and add hooks,
+so they run orchestrated and wait for review.
