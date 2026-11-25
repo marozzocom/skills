@@ -33,10 +33,12 @@ assert_eq tui-geometry '114 31' "$("$H" geometry)"
 assert_eq tui-tab-new 'tab=w1:tnew pane=w1:pnew' "$("$H" tab-new w1 Label "$SCRATCH")"
 echo '{"prefix":"fixture","agents":[],"herdr":{}}' >"$SCRATCH/run/status.json"
 assert_eq tui-board w1:pboard "$("$H" open-board "$SCRATCH/run" 0.65)"
+# start refuses a pane that already holds an agent, so the target pane is empty here.
+echo '{"result":{"agents":[]}}' >"$HERDR_SCENARIO/agents.json"
 assert_eq tui-start w1:p2 "$("$H" start worker fixture "$SCRATCH" --pane w1:p2 --timeout 2 -- --pin 'two words')"
 assert_contains tui-start-timeout 'herdr agent start worker --kind fixture --pane w1:p2 --timeout 2000 -- --pin two words' "$(cat "$MOCK_LOG")"
 assert_eq tui-prompt started=true "$("$H" prompt worker text)"
-assert_eq tui-wait done "$("$H" wait worker 2)"
+assert_eq tui-wait 'done' "$("$H" wait worker 2)"
 printf 'one\ntwo\nthree\n' >"$HERDR_SCENARIO/pane.txt"
 assert_eq tui-tail $'two\nthree' "$("$H" read-tail worker 2)"
 "$H" keys worker esc ctrl-c; "$H" close w1:p2
@@ -130,7 +132,7 @@ out=$("$H" start blocked tool "$SCRATCH" --tab tb1 --timeout 1 -- 2>&1)
 assert_eq blocked-never-ready 1 "$?"
 assert_contains blocked-reason 'not ready: blocked' "$out"
 echo '{"app":"fixture","state":"done"}' >"$HC_SCENARIO/run-status.json"
-assert_eq done-ready tnew6 "$("$H" start done tool "$SCRATCH" --tab tb1 --timeout 1 --)"
+assert_eq done-ready tnew6 "$("$H" start 'done' tool "$SCRATCH" --tab tb1 --timeout 1 --)"
 touch "$HC_SCENARIO/no-adoption"
 out=$("$H" start hidden tool "$SCRATCH" --tab tb1 --timeout 1 -- 2>&1)
 assert_eq adoption-required 1 "$?"

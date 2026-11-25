@@ -19,6 +19,8 @@ MOCK_LOG="$SCRATCH/mock.log"
 mkdir -p "$MOCK_BIN"
 : >"$MOCK_LOG"
 trap 'rm -rf "$SCRATCH"' EXIT
+# No test reads the human's real trust-roots allowlist.
+export XDG_CONFIG_HOME="$SCRATCH/xdg"
 
 _failures=0
 _checks=0

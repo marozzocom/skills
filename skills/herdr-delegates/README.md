@@ -10,7 +10,8 @@ skill in the set that needs a Herdr session — the terminal TUI
 (`HERDR_ENV=1`) or the desktop app (`HC_TERMINAL_ID`). It carries everything that
 is true because the delegate is a CLI in a sibling pane — naming, pinned
 starts, brief delivery by path, waiting and blocked dialogs, rotation,
-parallel panes and tabs, teardown order — and nothing about *what* to
+parallel panes and tabs, teardown order, startup dialogs (exit 4, the
+folder-trust allowlist) — and nothing about *what* to
 delegate (`design-gate`), *how to brief* (`delegation-briefs`), or *how
 to review the result* (`independent-review`). Extracted from
 `implementation-orchestration` (migration step 4 of its
@@ -32,6 +33,7 @@ was learned from real failures, which is why this skill keeps it verbatim.
 | `bin/rotate-implementer.sh` | quit → cd → restart an agent on a new worktree with its pin (app: a new terminal, same name) |
 | `bin/rotate-cockpit.sh` | hand the overseer role to a fresh session: successor in its own tab, takes the name, closes the old cockpit (TUI) |
 | `bin/agent-status.sh` | one-line liveness probe with a bounded pane read |
+| `trust-roots` (not in the repo) | `${XDG_CONFIG_HOME:-~/.config}/implementation-orchestration/trust-roots`: the human-owned allowlist of directories whose folder-trust dialog `start` may confirm; SKILL.md §Starting an agent has the rules |
 | `tests/` | offline tests against mock `herdr`, `hc`, and `herdr-app`; `validate-skill.sh` |
 
 ## Install

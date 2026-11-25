@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016 # jq filters and printf formats are single-quoted on purpose
 # rotate-cockpit.sh RUN_DIR start [--carry NAME]... [--cwd DIR] [--wait SECONDS]
 #                           [-- NATIVE AGENT ARGS...]
 # rotate-cockpit.sh RUN_DIR adopt | abort | status
@@ -54,7 +55,10 @@
 # in seconds; STATUS_NOW overrides the timestamp clock as
 # in status-set.sh and ROTATE_NOW_EPOCH the expiry clock (tests).
 # Exit: 0 done, 1 refusal or runtime failure, 2 usage, 3 unsupported flavor,
-# 4 start: the successor did not adopt in time and the offer was withdrawn,
+# 4 start: the successor did not adopt in time and the offer was withdrawn
+# (herdr-backend.sh start exiting 4 is different: a startup dialog holds the
+# successor; start waits for it to clear within --wait, never starts it
+# again, and otherwise withdraws with exit 1 naming the startup dialog),
 # 5 start: undecided — a live successor was in the middle of taking the run
 # when start had to stop; nothing was changed, and status tells the outcome.
 set -euo pipefail
@@ -299,15 +303,43 @@ start)
   fi
   advance --arg to "$to_pane" --arg to_tab "$to_tab" '.to_pane = $to | .to_tab = $to_tab'
   start_timeout=60; [ "$wait_s" -ge 60 ] || start_timeout=$wait_s; [ "$start_timeout" -gt 0 ] || start_timeout=1
-  started=0
+  started=0; dialog=0
   for attempt_no in 1 2 3 4 5; do
     # A freshly created pane reads busy until its shell is up; the start is retried.
-    if "$backend" start "$next" "$kind" "$cwd" --pane "$to_pane" --timeout "$start_timeout" -- ${agent_args[@]+"${agent_args[@]}"} >/dev/null; then
-      started=1; break
-    fi
+    # Exit 4 is a startup dialog: the agent runs in the pane, so it is never started again.
+    start_rc=0
+    "$backend" start "$next" "$kind" "$cwd" --pane "$to_pane" --timeout "$start_timeout" -- ${agent_args[@]+"${agent_args[@]}"} >/dev/null || start_rc=$?
+    if [ "$start_rc" = 0 ]; then started=1; break; fi
+    if [ "$start_rc" = 4 ]; then dialog=1; break; fi
     [ "$attempt_no" != 5 ] && [ "$SECONDS" -lt "$deadline" ] || break
     sleep 3
   done
+  if [ "$dialog" = 1 ]; then
+    echo "rotate-cockpit: hb start exit 4 — a startup dialog holds the successor in pane $to_pane (diagnostic above); waiting for it to clear until the handover budget ends" >&2
+    while :; do
+      case $(rot .state) in aborted|expired) withdraw "the offer was aborted" 1 ;; esac
+      if agents=$("$backend" agents); then
+        # The human answered the dialog by leaving (No, exit): nothing left to wait for.
+        jq -e --arg p "$to_pane" 'any(.[]; .pane == $p)' <<<"$agents" >/dev/null ||
+          withdraw "startup dialog exited in pane $to_pane" 1
+      else agents='[]'; fi
+      case $(agent_field "$to_pane" status) in
+        idle|done)
+          # Some agents read idle while a trust prompt is still on screen.
+          tail_text=$("$backend" read-tail "$to_pane" 40 2>/dev/null) || tail_text=''
+          grep -qiE 'do you trust|trust this (folder|workspace|project|directory)|quick safety check|trust the (contents|files|authors)' <<<"$tail_text" ||
+            { started=1; break; } ;;
+      esac
+      [ "$SECONDS" -lt "$deadline" ] || withdraw "startup dialog on successor pane $to_pane" 1
+      sleep "$poll"
+    done
+    if [ "$(agent_field "$to_pane" name)" != "$next" ]; then
+      if [ -n "$(agent_field "$to_pane" name)" ] || [ "$(agent_field "$to_pane" kind)" != "$kind" ] ||
+         ! "$backend" rename "$to_pane" "$next"; then
+        withdraw "the successor in pane $to_pane does not hold the name $next" 1
+      fi
+    fi
+  fi
   [ "$started" = 1 ] || withdraw "the successor did not start in pane $to_pane" 1
   "$setter" "$run" agent "$next" role=overseer transport=direct "pane=$to_pane" "tab=$to_tab" state=open \
     "note=successor; takes the overseer name at adoption" >/dev/null
