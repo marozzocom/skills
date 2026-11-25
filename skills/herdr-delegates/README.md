@@ -33,6 +33,9 @@ was learned from real failures, which is why this skill keeps it verbatim.
 | `bin/rotate-implementer.sh` | quit → cd → restart an agent on a new worktree with its pin (app: a new terminal, same name) |
 | `bin/rotate-cockpit.sh` | hand the overseer role to a fresh session: successor in its own tab, takes the name, closes the old cockpit (TUI) |
 | `bin/agent-status.sh` | one-line liveness probe with a bounded pane read |
+| `bin/inbox-watch.sh` | the run inbox's only reader: delivers messages and stall lines, writes the `inbox/.watch` heartbeat |
+| `bin/inbox-send.sh` | writes an inbox message from a shell, to this run's `RUN_DIR` or (with `--from-run`) another run's |
+| `bin/inbox-resolve.sh` | resolves a run_id, prefix or `<prefix>-overseer` to a run with a live inbox watcher |
 | `trust-roots` (not in the repo) | `${XDG_CONFIG_HOME:-~/.config}/implementation-orchestration/trust-roots`: the human-owned allowlist of directories whose folder-trust dialog `start` may confirm; SKILL.md §Starting an agent has the rules |
 | `tests/` | offline tests against mock `herdr`, `hc`, and `herdr-app`; `validate-skill.sh` |
 
