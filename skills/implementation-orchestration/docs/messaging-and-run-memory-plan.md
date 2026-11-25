@@ -62,8 +62,11 @@ overseer's pane.
   collisions over the next ~5 runs; `inbox/log.jsonl` shows delivery
   counts and stall lines.
 - Still open: whether a monitor notification arriving while the human is
-  mid-prompt behaves well in every harness (observed only in Claude Code);
-  messages between runs' overseers still use `herdr agent prompt`.
+  mid-prompt behaves well in every harness (observed only in Claude Code).
+  Messages between runs' overseers no longer use `herdr agent prompt`:
+  Phase 2 built cross-run inbox delivery (`inbox-resolve.sh`,
+  `inbox-send.sh --from-run`, the `inbox/.watch` heartbeat, and
+  `[peer:<run-id>]` attribution).
 
 ## Phase 2: fix recurring friction
 

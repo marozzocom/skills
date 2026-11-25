@@ -63,6 +63,7 @@ oversize=$(printf '%s\n' "$out" | grep 'fx-impl--e.md')
 assert_contains oversize-flag '[cur/fx-impl--e.md] [oversize]' "$oversize"
 assert_contains oversize-cut "$(printf 'x%.0s' $(seq 1 200))… [cur" "$oversize"
 assert_not_contains oversize-cut-only "$(printf 'x%.0s' $(seq 1 201))" "$oversize"
+# shellcheck disable=SC2012 # fixed fixture names; ls -A shows the dotfile
 assert_eq ignored-left '.fx-impl--hidden.md Bad--x.md fx-impl--x.md.tmp notes.md' "$(cd "$new" && ls -A | sort | xargs)"
 assert_eq cur-count 5 "$(find "$m/inbox/cur" -type f | wc -l | tr -d ' ')"
 log=$m/inbox/log.jsonl
@@ -186,4 +187,172 @@ assert_eq failure-silent '' "$(cat "$SCRATCH/fail" "$SCRATCH/fail.err")"
 assert_not_contains stall-no-prompt 'agent prompt' "$(cat "$MOCK_LOG")"
 "$W" "$s" --interval 0 >/dev/null 2>&1; assert_eq bad-interval 2 "$?"
 "$W" "$s" --stall-min x >/dev/null 2>&1; assert_eq bad-stall-min 2 "$?"
+# Heartbeat: written on start and every poll, removed on a signal or handover
+# exit only while it is this watcher's; a --once event exit leaves a rearm
+# heartbeat that inbox-resolve.sh counts as live while fresh.
+RES=$BIN_DIR/inbox-resolve.sh
+E=$(jq -n --arg s "$NOW" '$s|fromdateiso8601')
+h=$SCRATCH/hb; mkdir -p "$h/inbox/new"
+jq -n '{prefix:"hb",herdr:{overseer_pane:"w5:p1"},agents:[{name:"hb-overseer",role:"overseer",state:"open"}]}' >"$h/status.json"
+wait_file() { local i=0; while [ ! -f "$1" ] && [ "$i" -lt 60 ]; do sleep 0.05; i=$((i + 1)); done; [ -f "$1" ]; }
+start_watch "$SCRATCH/hb.out" "$h"; wait_file "$h/inbox/.watch"
+assert_eq hb-content "{\"pid\":$WPID,\"pane\":\"w5:p1\",\"ts\":\"$NOW\",\"epoch\":$E,\"interval\":0.05}" "$(cat "$h/inbox/.watch")"
+assert_eq hb-live "$(cd "$h" && pwd -P)" "$(INBOX_NOW=$NOW "$RES" "$h")"
+rm "$h/inbox/.watch"; wait_file "$h/inbox/.watch"; assert_eq hb-rewritten yes "$([ -f "$h/inbox/.watch" ] && echo yes)"
+stop_watch
+assert_eq hb-removed-on-signal no "$([ -e "$h/inbox/.watch" ] && echo yes || echo no)"
+INBOX_NOW=$NOW "$RES" "$h" >/dev/null 2>&1; assert_eq hb-gone-unwatched 1 "$?"
+assert_eq hb-no-temp '' "$(find "$h/inbox" -maxdepth 1 -name '.watch.tmp*')"
+# A newer watcher's heartbeat survives this one's exit (handover here).
+INBOX_NOW=$NOW "$W" "$h" --interval 1 >"$SCRATCH/hb2.out" 2>&1 & WPID=$!
+wait_file "$h/inbox/.watch"; sleep 0.3
+foreign='{"pid":999999,"pane":"w5:p2","ts":"x","epoch":1,"interval":2}'
+echo "$foreign" >"$h/inbox/.watch"
+jq '.herdr.overseer_pane = "w5:p2"' "$h/status.json" >"$SCRATCH/s" && mv "$SCRATCH/s" "$h/status.json"
+wait "$WPID"; assert_eq hb-handover-exit 0 "$?"
+assert_eq hb-foreign-kept "$foreign" "$(cat "$h/inbox/.watch")"
+# Its own heartbeat is removed at a handover.
+rm "$h/inbox/.watch"
+assert_eq hb-handover 'inbox: watcher stopped (handover)' "$(HERDR_PANE_ID=w5:p1 once "$h")"
+assert_eq hb-removed-on-handover no "$([ -e "$h/inbox/.watch" ] && echo yes || echo no)"
+# --once event exit: rearm heartbeat, live for max(30, 3 x interval) s.
+printf 'kind: note\nping\n' >"$h/inbox/new/hb-overseer--p.md"; touch -t 202001010000 "$h/inbox/new/hb-overseer--p.md"
+assert_eq hb-once-delivers 'inbox: hb-overseer note: ping [cur/hb-overseer--p.md]' "$(HERDR_PANE_ID=w5:p2 once "$h")"
+assert_eq hb-rearm 'true|0.05' "$(jq -r '"\(.rearm)|\(.interval)"' "$h/inbox/.watch")"
+assert_eq hb-rearm-live "$(cd "$h" && pwd -P)" "$(INBOX_NOW=2030-01-01T01:00:30Z "$RES" "$h")"
+INBOX_NOW=2030-01-01T01:00:31Z "$RES" "$h" >/dev/null 2>&1; assert_eq hb-rearm-expired 1 "$?"
+# A re-armed watcher replaces the rearm heartbeat with a plain one.
+start_watch "$SCRATCH/hb3.out" "$h"; sleep 0.2
+assert_eq hb-rearm-replaced "$WPID|null" "$(jq -r '"\(.pid)|\(.rearm)"' "$h/inbox/.watch")"
+stop_watch
+
+# Cross-run headers and peer attribution. Peers live beside this run
+# (dirname RUN_DIR) unless ORCHESTRATION_RUNS_DIR says otherwise.
+xr=$SCRATCH/xr; own=$xr/own; mkdir -p "$own/inbox/new"
+jq -n '{prefix:"ow",herdr:{overseer_pane:"w9:p1"},agents:[{name:"ow-overseer",role:"overseer",state:"open"},{name:"ow-impl",state:"open"}]}' >"$own/status.json"
+peer() { # DIR OVERSEER-STATE PANE: a peer run whose overseer is pa-overseer, with a live heartbeat
+  mkdir -p "$1/inbox"
+  jq -n --arg st "$2" --arg p "$3" '{prefix:"pa",herdr:{overseer_pane:$p},agents:[{name:"pa-overseer",role:"overseer",state:$st}]}' >"$1/status.json"
+  echo "{\"pid\":$$,\"pane\":\"$3\",\"epoch\":$E,\"interval\":2}" >"$1/inbox/.watch"
+}
+peer "$xr/peer-a" open w2:p1; peer "$xr/peer-b" closed w2:p1
+peer "$SCRATCH/x" open w2:p1 # what from-run: ../x would reach if it were joined
+xonce() { local n=$1 c=$2; printf '%b' "$c" >"$own/inbox/new/$n"; touch -t 202001010000 "$own/inbox/new/$n"; once "$own"; }
+assert_eq peer-live 'inbox: pa-overseer note [peer:peer-a]: hello [cur/pa-overseer--1.md]' \
+  "$(xonce pa-overseer--1.md 'kind: note\nfrom-run: peer-a\nfrom-pane: w2:p1\nhello\n')"
+assert_eq peer-live-log "{\"event\":\"delivered\",\"ts\":\"$NOW\",\"id\":\"pa-overseer--1.md\",\"from\":\"pa-overseer\",\"kind\":\"note\",\"verified\":false,\"peer_run\":\"peer-a\",\"peer\":\"live\",\"from_pane\":\"w2:p1\",\"bytes\":51,\"flags\":[]}" "$(tail -n1 "$own/inbox/log.jsonl")"
+assert_eq peer-order 'inbox: pa-overseer report [peer:peer-a]: body [cur/pa-overseer--2.md]' \
+  "$(xonce pa-overseer--2.md 'from-pane: w2:p1\nFrom-Run: peer-a\nKind: Report\nbody\n')"
+assert_eq peer-no-kind 'inbox: pa-overseer note [peer:peer-a]: hi [cur/pa-overseer--3.md] [no-kind]' \
+  "$(xonce pa-overseer--3.md 'from-run: peer-a\nfrom-pane: w2:p1\nhi\n')"
+assert_eq peer-no-kind-log 'note|no-kind' "$(tail -n1 "$own/inbox/log.jsonl" | jq -r '"\(.kind)|\(.flags|join(","))"')"
+assert_eq peer-repeat-ends-headers 'inbox: pa-overseer note [peer:peer-a]: kind: report x [cur/pa-overseer--3b.md]' \
+  "$(xonce pa-overseer--3b.md 'kind: note\nfrom-run: peer-a\nfrom-pane: w2:p1\nkind: report\nx\n')"
+assert_eq peer-retired 'inbox: pa-overseer note unverified [peer-stale:peer-a]: old pane [cur/pa-overseer--4.md]' \
+  "$(xonce pa-overseer--4.md 'kind: note\nfrom-run: peer-a\nfrom-pane: w2:p0\nold pane\n')"
+assert_eq peer-no-pane 'inbox: pa-overseer note unverified [peer-stale:peer-a]: no pane [cur/pa-overseer--5.md]' \
+  "$(xonce pa-overseer--5.md 'kind: note\nfrom-run: peer-a\nno pane\n')"
+assert_eq peer-stale-log 'false|peer-a|stale|null' "$(tail -n1 "$own/inbox/log.jsonl" | jq -r '"\(.verified)|\(.peer_run)|\(.peer)|\(.from_pane)"')"
+echo "{\"pid\":$$,\"epoch\":$((E - 31)),\"interval\":2}" >"$xr/peer-a/inbox/.watch"
+assert_eq peer-expired-watch 'inbox: pa-overseer note unverified [peer-stale:peer-a]: expired [cur/pa-overseer--6.md]' \
+  "$(xonce pa-overseer--6.md 'kind: note\nfrom-run: peer-a\nfrom-pane: w2:p1\nexpired\n')"
+sleep 0 & dead=$!; wait "$dead"
+echo "{\"pid\":$dead,\"epoch\":$E,\"interval\":2}" >"$xr/peer-a/inbox/.watch"
+assert_eq peer-dead-watcher 'inbox: pa-overseer note unverified [peer-stale:peer-a]: dead [cur/pa-overseer--7.md]' \
+  "$(xonce pa-overseer--7.md 'kind: note\nfrom-run: peer-a\nfrom-pane: w2:p1\ndead\n')"
+peer "$xr/peer-a" open w2:p1
+assert_eq peer-closed 'inbox: pa-overseer note unverified [peer-closed:peer-b]: bye [cur/pa-overseer--8.md]' \
+  "$(xonce pa-overseer--8.md 'kind: note\nfrom-run: peer-b\nfrom-pane: w2:p1\nbye\n')"
+assert_eq peer-missing 'inbox: pa-overseer note unverified [peer-unknown:nope]: ? [cur/pa-overseer--9.md]' \
+  "$(xonce pa-overseer--9.md 'kind: note\nfrom-run: nope\nfrom-pane: w2:p1\n?\n')"
+assert_eq peer-traversal 'inbox: pa-overseer note unverified [peer-unknown:../x]: up [cur/pa-overseer--10.md]' \
+  "$(xonce pa-overseer--10.md 'kind: note\nfrom-run: ../x\nfrom-pane: w2:p1\nup\n')"
+assert_eq peer-traversal-log '../x|unknown' "$(tail -n1 "$own/inbox/log.jsonl" | jq -r '"\(.peer_run)|\(.peer)"')"
+for bad in . ..; do
+  assert_contains "peer-dot-$bad" "unverified [peer-unknown:$bad]" "$(xonce "pa-overseer--d$bad.md" "kind: note\nfrom-run: $bad\nfrom-pane: w2:p1\nd\n")"
+done
+assert_eq peer-not-overseer 'inbox: pa-impl note unverified [peer-unknown:peer-a]: me [cur/pa-impl--11.md]' \
+  "$(xonce pa-impl--11.md 'kind: note\nfrom-run: peer-a\nfrom-pane: w2:p1\nme\n')"
+# from-run always means a peer message, even from a name that is an open agent here.
+assert_eq own-name-with-from-run 'inbox: ow-impl report unverified [peer-unknown:peer-a]: mine [cur/ow-impl--12.md]' \
+  "$(xonce ow-impl--12.md 'kind: report\nfrom-run: peer-a\nmine\n')"
+assert_eq own-name-log 'false|peer-a|unknown' "$(tail -n1 "$own/inbox/log.jsonl" | jq -r '"\(.verified)|\(.peer_run)|\(.peer)"')"
+assert_eq own-no-from-run-log-shape 'event,ts,id,from,kind,verified,bytes,flags' \
+  "$(xonce ow-impl--12b.md 'kind: report\nplain\n' >/dev/null; tail -n1 "$own/inbox/log.jsonl" | jq -r '"\(keys_unsorted|join(","))"')"
+assert_eq own-no-from-run-verified true "$(tail -n1 "$own/inbox/log.jsonl" | jq -r .verified)"
+# Same prefix, another run: a retired ow-overseer of run ow-old is a peer, not this run's open ow-overseer.
+mkdir -p "$xr/ow-old/inbox"
+jq -n '{prefix:"ow",herdr:{overseer_pane:"w2:p5"},agents:[{name:"ow-overseer",role:"overseer",state:"open"}]}' >"$xr/ow-old/status.json"
+echo "{\"pid\":$$,\"epoch\":$E,\"interval\":2}" >"$xr/ow-old/inbox/.watch"
+assert_eq same-prefix-peer 'inbox: ow-overseer note [peer:ow-old]: hi [cur/ow-overseer--s1.md]' \
+  "$(xonce ow-overseer--s1.md 'kind: note\nfrom-run: ow-old\nfrom-pane: w2:p5\nhi\n')"
+assert_eq same-prefix-retired 'inbox: ow-overseer note unverified [peer-stale:ow-old]: hi [cur/ow-overseer--s2.md]' \
+  "$(xonce ow-overseer--s2.md 'kind: note\nfrom-run: ow-old\nfrom-pane: w9:p1\nhi\n')"
+# This run naming itself is not a peer, even with its own live heartbeat and pane.
+echo "{\"pid\":$$,\"epoch\":$E,\"interval\":2}" >"$own/inbox/.watch"
+assert_eq self-run 'inbox: ow-overseer note unverified [peer-unknown:own]: me [cur/ow-overseer--s3.md]' \
+  "$(xonce ow-overseer--s3.md 'kind: note\nfrom-run: own\nfrom-pane: w9:p1\nme\n')"
+rm "$own/inbox/.watch"
+# from-pane alone is stripped and changes nothing else.
+assert_eq pane-only 'inbox: zz-who note unverified: x [cur/zz-who--13.md]' "$(xonce zz-who--13.md 'kind: note\nfrom-pane: w1:p1\nx\n')"
+assert_eq pane-only-log 'event,ts,id,from,kind,verified,bytes,flags' "$(tail -n1 "$own/inbox/log.jsonl" | jq -r 'keys_unsorted|join(",")')"
+# Headers do not count toward oversize.
+y4000=$(head -c 4000 /dev/zero | tr '\0' 'y')
+assert_not_contains headers-not-counted '[oversize]' "$(xonce pa-overseer--14.md "kind: note\nfrom-run: peer-a\nfrom-pane: w2:p1\n$y4000\n")"
+assert_contains over-limit '[oversize]' "$(xonce pa-overseer--15.md "kind: note\nfrom-run: peer-a\nfrom-pane: w2:p1\n${y4000}y\n")"
+# ORCHESTRATION_RUNS_DIR overrides the sibling lookup.
+alt=$SCRATCH/alt; peer "$alt/peer-a" closed w2:p1
+assert_eq peer-runs-env 'inbox: pa-overseer note unverified [peer-closed:peer-a]: alt [cur/pa-overseer--16.md]' \
+  "$(printf 'kind: note\nfrom-run: peer-a\nfrom-pane: w2:p1\nalt\n' >"$own/inbox/new/pa-overseer--16.md"; touch -t 202001010000 "$own/inbox/new/pa-overseer--16.md"; ORCHESTRATION_RUNS_DIR=$alt once "$own")"
+# Fix round 1 edge cases.
+# The peer's heartbeat may be a fresh rearm (its --once watcher exited), not an expired one.
+echo "{\"pid\":999999,\"epoch\":$((E - 20)),\"interval\":2,\"rearm\":true}" >"$xr/peer-a/inbox/.watch"
+assert_eq peer-rearm-fresh 'inbox: pa-overseer note [peer:peer-a]: r [cur/pa-overseer--r1.md]' \
+  "$(xonce pa-overseer--r1.md 'kind: note\nfrom-run: peer-a\nfrom-pane: w2:p1\nr\n')"
+echo "{\"pid\":999999,\"epoch\":$((E - 31)),\"interval\":2,\"rearm\":true}" >"$xr/peer-a/inbox/.watch"
+assert_eq peer-rearm-expired 'inbox: pa-overseer note unverified [peer-stale:peer-a]: r [cur/pa-overseer--r2.md]' \
+  "$(xonce pa-overseer--r2.md 'kind: note\nfrom-run: peer-a\nfrom-pane: w2:p1\nr\n')"
+echo "{\"pid\":$$,\"epoch\":$((E + 11)),\"interval\":2}" >"$xr/peer-a/inbox/.watch"
+assert_eq peer-future-epoch 'inbox: pa-overseer note unverified [peer-stale:peer-a]: f [cur/pa-overseer--r3.md]' \
+  "$(xonce pa-overseer--r3.md 'kind: note\nfrom-run: peer-a\nfrom-pane: w2:p1\nf\n')"
+echo 'not json' >"$xr/peer-a/inbox/.watch"
+assert_eq peer-malformed-watch 'inbox: pa-overseer note unverified [peer-stale:peer-a]: m [cur/pa-overseer--r4.md]' \
+  "$(xonce pa-overseer--r4.md 'kind: note\nfrom-run: peer-a\nfrom-pane: w2:p1\nm\n')"
+peer "$xr/peer-a" open w2:p1
+peer "$xr/peer-bad" open w2:p1; echo '{broken' >"$xr/peer-bad/status.json"
+assert_eq peer-malformed-status 'inbox: pa-overseer note unverified [peer-unknown:peer-bad]: m [cur/pa-overseer--r5.md]' \
+  "$(xonce pa-overseer--r5.md 'kind: note\nfrom-run: peer-bad\nfrom-pane: w2:p1\nm\n')"
+# Dotfile and leading-dash run ids are never joined, even when such a directory is a live peer.
+peer "$xr/.hidden" open w2:p1; peer "$xr/-dash" open w2:p1
+for bad in .hidden -dash; do
+  assert_contains "peer-unsafe-$bad" "unverified [peer-unknown:$bad]: u [cur/" "$(xonce "pa-overseer--u$bad.md" "kind: note\nfrom-run: $bad\nfrom-pane: w2:p1\nu\n")"
+done
+# The run id in the tag is flattened and capped at 64 characters.
+a70=$(printf 'a%.0s' $(seq 1 70))
+assert_eq peer-run-capped "inbox: pa-overseer note unverified [peer-unknown:$(printf 'a%.0s' $(seq 1 64))…]: c [cur/pa-overseer--c1.md]" \
+  "$(xonce pa-overseer--c1.md "kind: note\nfrom-run: $a70\nc\n")"
+assert_eq peer-run-log-full "$a70" "$(tail -n1 "$own/inbox/log.jsonl" | jq -r .peer_run)"
+assert_eq peer-run-ansi 'inbox: pa-overseer note unverified [peer-unknown:abcd]: c [cur/pa-overseer--c2.md]' \
+  "$(xonce pa-overseer--c2.md 'kind: note\nfrom-run: ab\033[31mcd\nc\n')"
+assert_eq peer-run-control 'inbox: pa-overseer note unverified [peer-unknown:ab cd]: c [cur/pa-overseer--c3.md]' \
+  "$(xonce pa-overseer--c3.md 'kind: note\nfrom-run: ab\001cd\nc\n')"
+# A from-run line after the first body line is body text.
+assert_eq body-from-run 'inbox: zz-who note unverified: text from-run: peer-a [cur/zz-who--b1.md]' \
+  "$(xonce zz-who--b1.md 'kind: note\ntext\nfrom-run: peer-a\n')"
+assert_eq body-from-run-log 'null' "$(tail -n1 "$own/inbox/log.jsonl" | jq -r .peer_run)"
+# A retiring watcher (handover at start) leaves its successor's heartbeat untouched.
+jq '.herdr.overseer_pane = "w5:p2"' "$h/status.json" >"$SCRATCH/s" && mv "$SCRATCH/s" "$h/status.json"
+rm -f "$h/rotation.json"
+succ="{\"pid\":$$,\"pane\":\"w5:p2\",\"ts\":\"$NOW\",\"epoch\":$E,\"interval\":2}"
+echo "$succ" >"$h/inbox/.watch"; touch -t 202001010000 "$h/inbox/.watch"
+assert_eq retiring-handover 'inbox: watcher stopped (handover)' "$(HERDR_PANE_ID=w5:p1 once "$h")"
+assert_eq retiring-keeps-successor "$succ" "$(cat "$h/inbox/.watch")"
+assert_eq retiring-no-touch 202001010000 "$(date -r "$h/inbox/.watch" +%Y%m%d%H%M 2>/dev/null || date -d "@$(stat -c %Y "$h/inbox/.watch")" +%Y%m%d%H%M)"
+# CDPATH never redirects a relative RUN_DIR.
+cdp=$SCRATCH/cdp; mkdir -p "$cdp/real/rel/inbox/new" "$cdp/decoy/rel/inbox/new"
+echo '{"agents":[]}' >"$cdp/real/rel/status.json"
+printf 'kind: note\nreal\n' >"$cdp/real/rel/inbox/new/zz-who--cd.md"; touch -t 202001010000 "$cdp/real/rel/inbox/new/zz-who--cd.md"
+assert_eq cdpath-watch 'inbox: zz-who note unverified: real [cur/zz-who--cd.md]' "$(cd "$cdp/real" && CDPATH=$cdp/decoy once rel)"
+assert_eq cdpath-decoy-untouched '' "$(find "$cdp/decoy" -type f)"
+assert_not_contains peer-no-prompt 'agent prompt' "$(cat "$MOCK_LOG")"
 finish
