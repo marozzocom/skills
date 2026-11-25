@@ -25,7 +25,7 @@ reviewer preferably comes from a different vendor than the implementer.
 | `references/review-checklists.md` | local, gitignored: per-repo checklists, escalation domains, review conventions, landing grants and safe sets, verification matrix. Create from [the template](references/review-checklists.template.md). |
 | `references/agent-trust-profiles.md` | local, gitignored: verified per-agent behavior. Create from [the template](references/agent-trust-profiles.template.md). |
 | `bin/run-gates.sh` | acceptance re-run: one verdict line per gate with its seconds, failure tails, logs on disk; optional lock and timing record |
-| `bin/with-lock.sh` | run a command under a machine-wide named lock, so heavy runs queue across sessions and agents |
+| `bin/with-lock.sh` | run a command under a machine-wide named lock, so heavy runs queue across sessions and agents; max hold, holder liveness, `--status` |
 | `bin/review-inventory.sh` | every path changed since the base: committed, staged, unstaged, untracked |
 | `bin/diff-hunks.sh` | only the hunks a triage range names; exits 3 when nothing matches |
 | `bin/resolve-thread.sh` | reply to a review comment and resolve its thread in one call |
@@ -67,5 +67,37 @@ Validate:
 - **Triage may escalate, never demote.** A label cannot protect a file you
   never learn exists, and a reviewer's "routine" is cheaper to overrule
   than its "risk-bearing" is to miss.
+- **Locks have a maximum hold, enforced by the holder.** A hung heavy run
+  used to keep every other session queued indefinitely. `run-gates.sh`
+  now holds its locks at most `WITH_LOCK_MAX_HOLD` seconds (default 3600,
+  `0` disables; `with-lock.sh --max-hold` elsewhere). The deadline is an
+  absolute time exported as `WITH_LOCK_DEADLINE`, so a lock taken inside a
+  gate inherits it, and inner holders kill first (the wait before KILL
+  grows by `WITH_LOCK_DEPTH_STEP` per level outward). Only the holder's
+  supervisor ends the command, and only after its whole process group has
+  exited is the kernel lock released: waiters never unlink a lock or
+  bypass it, so two holders never overlap. `WITH_LOCK_KILL_GRACE` (default
+  5 seconds) is the TERM-to-KILL grace; give `desktop` runs more when a
+  GUI suite needs time to close, on the outermost call
+  (`RUN_GATES_LOCK=heavy,desktop WITH_LOCK_KILL_GRACE=30`). Each holder
+  exports when it will send KILL (`WITH_LOCK_OUTER_KILL_AT`, and
+  `WITH_LOCK_OUTER_KILL_WAIT` relative to a TERM), and a nested holder
+  clamps its own KILL to before that, whatever grace it was given:
+  otherwise an outer KILL could free the outer lock while the inner
+  command still ran. `WITH_LOCK_DEPTH_STEP` must be at least 1 with a
+  deadline for the same reason.
+- **The caller's errexit never reaches the lock scripts.** With
+  `SHELLOPTS=errexit` or a `BASH_ENV` that runs `set -e`, the supervisor's
+  1-second wait would fail and end it, freeing the lock mid-command. Both
+  scripts turn errexit off at once and hand it, with `BASH_ENV` and `ENV`,
+  back to the command they run. The cost is one supervisor shell per
+  held lock; `kill -9` of that shell frees the lock while the command
+  may still run, which `--status` then reports as a warning.
+- **Staleness is reported, never acted on by waiters.** The holder samples
+  its command's processes (`WITH_LOCK_SAMPLE_INTERVAL`, default 30 s) and
+  writes `NAME.meta`; waiters and `with-lock.sh --status NAME` show its
+  age, idle time (`STALE` from `WITH_LOCK_STALE_IDLE`, default 300 s) or
+  that it waits on another lock. Without `ps` liveness is "uncheckable"
+  rather than guessed.
 - **Mutation check on new tests.** Red-then-green proves the test sees
   the bug it was written for, not that it pins the invariant.

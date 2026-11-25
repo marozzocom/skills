@@ -74,6 +74,21 @@ local, created from the templates beside them).
   repo's gates are heavy in its `references/review-checklists.md` entry,
   and name the same lock in a brief's verification floor so implementers
   queue too.
+- **A lock is never held forever.** `run-gates.sh` holds its locks at most
+  `WITH_LOCK_MAX_HOLD` seconds (default 3600; `0` disables); for
+  `with-lock.sh` pass `--max-hold <seconds>`. The deadline is absolute and
+  inherited by nested locks, so nesting never resets it. At the deadline
+  the holder's own supervisor terminates the whole command (TERM, then
+  KILL after `WITH_LOCK_KILL_GRACE`, default 5 seconds) before the lock
+  is released, and the run exits 124 with its usual last lines. When
+  `desktop` suites need longer to close windows, set the grace on the
+  outermost call (`RUN_GATES_LOCK=heavy,desktop WITH_LOCK_KILL_GRACE=30`):
+  an inner lock always clamps its KILL to before its outer holder's, so a
+  larger grace given only to an inner lock is cut short. A
+  waiter's message shows the holder's age and whether it is idle
+  (`STALE`) or waiting on another lock; `bin/with-lock.sh --status <name>`
+  prints the same as one line. Treat a stale holder as a question for
+  whoever owns it, never as a reason to delete lock files.
 - **A test written in the same run gets no verdict from its own exit
   code.** For any test that pins something (a default, an invariant, a
   regression guard): mutate the implementation and confirm the test

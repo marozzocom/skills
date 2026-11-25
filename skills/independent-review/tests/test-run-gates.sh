@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2016 # Literal command strings must expand in the child shell.
-# shellcheck source=tests/lib.sh
+# shellcheck source=tests/lib.sh disable=SC1091 # Followed only with -x.
 . "$(dirname "$0")/lib.sh"
 G=${RUN_GATES:-$BIN_DIR/run-gates.sh}
 mkdir "$SCRATCH/worktree"
@@ -161,10 +161,79 @@ out=$(RUN_GATES_LOCK=heavy "$BASH" "$G" "$GATE_WORKTREE" 'a:false' 2>&1); rc=$?
 assert_eq lock-started-exit 1 "$rc"
 assert_eq lock-started-logs-last logs: "$(printf '%s\n' "$out" | tail -n1 | cut -d' ' -f1)"
 assert_eq no-pending-left 0 "$(find "${TMPDIR:-/tmp}" -maxdepth 1 -name 'run-gates-lock.*' -newer "$SCRATCH/mock.log" 2>/dev/null | wc -l | tr -d ' ')"
-for bad in 'a b' ',heavy' 'heavy,' 'a/b'; do
-  out=$(RUN_GATES_LOCK="$bad" "$BASH" "$G" "$GATE_WORKTREE" 'a:touch "$GATE_MARKER"' 2>&1); rc=$?
+# Max hold: 3600s by default, 0 unlimited; gates keep the absolute deadline.
+out=$(RUN_GATES_LOCK=heavy "$BASH" "$G" "$GATE_WORKTREE" 'deadline:test $((WITH_LOCK_DEADLINE - $(date +%s))) -gt 3500' 2>&1); rc=$?
+assert_eq max-hold-default 0 "$rc"
+out=$(WITH_LOCK_MAX_HOLD=0 RUN_GATES_LOCK=heavy "$BASH" "$G" "$GATE_WORKTREE" 'unlimited:test -z "${WITH_LOCK_DEADLINE-}"' 2>&1); rc=$?
+assert_eq max-hold-zero-unlimited 0 "$rc"
+out=$(WITH_LOCK_MAX_HOLD=soon RUN_GATES_LOCK=heavy "$BASH" "$G" "$GATE_WORKTREE" 'a:touch "$GATE_MARKER"' 2>&1); rc=$?
+assert_eq max-hold-bad 2 "$rc"
+assert_eq max-hold-bad-no-gate no "$([ -e "$GATE_MARKER" ] && echo yes || echo no)"
+# Reaching it ends the running gate before the lock is free, and the output
+# contract holds: FAIL lock, then bash_env: and logs: last, exit 124.
+: >"$rec"
+began=$SECONDS
+out=$(WITH_LOCK_MAX_HOLD=2 WITH_LOCK_KILL_GRACE=1 WITH_LOCK_DEPTH_STEP=1 RUN_GATES_RECORD="$rec" RUN_GATES_LOCK=heavy \
+  "$BASH" "$G" "$GATE_WORKTREE" 'quick:true' 'hang:sleep 30 & echo $! >"$GATE_MARKER"; wait' 2>&1); rc=$?
+assert_eq max-hold-exit 124 "$rc"
+assert_eq max-hold-prompt yes "$([ $((SECONDS - began)) -le 6 ] && echo yes || echo no)"
+assert_contains max-hold-pass 'PASS quick in' "$out"
+assert_contains max-hold-stderr 'with-lock.sh: heavy exceeded max-hold (2s)' "$out"
+assert_eq max-hold-last-lines 'FAIL lock heavy (max-hold)|bash_env: none|logs:' \
+  "$(printf '%s\n' "$out" | tail -n3 | sed 's/^logs: .*/logs:/' | tr '\n' '|' | sed 's/|$//')"
+logdir=$(printf '%s\n' "$out" | sed -n 's/^logs: //p')
+assert_eq max-hold-logs-kept yes "$([ -f "$logdir/02-hang.log" ] && echo yes || echo no)"
+assert_eq max-hold-record 'lock	heavy	124' "$(tail -n1 "$rec" | cut -f3-5)"
+assert_eq max-hold-gate-gone gone "$(kill -0 "$(cat "$GATE_MARKER")" 2>/dev/null && echo alive || echo gone)"
+assert_eq max-hold-lock-free free "$("$BIN_DIR/with-lock.sh" --status heavy)"
+rm -f "$GATE_MARKER"
+# A signal to the script, alone or with its process group, ends the gate
+# run before the lock is free and keeps the last lines and the record row.
+last3() { printf '%s\n' "$1" | tail -n3 | sed 's/^logs: .*/logs:/' | tr '\n' '|' | sed 's/|$//'; }
+for how in pid group; do
+  : >"$rec"; rm -f "$GATE_MARKER"
+  set -m
+  RUN_GATES_RECORD="$rec" RUN_GATES_LOCK=heavy "$BASH" "$G" "$GATE_WORKTREE" \
+    'hang:sleep 30 & echo $! >"$GATE_MARKER"; wait' >"$SCRATCH/signalled.out" 2>&1 &
+  rg=$!
+  set +m
+  for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do [ -s "$GATE_MARKER" ] && break; sleep 0.2; done
+  if [ "$how" = pid ]; then kill -TERM "$rg"; else kill -TERM -- -"$rg"; fi
+  wait "$rg"; rc=$?
+  out=$(cat "$SCRATCH/signalled.out")
+  assert_eq "signal-$how-exit" 143 "$rc"
+  assert_eq "signal-$how-last-lines" 'FAIL lock heavy (terminated, exit 143)|bash_env: none|logs:' "$(last3 "$out")"
+  assert_eq "signal-$how-gate-gone" gone "$(kill -0 "$(cat "$GATE_MARKER" 2>/dev/null || echo 0)" 2>/dev/null && echo alive || echo gone)"
+  assert_eq "signal-$how-lock-free" free "$("$BIN_DIR/with-lock.sh" --status heavy)"
+  assert_eq "signal-$how-record" 'lock	heavy	143' "$(tail -n1 "$rec" | cut -f3-5)"
+done
+rm -f "$GATE_MARKER"
+# The caller's errexit never ends the run early: the lock is held for the
+# whole run and the output contract holds.
+printf 'set -e\n' >"$SCRATCH/errexit-env"
+for how in "SHELLOPTS=errexit" "BASH_ENV=$SCRATCH/errexit-env"; do
+  env "$how" WITH_LOCK_SAMPLE_INTERVAL=1 RUN_GATES_LOCK=heavy "$BASH" "$G" "$GATE_WORKTREE" 'slow:sleep 3' 'bad:false' \
+    >"$SCRATCH/errexit.out" 2>&1 &
+  rg=$!; sleep 1.8
+  out=$(WITH_LOCK_WAIT=0 "$BIN_DIR/with-lock.sh" heavy -- echo overlap 2>/dev/null); rc=$?
+  assert_eq "errexit-no-overlap-${how%%=*}" "75 " "$rc $out"
+  wait "$rg"; rc=$?
+  out=$(cat "$SCRATCH/errexit.out")
+  assert_eq "errexit-exit-${how%%=*}" 1 "$rc"
+  assert_contains "errexit-pass-${how%%=*}" 'PASS slow in' "$out"
+  assert_contains "errexit-fail-${how%%=*}" 'FAIL bad (exit 1)' "$out"
+  assert_eq "errexit-logs-last-${how%%=*}" logs: "$(printf '%s\n' "$out" | tail -n1 | cut -d' ' -f1)"
+done
+for bad in 'a b' ',heavy' 'heavy,' 'a/b' '-heavy' 'heavy,-x'; do
+  out=$(ORCHESTRATION_LOCK_DIR="$SCRATCH/bad-locks" RUN_GATES_LOCK="$bad" "$BASH" "$G" "$GATE_WORKTREE" 'a:touch "$GATE_MARKER"' 2>&1); rc=$?
   assert_eq "bad-lock-$bad" 2 "$rc"
 done
+# An exported CDPATH does not change where a relative invocation finds with-lock.sh.
+mkdir -p "$SCRATCH/cdpath/bin"
+out=$(cd "$BIN_DIR/.." && CDPATH="$SCRATCH/cdpath" RUN_GATES_LOCK=heavy "$BASH" bin/run-gates.sh "$GATE_WORKTREE" 'ok:true' 2>&1); rc=$?
+assert_eq cdpath-relative 0 "$rc"
+assert_contains cdpath-relative-lock 'lock: heavy waited' "$out"
+assert_eq bad-lock-nothing-locked no "$([ -e "$SCRATCH/bad-locks" ] && echo yes || echo no)"
 assert_eq bad-lock-no-gate no "$([ -e "$GATE_MARKER" ] && echo yes || echo no)"
 out=$("$BASH" "$G" 2>&1); rc=$?
 assert_eq usage-exit 2 "$rc"
